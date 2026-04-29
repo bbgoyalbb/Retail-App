@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { getJobwork, moveJobwork, moveJobworkBack, moveJobworkEmb, editJobworkEmb, getJobworkFilters } from "@/api";
 import { ArrowRight, ArrowLeft, Funnel, X, PencilSimple, CheckSquare } from "@phosphor-icons/react";
@@ -207,6 +207,13 @@ export default function JobWork() {
     else { setSortKey(key); setSortDir("asc"); }
   };
 
+  const sortedPending    = useMemo(() => sortItems(data.pending),     [data.pending,    sortKey, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sortedStitched   = useMemo(() => sortItems(data.stitched),    [data.stitched,   sortKey, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sortedDelivered  = useMemo(() => sortItems(data.delivered),   [data.delivered,  sortKey, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sortedRequired   = useMemo(() => sortItems(data.required),    [data.required,   sortKey, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sortedInProgress = useMemo(() => sortItems(data.in_progress), [data.in_progress,sortKey, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sortedFinished   = useMemo(() => sortItems(data.finished),    [data.finished,   sortKey, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleTailoringMove = async (itemIds, newStatus) => {
     try {
       await moveJobwork({ item_ids: itemIds, new_status: newStatus });
@@ -371,13 +378,13 @@ export default function JobWork() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className={activeCol === "Pending" ? "block md:block" : "hidden md:block"}>
-              <StatusColumn title="Pending" items={sortItems(data.pending)} color="var(--warning)" moveLabel="Stitched" onMove={(ids) => handleTailoringMove(ids, "Stitched")} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              <StatusColumn title="Pending" items={sortedPending} color="var(--warning)" moveLabel="Stitched" onMove={(ids) => handleTailoringMove(ids, "Stitched")} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
             </div>
             <div className={activeCol === "Stitched" ? "block md:block" : "hidden md:block"}>
-              <StatusColumn title="Stitched" items={sortItems(data.stitched)} color="var(--info)" moveLabel="Delivered" onMove={(ids) => handleTailoringMove(ids, "Delivered")} onMoveBack={(ids) => handleTailoringMoveBack(ids, "Stitched")} moveBackLabel="to Pending" sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              <StatusColumn title="Stitched" items={sortedStitched} color="var(--info)" moveLabel="Delivered" onMove={(ids) => handleTailoringMove(ids, "Delivered")} onMoveBack={(ids) => handleTailoringMoveBack(ids, "Stitched")} moveBackLabel="to Pending" sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
             </div>
             <div className={activeCol === "Delivered" ? "block md:block" : "hidden md:block"}>
-              <StatusColumn title="Delivered" items={sortItems(data.delivered)} color="var(--success)" onMoveBack={(ids) => handleTailoringMoveBack(ids, "Delivered")} moveBackLabel="to Stitched" sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              <StatusColumn title="Delivered" items={sortedDelivered} color="var(--success)" onMoveBack={(ids) => handleTailoringMoveBack(ids, "Delivered")} moveBackLabel="to Stitched" sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
             </div>
           </div>
         </div>
@@ -393,13 +400,13 @@ export default function JobWork() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className={activeCol === "Required" ? "block md:block" : "hidden md:block"}>
-              <StatusColumn title="Required" items={sortItems(data.required)} color="var(--warning)" moveLabel="In Progress" onMove={handleEmbRequiredMove} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              <StatusColumn title="Required" items={sortedRequired} color="var(--warning)" moveLabel="In Progress" onMove={handleEmbRequiredMove} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
             </div>
             <div className={activeCol === "In Progress" ? "block md:block" : "hidden md:block"}>
-              <StatusColumn title="In Progress" items={sortItems(data.in_progress)} color="var(--info)" moveLabel="Finished" onMove={handleEmbProgressMove} onMoveBack={(ids) => handleEmbMoveBack(ids, "In Progress")} moveBackLabel="to Required" onItemDoubleClick={handleEditInProgress} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              <StatusColumn title="In Progress" items={sortedInProgress} color="var(--info)" moveLabel="Finished" onMove={handleEmbProgressMove} onMoveBack={(ids) => handleEmbMoveBack(ids, "In Progress")} moveBackLabel="to Required" onItemDoubleClick={handleEditInProgress} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
             </div>
             <div className={activeCol === "Finished" ? "block md:block" : "hidden md:block"}>
-              <StatusColumn title="Finished" items={sortItems(data.finished)} color="var(--success)" onMoveBack={(ids) => handleEmbMoveBack(ids, "Finished")} moveBackLabel="to In Progress" onItemDoubleClick={handleEditFinished} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              <StatusColumn title="Finished" items={sortedFinished} color="var(--success)" onMoveBack={(ids) => handleEmbMoveBack(ids, "Finished")} moveBackLabel="to In Progress" onItemDoubleClick={handleEditFinished} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
             </div>
           </div>
         </div>

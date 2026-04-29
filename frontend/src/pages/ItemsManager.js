@@ -485,17 +485,17 @@ export default function ItemsManager() {
     }
     // Items
     let ok=0, fail=0, allMM=[], affRefs=new Set(), reRef=null, reCust=null, reSecs=[];
-    for (const id of Object.keys(editData)) {
-      if (newItemIds.includes(id)) continue;
-      try {
-        const orig=originalData[id], cur=editData[id]; const ch={};
-        Object.keys(cur).forEach(k=>{ if(JSON.stringify(cur[k])!==JSON.stringify(orig[k])) ch[k]=cur[k]; });
-        const mm=detectMismatches(orig,cur); if(mm.length){allMM.push(...mm);affRefs.add(orig.ref);}
-        const sc=detectSettledChanges(orig,cur); if(sc.length){reRef=orig.ref;reCust=orig.name;reSecs=[...reSecs,...sc];}
-        if (Object.keys(ch).length) await updateItem(id, ch); ok++;
-      } catch { fail++; }
-    }
-    for (const id of newItemIds) { try { if(editData[id]) await createItem(editData[id]); ok++; } catch { fail++; } }
+    const existingIds = Object.keys(editData).filter(id => !newItemIds.includes(id));
+    const existingResults = await Promise.allSettled(existingIds.map(async id => {
+      const orig=originalData[id], cur=editData[id]; const ch={};
+      Object.keys(cur).forEach(k=>{ if(JSON.stringify(cur[k])!==JSON.stringify(orig[k])) ch[k]=cur[k]; });
+      const mm=detectMismatches(orig,cur); if(mm.length){allMM.push(...mm);affRefs.add(orig.ref);}
+      const sc=detectSettledChanges(orig,cur); if(sc.length){reRef=orig.ref;reCust=orig.name;reSecs=[...reSecs,...sc];}
+      if (Object.keys(ch).length) await updateItem(id, ch);
+    }));
+    existingResults.forEach(r => r.status === "fulfilled" ? ok++ : fail++);
+    const newResults = await Promise.allSettled(newItemIds.map(id => editData[id] ? createItem(editData[id]) : Promise.resolve()));
+    newResults.forEach(r => r.status === "fulfilled" ? ok++ : fail++);
     setSaving(false); setSelectedSection(null); setEditData({}); setOriginalData({}); setEditItems([]); setNewItemIds([]);
     if (fail === 0) {
       if (allMM.length) setMismatchPrompt({ refs: Array.from(affRefs), mismatches: allMM });
@@ -523,8 +523,8 @@ export default function ItemsManager() {
 
   const handleCancelOrder = async (group) => {
     const zero = { cancelled:true,cancelled_at:new Date().toISOString(),price:0,qty:0,discount:0,fabric_amount:0,fabric_received:0,fabric_pending:0,fabric_pay_mode:"N/A",tally_fabric:false,tailoring_amount:0,tailoring_received:0,tailoring_pending:0,tailoring_pay_mode:"N/A",tailoring_status:"N/A",article_type:"N/A",order_no:"N/A",delivery_date:"N/A",labour_amount:0,labour_paid:"N/A",tally_tailoring:false,embroidery_amount:0,embroidery_received:0,embroidery_pending:0,embroidery_pay_mode:"N/A",embroidery_status:"N/A",karigar:"N/A",emb_labour_amount:0,emb_labour_paid:"N/A",tally_embroidery:false,addon_amount:0,addon_received:0,addon_pending:0,addon_pay_mode:"N/A",addon_desc:"N/A",tally_addon:false };
-    let ok = 0;
-    for (const item of group.items) { try { await updateItem(item.id, zero); ok++; } catch {} }
+    const results = await Promise.allSettled(group.items.map(item => updateItem(item.id, zero)));
+    const ok = results.filter(r => r.status === "fulfilled").length;
     setMessage({ type: ok===group.items.length?"success":"error", text: ok===group.items.length?`Order ${group.ref} cancelled`:`${group.items.length-ok} items failed` });
     setTimeout(()=>setMessage(null),3000);
     setCancelConfirm(null); invalidateItemsCache(); loadData();

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { getDaybook, getDaybookDates, tallyEntries } from "@/api";
 import { dataEvents } from "@/lib/dataEvents";
 import { fmt } from "@/lib/fmt";
@@ -405,8 +405,8 @@ export default function Daybook() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const uniqueRefs  = ["All", ...Array.from(new Set(entries.map(e => e.ref).filter(Boolean))).sort()];
-  const uniqueNames = ["All", ...Array.from(new Set(entries.map(e => e.name).filter(Boolean))).sort()];
+  const uniqueRefs  = useMemo(() => ["All", ...Array.from(new Set(entries.map(e => e.ref).filter(Boolean))).sort()],  [entries]);
+  const uniqueNames = useMemo(() => ["All", ...Array.from(new Set(entries.map(e => e.name).filter(Boolean))).sort()], [entries]);
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -416,13 +416,22 @@ export default function Daybook() {
       .finally(() => setLoading(false));
   }, [dateFilter]);
 
+  const initialLoadDone = useRef(false);
   useEffect(() => {
     getDaybookDates().then(res => {
       setDates(res.data);
-      if (res.data && res.data.includes(todayStr)) setDateFilter(todayStr);
-    }).catch(() => {});
+      if (res.data && res.data.includes(todayStr)) {
+        setDateFilter(todayStr);
+      } else {
+        // dateFilter stays "All" — trigger first load manually since loadData won't fire
+        initialLoadDone.current = true;
+        loadData();
+      }
+    }).catch(() => { initialLoadDone.current = true; loadData(); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
+    if (!initialLoadDone.current) { initialLoadDone.current = true; return; }
     loadData();
     const handler = () => loadData();
     dataEvents.addEventListener("daybook", handler);

@@ -167,10 +167,19 @@ const _authToken = () => { try { return sessionStorage.getItem("token") || ""; }
 // Invoice (HTML only) — include token so iframe/direct links authenticate
 export const getInvoiceUrl = (ref) => { const t = _authToken(); return `${BACKEND_URL}/api/invoice?ref=${encodeURIComponent(ref)}${t ? `&token=${encodeURIComponent(t)}` : ''}`; };
 
-// Reports
-export const getRevenueReport = (params) => api.get("/reports/revenue", { params });
-export const getCustomerReport = (params) => api.get("/reports/customers", { params });
-export const getSummaryReport = (params) => api.get("/reports/summary", { params });
+// Reports — 30 s in-process cache per param set
+const _reportsCache = new Map();
+const REPORTS_CACHE_TTL = 30000;
+const _cachedReport = (key, fetcher) => {
+  const now = Date.now();
+  const hit = _reportsCache.get(key);
+  if (hit && now - hit.ts < REPORTS_CACHE_TTL) return Promise.resolve(hit.res);
+  return fetcher().then(res => { _reportsCache.set(key, { res, ts: Date.now() }); return res; });
+};
+export const getRevenueReport  = (params) => _cachedReport(`rev:${JSON.stringify(params)}`,  () => api.get("/reports/revenue",   { params }));
+export const getCustomerReport = (params) => _cachedReport(`cust:${JSON.stringify(params)}`, () => api.get("/reports/customers", { params }));
+export const getSummaryReport  = (params) => _cachedReport(`sum:${JSON.stringify(params)}`,  () => api.get("/reports/summary",   { params }));
+export const invalidateReportsCache = () => _reportsCache.clear();
 
 // Import / Export / Backup
 export const importExcel = (formData, mode) => api.post(`/import/excel?mode=${mode}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });

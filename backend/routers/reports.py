@@ -21,8 +21,6 @@ router = APIRouter()
 
 @router.get("/invoice")
 async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref"), format: str = Query(default="standard", alias="format"), current_user: dict = Depends(get_current_user_dep)):
-    from fastapi.responses import HTMLResponse
-
     items, advances, stored_settings = await asyncio.gather(
         db.items.find({"ref": ref_id}, {"_id": 0}).to_list(1000),
         db.advances.find({"ref": ref_id}, {"_id": 0}).to_list(50),

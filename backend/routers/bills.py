@@ -4,7 +4,7 @@ Bills router.
 import asyncio
 from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 import uuid
 import re
 import logging
@@ -24,8 +24,6 @@ router = APIRouter()
 
 @router.get("/dashboard")
 async def get_dashboard(current_user: dict = Depends(get_current_user_dep)):
-    from datetime import date, timedelta
-
     _ns = {"$not": {"$regex": "^Settled"}}
 
     # Build 7-day date list for trend
@@ -149,7 +147,7 @@ async def get_items(
     tailoring_status: Optional[str] = None,
     embroidery_status: Optional[str] = None,
     order_no: Optional[str] = None,
-    limit: int = 500,
+    limit: int = Query(500, le=2000),
     skip: int = 0,
     summary: bool = False,
     current_user: dict = Depends(get_current_user_dep),

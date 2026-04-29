@@ -48,7 +48,14 @@ async def get_daybook(date_filter: Optional[str] = None, current_user: dict = De
             {"addon_pay_date": date_filter},
         ]
 
-    items = await db.items.find(item_query if date_filter and date_filter != "All" else {}, {"_id": 0}).to_list(2000)
+    _DAYBOOK_PROJ = {
+        "_id": 0, "ref": 1, "name": 1,
+        "fabric_pay_date": 1,     "fabric_received": 1,     "fabric_pay_mode": 1,     "tally_fabric": 1,
+        "tailoring_pay_date": 1,  "tailoring_received": 1,  "tailoring_pay_mode": 1,  "tally_tailoring": 1,
+        "embroidery_pay_date": 1, "embroidery_received": 1, "embroidery_pay_mode": 1, "tally_embroidery": 1,
+        "addon_pay_date": 1,      "addon_received": 1,      "addon_pay_mode": 1,      "tally_addon": 1,
+    }
+    items = await db.items.find(item_query if date_filter and date_filter != "All" else {}, _DAYBOOK_PROJ).to_list(2000)
 
     categories = [
         ("fabric",     "fabric_pay_date",     "fabric_received",     "fabric_pay_mode",     "tally_fabric"),
@@ -161,31 +168,30 @@ async def tally_entries(req: TallyRequest, current_user: dict = Depends(get_curr
         "addon":      ("tally_addon",      "addon_pay_date"),
     }
 
+    refs = req.entry_ids
     if req.category == "advance":
-        for entry_ref in req.entry_ids:
-            adv_query = {"ref": entry_ref}
-            if req.date:
-                adv_query["date"] = req.date
-            await db.advances.update_many(adv_query, {"$set": {"tally": tally_value}})
+        adv_query = {"ref": {"$in": refs}}
+        if req.date:
+            adv_query["date"] = req.date
+        await db.advances.update_many(adv_query, {"$set": {"tally": tally_value}})
     elif req.category == "all":
-        for entry_ref in req.entry_ids:
-            # Update each category scoped to its own pay_date
-            for cat, (tally_field, pay_date_field) in date_field_map.items():
-                item_query = {"ref": entry_ref}
-                if req.date:
-                    item_query[pay_date_field] = req.date
-                await db.items.update_many(item_query, {"$set": {tally_field: tally_value}})
-            adv_query = {"ref": entry_ref}
-            if req.date:
-                adv_query["date"] = req.date
-            await db.advances.update_many(adv_query, {"$set": {"tally": tally_value}})
-    elif req.category in date_field_map:
-        tally_field, pay_date_field = date_field_map[req.category]
-        for entry_ref in req.entry_ids:
-            item_query = {"ref": entry_ref}
+        coros = []
+        for cat, (tally_field, pay_date_field) in date_field_map.items():
+            item_query = {"ref": {"$in": refs}}
             if req.date:
                 item_query[pay_date_field] = req.date
-            await db.items.update_many(item_query, {"$set": {tally_field: tally_value}})
+            coros.append(db.items.update_many(item_query, {"$set": {tally_field: tally_value}}))
+        adv_query = {"ref": {"$in": refs}}
+        if req.date:
+            adv_query["date"] = req.date
+        coros.append(db.advances.update_many(adv_query, {"$set": {"tally": tally_value}}))
+        await asyncio.gather(*coros)
+    elif req.category in date_field_map:
+        tally_field, pay_date_field = date_field_map[req.category]
+        item_query = {"ref": {"$in": refs}}
+        if req.date:
+            item_query[pay_date_field] = req.date
+        await db.items.update_many(item_query, {"$set": {tally_field: tally_value}})
 
     return {"message": f"{len(req.entry_ids)} entries {req.action}ed"}
 

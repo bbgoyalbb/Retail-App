@@ -7,7 +7,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
 import uuid
 import re
-from bson import ObjectId
+from pymongo import UpdateOne
 from .deps import db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
@@ -116,7 +116,6 @@ async def get_jobwork(
 
 @router.post("/jobwork/move")
 async def move_jobwork(req: StatusUpdateRequest, current_user: dict = Depends(get_current_user_dep)):
-    from pymongo import UpdateOne
     update_fields = {}
     if req.new_status in ["Pending", "Stitched", "Delivered"]:
         update_fields["tailoring_status"] = req.new_status
@@ -132,7 +131,6 @@ async def move_jobwork(req: StatusUpdateRequest, current_user: dict = Depends(ge
 
 @router.post("/jobwork/move-back")
 async def move_jobwork_back(req: MoveBackRequest, current_user: dict = Depends(get_current_user_dep)):
-    from pymongo import UpdateOne
     TAILORING_PREV = {"Stitched": "Pending", "Delivered": "Stitched"}
     EMB_PREV = {"In Progress": "Required", "Finished": "In Progress"}
     if req.current_status in TAILORING_PREV:
@@ -147,7 +145,6 @@ async def move_jobwork_back(req: MoveBackRequest, current_user: dict = Depends(g
 
 @router.post("/jobwork/move-emb")
 async def move_embroidery(req: EmbMoveRequest, current_user: dict = Depends(get_current_user_dep)):
-    from pymongo import UpdateOne
     needs_amounts = req.emb_customer_amount is not None and req.emb_customer_amount > 0
     if needs_amounts:
         # Batch-fetch all items once instead of one find_one per item

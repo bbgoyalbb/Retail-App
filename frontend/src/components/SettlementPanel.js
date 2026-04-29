@@ -78,9 +78,10 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
   ), [refBalances]);
   const totalPending = aggBalances.fabric + aggBalances.tailoring + aggBalances.embroidery + aggBalances.addon;
   const totalPool    = (parseFloat(freshPay) || 0) + (useAdvance ? aggBalances.advance : 0);
-  const totalAlloc   = Object.values(allotments).reduce((sum, a) =>
+  const totalAlloc   = useMemo(() => Object.values(allotments).reduce((sum, a) =>
     sum + (parseFloat(a.fabric) || 0) + (parseFloat(a.tailoring) || 0) +
-          (parseFloat(a.embroidery) || 0) + (parseFloat(a.addon) || 0) + (parseFloat(a.advance) || 0), 0);
+          (parseFloat(a.embroidery) || 0) + (parseFloat(a.addon) || 0) + (parseFloat(a.advance) || 0), 0),
+  [allotments]);
 
   const toggleMode = (m) => setSelectedModes(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
   const toggleRef  = (ref) => setExpandedRefs(prev => ({ ...prev, [ref]: !prev[ref] }));

@@ -7,7 +7,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
 import uuid
 import re
-from bson import ObjectId
+from pymongo import UpdateOne
 from .deps import db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
@@ -52,13 +52,20 @@ async def get_labour_items(filter_type: str = "All", filter_karigar: str = "All"
         if filter_karigar != "All":
             emb_query["karigar"] = filter_karigar
 
+    _LABOUR_PROJ = {
+        "_id": 0, "id": 1, "ref": 1, "name": 1, "barcode": 1, "date": 1,
+        "article_type": 1, "order_no": 1, "delivery_date": 1, "karigar": 1,
+        "labour_amount": 1, "labour_paid": 1, "labour_pay_date": 1, "labour_payment_mode": 1, "labour_payment_id": 1,
+        "emb_labour_amount": 1, "emb_labour_paid": 1, "emb_labour_date": 1, "emb_labour_payment_mode": 1, "emb_labour_payment_id": 1,
+        "tailoring_status": 1, "embroidery_status": 1,
+    }
     coros = []
     order = []
     if tail_query is not None:
-        coros.append(db.items.find(tail_query, {"_id": 0}).to_list(500))
+        coros.append(db.items.find(tail_query, _LABOUR_PROJ).to_list(500))
         order.append("tail")
     if emb_query is not None:
-        coros.append(db.items.find(emb_query, {"_id": 0}).to_list(500))
+        coros.append(db.items.find(emb_query, _LABOUR_PROJ).to_list(500))
         order.append("emb")
 
     results = await asyncio.gather(*coros)
@@ -78,7 +85,6 @@ async def get_karigars(current_user: dict = Depends(get_current_user_dep)):
 
 @router.post("/labour/pay")
 async def pay_labour(req: LabourPaymentRequest, current_user: dict = Depends(get_current_user_dep)):
-    from pymongo import UpdateOne
     mode_str = ", ".join(req.payment_modes) if req.payment_modes else "Cash"
     if req.labour_type == "tailoring":
         update = {
@@ -100,7 +106,6 @@ async def pay_labour(req: LabourPaymentRequest, current_user: dict = Depends(get
 
 @router.post("/labour/delete-payment")
 async def delete_labour_payment(req: LabourDeleteRequest, current_user: dict = Depends(get_current_user_dep)):
-    from pymongo import UpdateOne
     if req.labour_type == "tailoring":
         update = {"labour_paid": "N/A", "labour_pay_date": "N/A", "labour_payment_mode": "N/A", "labour_payment_id": ""}
     else:
