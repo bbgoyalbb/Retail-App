@@ -72,8 +72,10 @@ async def process_settlement(req: SettlementRequest, current_user: dict = Depend
 
     # Fetch items ONCE for all categories - prevents 4x database round trips
     all_items = await db.items.find({"ref": req.ref}, {"_id": 0}).to_list(500)
-    
-    async def apply_pro_rata(pay_mode_field, pay_date_field, received_field, pending_field, total_to_pay):
+
+    shared_bulk_ops: list = []
+
+    def collect_pro_rata(pay_mode_field, pay_date_field, received_field, pending_field, total_to_pay):
         amount_field = pending_field.replace("_pending", "_amount")
         eligible = [i for i in all_items if round_money(i.get(amount_field, 0)) > 0 and not str(i.get(pay_mode_field, "")).startswith("Settled")]
         if not eligible:
@@ -81,7 +83,6 @@ async def process_settlement(req: SettlementRequest, current_user: dict = Depend
 
         total_weight = sum(round_money(i.get(amount_field, 0)) for i in eligible)
         running_paid = 0
-        bulk_ops = []
 
         for idx, item in enumerate(eligible):
             weight = round_money(item.get(amount_field, 0))
@@ -101,19 +102,19 @@ async def process_settlement(req: SettlementRequest, current_user: dict = Depend
                 pending_field: new_balance,
                 pay_mode_field: build_payment_mode_label(req.payment_modes, new_balance, new_received),
             }
-            bulk_ops.append(UpdateOne({"id": item["id"]}, {"$set": update}))
-
-        if bulk_ops:
-            await db.items.bulk_write(bulk_ops, ordered=False)
+            shared_bulk_ops.append(UpdateOne({"id": item["id"]}, {"$set": update}))
 
     if req.allot_fabric > 0:
-        await apply_pro_rata("fabric_pay_mode", "fabric_pay_date", "fabric_received", "fabric_pending", req.allot_fabric)
+        collect_pro_rata("fabric_pay_mode", "fabric_pay_date", "fabric_received", "fabric_pending", req.allot_fabric)
     if req.allot_tailoring > 0:
-        await apply_pro_rata("tailoring_pay_mode", "tailoring_pay_date", "tailoring_received", "tailoring_pending", req.allot_tailoring)
+        collect_pro_rata("tailoring_pay_mode", "tailoring_pay_date", "tailoring_received", "tailoring_pending", req.allot_tailoring)
     if req.allot_embroidery > 0:
-        await apply_pro_rata("embroidery_pay_mode", "embroidery_pay_date", "embroidery_received", "embroidery_pending", req.allot_embroidery)
+        collect_pro_rata("embroidery_pay_mode", "embroidery_pay_date", "embroidery_received", "embroidery_pending", req.allot_embroidery)
     if req.allot_addon > 0:
-        await apply_pro_rata("addon_pay_mode", "addon_pay_date", "addon_received", "addon_pending", req.allot_addon)
+        collect_pro_rata("addon_pay_mode", "addon_pay_date", "addon_received", "addon_pending", req.allot_addon)
+
+    if shared_bulk_ops:
+        await db.items.bulk_write(shared_bulk_ops, ordered=False)
 
     if req.allot_advance > 0:
         adv = {

@@ -53,7 +53,8 @@ export default function LabourPayments() {
     else setSelected(items.map(i => i.id));
   };
 
-  const selectedTotal = items.filter(i => selected.includes(i.id)).reduce((sum, i) => {
+  const selectedSet = new Set(selected);
+  const selectedTotal = items.filter(i => selectedSet.has(i.id)).reduce((sum, i) => {
     return sum + (i.labour_type === "Tailoring" ? (i.labour_amount || 0) : (i.emb_labour_amount || 0));
   }, 0);
 
@@ -62,8 +63,8 @@ export default function LabourPayments() {
   const handlePay = async () => {
     if (selected.length === 0) { setMessage({ type: "error", text: "Select at least one item" }); return; }
 
-    const tailoringIds = items.filter(i => selected.includes(i.id) && i.labour_type === "Tailoring").map(i => i.id);
-    const embroideryIds = items.filter(i => selected.includes(i.id) && i.labour_type === "Embroidery").map(i => i.id);
+    const tailoringIds = items.filter(i => selectedSet.has(i.id) && i.labour_type === "Tailoring").map(i => i.id);
+    const embroideryIds = items.filter(i => selectedSet.has(i.id) && i.labour_type === "Embroidery").map(i => i.id);
 
     // Generate single payment_id for this batch (shared across tailoring + embroidery)
     const paymentId = `PAY-${Date.now().toString(36).slice(-6)}`;

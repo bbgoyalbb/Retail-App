@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getBalances, processSettlement, getSettings } from "@/api";
 import { invalidate } from "@/lib/dataEvents";
 import { fmt } from "@/lib/fmt";
@@ -66,7 +66,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
   }, [orders.map(o => o.ref).join(",")]);
 
   // ── Aggregated totals ──
-  const aggBalances = Object.values(refBalances).reduce(
+  const aggBalances = useMemo(() => Object.values(refBalances).reduce(
     (acc, b) => ({
       fabric:     acc.fabric     + (b.fabric     || 0),
       tailoring:  acc.tailoring  + (b.tailoring  || 0),
@@ -75,7 +75,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
       advance:    acc.advance    + (b.advance     || 0),
     }),
     { fabric: 0, tailoring: 0, embroidery: 0, addon: 0, advance: 0 }
-  );
+  ), [refBalances]);
   const totalPending = aggBalances.fabric + aggBalances.tailoring + aggBalances.embroidery + aggBalances.addon;
   const totalPool    = (parseFloat(freshPay) || 0) + (useAdvance ? aggBalances.advance : 0);
   const totalAlloc   = Object.values(allotments).reduce((sum, a) =>
@@ -141,20 +141,20 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [freshPay, useAdvance, loading]);
 
-  // ── Submit — one settlement per ref ──
+  // ── Submit — all settlements in parallel ──
   const handleSubmit = async () => {
     if (totalAlloc <= 0)          { setMessage({ type: "error", text: "Allocate at least some amount" }); return; }
     if (selectedModes.length === 0) { setMessage({ type: "error", text: "Select at least one payment mode" }); return; }
     setSaving(true);
-    setSavingProgress({ done: 0, total: orders.length });
-    let failed = 0;
-    for (let i = 0; i < orders.length; i++) {
-      const o = orders[i];
+    const eligible = orders.filter(o => {
       const a = allotments[o.ref] || {};
-      const anyAlloc = ["fabric","tailoring","embroidery","addon","advance"].some(k => parseFloat(a[k]) > 0);
-      if (!anyAlloc) { setSavingProgress(p => ({ ...p, done: p.done + 1 })); continue; }
-      try {
-        await processSettlement({
+      return ["fabric","tailoring","embroidery","addon","advance"].some(k => parseFloat(a[k]) > 0);
+    });
+    setSavingProgress({ done: 0, total: eligible.length });
+    const results = await Promise.allSettled(
+      eligible.map(o => {
+        const a = allotments[o.ref] || {};
+        return processSettlement({
           customer_name: o.name,
           ref: o.ref,
           payment_date: payDate,
@@ -166,20 +166,18 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
           allot_embroidery: parseFloat(a.embroidery)|| 0,
           allot_addon:      parseFloat(a.addon)     || 0,
           allot_advance:    parseFloat(a.advance)   || 0,
-        });
-        setSavingProgress(p => ({ ...p, done: p.done + 1 }));
-      } catch {
-        failed++;
-        setSavingProgress(p => ({ ...p, done: p.done + 1 }));
-      }
-    }
+        }).then(r => { setSavingProgress(p => ({ ...p, done: p.done + 1 })); return r; })
+          .catch(e => { setSavingProgress(p => ({ ...p, done: p.done + 1 })); throw e; });
+      })
+    );
+    const failed = results.filter(r => r.status === "rejected").length;
     invalidate("dashboard");
     invalidate("daybook");
     if (failed > 0) {
       setMessage({ type: "error", text: `${failed} settlement(s) failed. Rest processed.` });
       setSaving(false);
     } else {
-      setMessage({ type: "success", text: `${orders.length} settlement(s) processed!` });
+      setMessage({ type: "success", text: `${eligible.length} settlement(s) processed!` });
       onSuccess?.();
       setTimeout(() => onClose(), 1400);
     }

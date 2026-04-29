@@ -40,6 +40,22 @@ ACCESS_TOKEN_EXPIRE_DAYS = 1  # Reduced from 7 for security
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=False)
 
+# In-process revocation cache — populated lazily from DB on first use.
+# Eliminates a DB round-trip on every authenticated request.
+_revoked_jtis: set = set()
+_revoked_jtis_loaded: bool = False
+
+async def _ensure_revocation_cache(db) -> None:
+    global _revoked_jtis, _revoked_jtis_loaded
+    if not _revoked_jtis_loaded:
+        docs = await db.token_blocklist.find({}, {"jti": 1, "_id": 0}).to_list(10000)
+        _revoked_jtis = {d["jti"] for d in docs if d.get("jti")}
+        _revoked_jtis_loaded = True
+
+def revoke_jti(jti: str) -> None:
+    """Call after inserting a JTI into the DB blocklist to keep cache in sync."""
+    _revoked_jtis.add(jti)
+
 
 
 # --- Helpers ---
@@ -86,8 +102,10 @@ async def get_current_user(
     if db is None:
         raise HTTPException(status_code=500, detail="Database not available")
 
-    if jti and await db.token_blocklist.find_one({"jti": jti}):
-        raise HTTPException(status_code=401, detail="Token has been revoked")
+    if jti:
+        await _ensure_revocation_cache(db)
+        if jti in _revoked_jtis:
+            raise HTTPException(status_code=401, detail="Token has been revoked")
 
     user = await db.users.find_one({"username": username.lower().strip() if username else username}, {"password_hash": 0})
     if user is None:

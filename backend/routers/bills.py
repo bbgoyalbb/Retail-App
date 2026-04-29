@@ -227,17 +227,17 @@ async def get_next_ref(date: str, current_user: dict = Depends(get_current_user_
     except Exception:
         date_suffix = "000000"
     counter_key = f"bill_seq_{date}"
-    existing_refs, counter_doc = await asyncio.gather(
-        db.items.distinct("ref", {"date": date}),
-        db.counters.find_one({"_id": counter_key}),
-    )
-    max_existing_seq = 0
-    for r in existing_refs:
-        try:
-            max_existing_seq = max(max_existing_seq, int(r.split("/")[0]))
-        except (ValueError, IndexError):
-            pass
-    current_seq = max(counter_doc.get("seq", 0) if counter_doc else 0, max_existing_seq)
+    counter_doc = await db.counters.find_one({"_id": counter_key})
+    if counter_doc:
+        current_seq = counter_doc.get("seq", 0)
+    else:
+        existing_refs = await db.items.distinct("ref", {"date": date})
+        current_seq = 0
+        for r in existing_refs:
+            try:
+                current_seq = max(current_seq, int(r.split("/")[0]))
+            except (ValueError, IndexError):
+                pass
     next_seq = current_seq + 1
     return {"ref": f"{next_seq:02d}/{date_suffix}", "seq": next_seq}
 
@@ -357,6 +357,44 @@ async def create_bill(req: CreateBillRequest, current_user: dict = Depends(get_c
         # doing so hides the bill from the Settlements page permanently.
         effective_settled = req.is_settled and req.amount_paid > 0
 
+        base_doc = {
+            "id": str(uuid.uuid4()),
+            "date": req.date,
+            "name": req.customer_name,
+            "ref": ref,
+            "barcode": item.barcode,
+            "price": item.price,
+            "qty": item.qty,
+            "discount": item.discount,
+            "fabric_amount": item_total,
+            "tailoring_status": item_tailoring_status,
+            "article_type": item_article_type,
+            "order_no": item_order_no,
+            "delivery_date": item_delivery_date,
+            "tailoring_amount": 0,
+            "embroidery_status": item_emb_status,
+            "embroidery_amount": 0,
+            "addon_desc": item_addon_desc,
+            "addon_amount": item_addon_amount,
+            "labour_amount": 0,
+            "labour_paid": "N/A",
+            "labour_pay_date": "N/A",
+            "tailoring_pay_mode": "N/A",
+            "tailoring_pay_date": "N/A",
+            "tailoring_received": 0,
+            "tailoring_pending": 0,
+            "embroidery_pay_mode": "N/A",
+            "embroidery_pay_date": "N/A",
+            "embroidery_received": 0,
+            "embroidery_pending": 0,
+            "karigar": "N/A",
+            "tally_fabric": False,
+            "tally_tailoring": False,
+            "tally_embroidery": False,
+            "tally_addon": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+
         if effective_settled:
             # Pro-rata fabric payment only over fabric_only_total (addons handled separately below)
             fabric_diff = fabric_only_total - req.amount_paid
@@ -369,102 +407,28 @@ async def create_bill(req: CreateBillRequest, current_user: dict = Depends(get_c
                 running_discount += item_discount
                 running_paid += item_paid
 
-            # Settle addon section too when the bill is being settled at creation
-            eff_addon_pay_mode = f"Settled - {modes_str}" if item_addon_amount > 0 else "N/A"
-            eff_addon_pay_date = req.payment_date if item_addon_amount > 0 else "N/A"
-            eff_addon_received = item_addon_amount
-            eff_addon_pending  = 0
-
             doc = {
-                "id": str(uuid.uuid4()),
-                "date": req.date,
-                "name": req.customer_name,
-                "ref": ref,
-                "barcode": item.barcode,
-                "price": item.price,
-                "qty": item.qty,
-                "discount": item.discount,
-                "fabric_amount": item_total,
-                "tailoring_status": item_tailoring_status,
-                "article_type": item_article_type,
-                "order_no": item_order_no,
-                "delivery_date": item_delivery_date,
-                "tailoring_amount": 0,
-                "embroidery_status": item_emb_status,
-                "embroidery_amount": 0,
-                "addon_desc": item_addon_desc,
-                "addon_amount": item_addon_amount,
+                **base_doc,
                 "fabric_pay_mode": f"Settled - {modes_str}",
                 "fabric_pay_date": req.payment_date,
                 "fabric_pending": item_discount,
                 "fabric_received": item_paid,
-                "labour_amount": 0,
-                "labour_paid": "N/A",
-                "labour_pay_date": "N/A",
-                "tailoring_pay_mode": "N/A",
-                "tailoring_pay_date": "N/A",
-                "tailoring_received": 0,
-                "tailoring_pending": 0,
-                "embroidery_pay_mode": "N/A",
-                "embroidery_pay_date": "N/A",
-                "embroidery_received": 0,
-                "embroidery_pending": 0,
-                "addon_pay_mode": eff_addon_pay_mode,
-                "addon_pay_date": eff_addon_pay_date,
-                "addon_received": eff_addon_received,
-                "addon_pending": eff_addon_pending,
-                "karigar": "N/A",
-                "tally_fabric": False,
-                "tally_tailoring": False,
-                "tally_embroidery": False,
-                "tally_addon": False,
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "addon_pay_mode": f"Settled - {modes_str}" if item_addon_amount > 0 else "N/A",
+                "addon_pay_date": req.payment_date if item_addon_amount > 0 else "N/A",
+                "addon_received": item_addon_amount,
+                "addon_pending": 0,
             }
         else:
             doc = {
-                "id": str(uuid.uuid4()),
-                "date": req.date,
-                "name": req.customer_name,
-                "ref": ref,
-                "barcode": item.barcode,
-                "price": item.price,
-                "qty": item.qty,
-                "discount": item.discount,
-                "fabric_amount": item_total,
-                "tailoring_status": item_tailoring_status,
-                "article_type": item_article_type,
-                "order_no": item_order_no,
-                "delivery_date": item_delivery_date,
-                "tailoring_amount": 0,
-                "embroidery_status": item_emb_status,
-                "embroidery_amount": 0,
-                "addon_desc": item_addon_desc,
-                "addon_amount": item_addon_amount,
+                **base_doc,
                 "fabric_pay_mode": "Pending",
                 "fabric_pay_date": "N/A",
                 "fabric_pending": item_total,
                 "fabric_received": 0,
-                "labour_amount": 0,
-                "labour_paid": "N/A",
-                "labour_pay_date": "N/A",
-                "tailoring_pay_mode": "N/A",
-                "tailoring_pay_date": "N/A",
-                "tailoring_received": 0,
-                "tailoring_pending": 0,
-                "embroidery_pay_mode": "N/A",
-                "embroidery_pay_date": "N/A",
-                "embroidery_received": 0,
-                "embroidery_pending": 0,
                 "addon_pay_mode": item_addon_pay_mode,
                 "addon_pay_date": "N/A",
                 "addon_received": 0,
                 "addon_pending": item_addon_pending,
-                "karigar": "N/A",
-                "tally_fabric": False,
-                "tally_tailoring": False,
-                "tally_embroidery": False,
-                "tally_addon": False,
-                "created_at": datetime.now(timezone.utc).isoformat(),
             }
 
         items_to_insert.append(doc)

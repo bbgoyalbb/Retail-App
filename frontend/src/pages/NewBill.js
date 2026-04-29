@@ -126,12 +126,15 @@ export default function NewBill() {
   // Fetch ref preview whenever order date changes (and user hasn't manually edited it)
   useEffect(() => {
     if (!orderDate) return;
-    getNextBillRef(orderDate)
-      .then(res => {
-        setRefPreview(res.data.ref);
-        if (!refEdited) setCustomRef(res.data.ref);
-      })
-      .catch(() => {});
+    const timer = setTimeout(() => {
+      getNextBillRef(orderDate)
+        .then(res => {
+          setRefPreview(res.data.ref);
+          if (!refEdited) setCustomRef(res.data.ref);
+        })
+        .catch(() => {});
+    }, 300);
+    return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderDate]);
 

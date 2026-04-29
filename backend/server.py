@@ -219,6 +219,10 @@ async def startup_db_client():
     await db.settings.create_index("key", unique=True, background=True)
     await db.token_blocklist.create_index("jti", unique=True, background=True)
     await db.token_blocklist.create_index("created_at", expireAfterSeconds=86400, background=True)
+    await db.audit_logs.create_index("timestamp", background=True)
+    await db.audit_logs.create_index("username",  background=True)
+    await db.audit_logs.create_index("action",    background=True)
+    await db.audit_logs.create_index([("timestamp", DESCENDING)], background=True)
     await db.counters.create_index("created_at", expireAfterSeconds=86400 * 90, background=True)
     logger.info("MongoDB indexes ensured.")
 

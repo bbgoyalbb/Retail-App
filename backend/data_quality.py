@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List
@@ -173,9 +174,21 @@ def normalize_payment_field(
     }
 
 
+_PAYMENT_PROJ = {
+    "_id": 0, "id": 1, "ref": 1, "name": 1, "barcode": 1, "date": 1,
+    "fabric_amount": 1, "fabric_received": 1, "fabric_pending": 1, "fabric_pay_mode": 1, "fabric_pay_date": 1,
+    "tailoring_amount": 1, "tailoring_received": 1, "tailoring_pending": 1, "tailoring_pay_mode": 1, "tailoring_pay_date": 1,
+    "embroidery_amount": 1, "embroidery_received": 1, "embroidery_pending": 1, "embroidery_pay_mode": 1, "embroidery_pay_date": 1,
+    "addon_amount": 1, "addon_received": 1, "addon_pending": 1, "addon_pay_mode": 1, "addon_pay_date": 1,
+    "embroidery_status": 1, "emb_labour_amount": 1,
+}
+_ADV_PROJ = {"_id": 0, "id": 1, "ref": 1, "name": 1, "amount": 1, "mode": 1, "date": 1}
+
 async def normalize_low_risk_data(db, limit: int = 100) -> dict:
-    items = await db.items.find({}, {"_id": 0}).to_list(10000)
-    advances = await db.advances.find({}, {"_id": 0}).to_list(5000)
+    items, advances = await asyncio.gather(
+        db.items.find({}, _PAYMENT_PROJ).to_list(10000),
+        db.advances.find({}, _ADV_PROJ).to_list(5000),
+    )
 
     changes = []
     items_updated = 0
@@ -250,7 +263,7 @@ async def normalize_low_risk_data(db, limit: int = 100) -> dict:
 
 
 async def repair_high_risk_data(db, limit: int = 100) -> dict:
-    items = await db.items.find({}, {"_id": 0}).to_list(10000)
+    items = await db.items.find({}, _PAYMENT_PROJ).to_list(10000)
     item_updates = 0
     advances_created = 0
     changes = []
@@ -377,8 +390,10 @@ async def repair_high_risk_data(db, limit: int = 100) -> dict:
 
 
 async def generate_data_audit(db, limit: int = 100) -> dict:
-    items = await db.items.find({}, {"_id": 0}).to_list(10000)
-    advances = await db.advances.find({}, {"_id": 0}).to_list(5000)
+    items, advances = await asyncio.gather(
+        db.items.find({}, _PAYMENT_PROJ).to_list(10000),
+        db.advances.find({}, _ADV_PROJ).to_list(5000),
+    )
 
     issue_counts = {}
     issues = []
