@@ -1,8 +1,8 @@
 """
 Tailoring router.
 """
+import asyncio
 from fastapi import APIRouter, HTTPException, Query, Depends, Request
-from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
 import uuid
@@ -12,7 +12,7 @@ from .deps import db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
-from .models import AddOnRequest, TAILORING_RATES, TailoringOrderRequest, merge_settings
+from .models import AddOnRequest, TAILORING_RATES, TailoringOrderRequest, SplitItem, SplitTailoringRequest, merge_settings
 
 router = APIRouter()
 
@@ -39,7 +39,6 @@ async def get_awaiting_orders(current_user: dict = Depends(get_current_user_dep)
 @router.post("/tailoring/assign")
 async def assign_tailoring(req: TailoringOrderRequest, current_user: dict = Depends(get_current_user_dep)):
     from pymongo import UpdateOne
-    import asyncio
     item_ids = [a.get("item_id") for a in req.assignments]
     stored_settings, existing_items_list = await asyncio.gather(
         db.settings.find_one({"key": "app_settings"}, {"_id": 0}),
@@ -91,15 +90,6 @@ async def assign_tailoring(req: TailoringOrderRequest, current_user: dict = Depe
     result = await db.items.bulk_write(bulk_ops, ordered=False)
     return {"message": f"{result.modified_count} items assigned to order {req.order_no}"}
 
-class SplitItem(BaseModel):
-    article_type: str
-    qty: float
-    embroidery_status: str = "Not Required"
-
-class SplitTailoringRequest(BaseModel):
-    item_id: str
-    splits: List[SplitItem]
-
 @router.post("/tailoring/split")
 async def split_and_assign(req: SplitTailoringRequest, current_user: dict = Depends(get_current_user_dep)):
     item = await db.items.find_one({"id": req.item_id}, {"_id": 0})
@@ -115,27 +105,25 @@ async def split_and_assign(req: SplitTailoringRequest, current_user: dict = Depe
     original_price = item.get("price", 0)
     original_discount = item.get("discount", 0)
 
-    created = 0
+    first_update = None
+    new_docs = []
     for idx, split in enumerate(req.splits):
-        # Use settings rates with fallback to hardcoded defaults
         rate_data = tailoring_rates.get(split.article_type, {})
         if isinstance(rate_data, dict):
             tail_amt = rate_data.get("tailoring", 0)
             labour_amt = rate_data.get("labour", 0)
         else:
-            # Fallback to hardcoded for backwards compatibility
             tail_amt, labour_amt = TAILORING_RATES.get(split.article_type, (0, 0))
 
         discounted_price = round(original_price - (original_price * original_discount / 100), 0)
         split_fabric_amt = round(discounted_price * split.qty, 0)
 
         if idx == 0:
-            # Update original item with first split
             existing_tail_received = float(item.get("tailoring_received", 0))
             existing_tail_mode = item.get("tailoring_pay_mode", "Pending")
             tail_pending = round(tail_amt - existing_tail_received, 2)
             tail_mode = existing_tail_mode if str(existing_tail_mode).startswith("Settled") else ("Pending" if existing_tail_received <= 0 else existing_tail_mode)
-            update = {
+            first_update = {
                 "qty": split.qty,
                 "fabric_amount": split_fabric_amt,
                 "fabric_pending": split_fabric_amt if item.get("fabric_pay_mode") == "Pending" else item.get("fabric_pending", 0),
@@ -148,10 +136,8 @@ async def split_and_assign(req: SplitTailoringRequest, current_user: dict = Depe
                 "embroidery_status": split.embroidery_status,
             }
             if split.embroidery_status == "Required":
-                update["embroidery_pay_mode"] = "Pending"
-            await db.items.update_one({"id": req.item_id}, {"$set": update})
+                first_update["embroidery_pay_mode"] = "Pending"
         else:
-            # Create new items for subsequent splits
             new_item = {**item}
             new_item.pop("_id", None)
             new_item["id"] = str(uuid.uuid4())
@@ -177,11 +163,17 @@ async def split_and_assign(req: SplitTailoringRequest, current_user: dict = Depe
             if split.embroidery_status == "Required":
                 new_item["embroidery_pay_mode"] = "Pending"
             new_item["created_at"] = datetime.now(timezone.utc).isoformat()
-            await db.items.insert_one(new_item)
+            new_docs.append(new_item)
 
-        created += 1
+    ops = []
+    if first_update:
+        ops.append(db.items.update_one({"id": req.item_id}, {"$set": first_update}))
+    if new_docs:
+        ops.append(db.items.insert_many(new_docs))
+    if ops:
+        await asyncio.gather(*ops)
 
-    return {"message": f"Item split into {created} pieces. Fill in order details to assign."}
+    return {"message": f"Item split into {len(req.splits)} pieces. Fill in order details to assign."}
 
 # ==========================================
 # ADDONS

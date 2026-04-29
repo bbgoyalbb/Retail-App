@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useRef } from "react";
-import { getSettings, updateSettings, uploadLogo, invalidatePublicSettingsCache, BACKEND_URL } from "@/api";
+import { getSettings, updateSettings, uploadLogo, invalidatePublicSettingsCache, invalidateSettingsCache, BACKEND_URL } from "@/api";
 import { FloppyDisk, Plus, Trash, CheckCircle, Warning, Keyboard } from "@phosphor-icons/react";
 import { DEFAULT_NUM_SHORTCUTS, DEFAULT_LETTER_SHORTCUTS, loadLetterShortcuts } from "@/components/KeyboardShortcuts";
 
@@ -94,6 +94,7 @@ export default function SettingsPage() {
       setSettings(res.data);
       setSavedSettings(res.data);
       invalidatePublicSettingsCache();
+      invalidateSettingsCache();
       window.dispatchEvent(new CustomEvent("settings:updated"));
       showMessage({ type: "success", text: "Settings saved successfully!" });
     } catch (err) {
@@ -258,6 +259,7 @@ export default function SettingsPage() {
                           await updateSettings(updatedSettings);
                           setSavedSettings(updatedSettings);
                           invalidatePublicSettingsCache();
+                          invalidateSettingsCache();
                           window.dispatchEvent(new CustomEvent("settings:updated"));
                           showMessage({ type: "success", text: "Logo uploaded and saved successfully!" });
                         } catch (err) {
@@ -310,6 +312,7 @@ export default function SettingsPage() {
                           await updateSettings(updatedSettings);
                           setSavedSettings(updatedSettings);
                           invalidatePublicSettingsCache();
+                          invalidateSettingsCache();
                           window.dispatchEvent(new CustomEvent("settings:updated"));
                           showMessage({ type: "success", text: "Dark mode logo uploaded and saved!" });
                         } catch (err) {

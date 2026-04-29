@@ -70,12 +70,10 @@ export default function LabourPayments() {
 
     setSaving(true);
     try {
-      if (tailoringIds.length > 0) {
-        await payLabour({ item_ids: tailoringIds, labour_type: "tailoring", payment_date: payDate, payment_modes: selectedModes, payment_id: paymentId });
-      }
-      if (embroideryIds.length > 0) {
-        await payLabour({ item_ids: embroideryIds, labour_type: "embroidery", payment_date: payDate, payment_modes: selectedModes, payment_id: paymentId });
-      }
+      await Promise.all([
+        tailoringIds.length > 0 && payLabour({ item_ids: tailoringIds, labour_type: "tailoring", payment_date: payDate, payment_modes: selectedModes, payment_id: paymentId }),
+        embroideryIds.length > 0 && payLabour({ item_ids: embroideryIds, labour_type: "embroidery", payment_date: payDate, payment_modes: selectedModes, payment_id: paymentId }),
+      ].filter(Boolean));
       setMessage({ type: "success", text: `${selected.length} labour payments processed` });
       setSelected([]);
       loadData();

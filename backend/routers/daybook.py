@@ -1,6 +1,8 @@
 """
 Daybook router.
 """
+import asyncio
+import time
 from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
@@ -102,7 +104,6 @@ async def get_daybook(date_filter: Optional[str] = None, current_user: dict = De
 
 @router.get("/daybook/dates")
 async def get_daybook_dates(current_user: dict = Depends(get_current_user_dep)):
-    import asyncio, time
     global _daybook_dates_cache, _daybook_dates_cache_time
     if _daybook_dates_cache and (time.monotonic() - _daybook_dates_cache_time) < _DAYBOOK_DATES_TTL:
         return _daybook_dates_cache
@@ -128,7 +129,6 @@ async def get_daybook_dates(current_user: dict = Depends(get_current_user_dep)):
 @router.get("/daybook/pending-count")
 async def get_daybook_pending_count(current_user: dict = Depends(get_current_user_dep)):
     """Return the number of untallied payment entries for today."""
-    import asyncio
     today = date.today().isoformat()
     facet_pipeline = [{"$facet": {
         "fab":  [{"$match": {"fabric_pay_date":     today, "fabric_received":     {"$gt": 0}, "tally_fabric":     {"$ne": True}}}, {"$count": "n"}],

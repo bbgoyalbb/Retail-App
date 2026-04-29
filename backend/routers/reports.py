@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, StreamingResponse
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
+import asyncio
 import html as html_mod
 import uuid
 import re
@@ -22,12 +23,13 @@ router = APIRouter()
 async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref"), format: str = Query(default="standard", alias="format"), current_user: dict = Depends(get_current_user_dep)):
     from fastapi.responses import HTMLResponse
 
-    items = await db.items.find({"ref": ref_id}, {"_id": 0}).to_list(1000)
+    items, advances, stored_settings = await asyncio.gather(
+        db.items.find({"ref": ref_id}, {"_id": 0}).to_list(1000),
+        db.advances.find({"ref": ref_id}, {"_id": 0}).to_list(50),
+        db.settings.find_one({"key": "app_settings"}, {"_id": 0}),
+    )
     if not items:
         raise HTTPException(status_code=404, detail="No items found for this reference")
-
-    advances = await db.advances.find({"ref": ref_id}, {"_id": 0}).to_list(50)
-    stored_settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
     s = merge_settings(stored_settings)
 
     GST_RATE = float(s.get("gst_rate", DEFAULT_SETTINGS["gst_rate"]))
@@ -939,7 +941,6 @@ async def get_summary_report(date_from: Optional[str] = None, date_to: Optional[
             "mode_counts_ao":   [{"$match": {"addon_pay_mode":      {"$regex": "^Settled"}}}, {"$group": {"_id": "$addon_pay_mode",      "amount": {"$sum": "$addon_received"}}}],
         }}
     ]
-    import asyncio
     res_list, adv = await asyncio.gather(
         db.items.aggregate(pipeline).to_list(1),
         db.advances.aggregate([{"$group": {"_id": None, "total": {"$sum": "$amount"}}}]).to_list(1),

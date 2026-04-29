@@ -198,7 +198,22 @@ export const getPublicSettings = () => {
   });
 };
 export const invalidatePublicSettingsCache = () => { _publicSettingsCache = null; };
-export const getSettings = () => api.get("/settings");
+
+let _settingsCache = null;
+let _settingsCacheTime = 0;
+const SETTINGS_CACHE_TTL = 120000;
+export const getSettings = () => {
+  const now = Date.now();
+  if (_settingsCache && now - _settingsCacheTime < SETTINGS_CACHE_TTL) {
+    return Promise.resolve(_settingsCache);
+  }
+  return api.get("/settings").then(res => {
+    _settingsCache = res;
+    _settingsCacheTime = Date.now();
+    return res;
+  });
+};
+export const invalidateSettingsCache = () => { _settingsCache = null; };
 export const updateSettings = (data) => api.put("/settings", data);
 export const uploadLogo = (formData) => api.post("/upload/logo", formData, {
   headers: { 'Content-Type': 'multipart/form-data' }

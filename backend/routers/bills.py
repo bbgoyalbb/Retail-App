@@ -1,6 +1,7 @@
 """
 Bills router.
 """
+import asyncio
 from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
@@ -23,7 +24,6 @@ router = APIRouter()
 
 @router.get("/dashboard")
 async def get_dashboard(current_user: dict = Depends(get_current_user_dep)):
-    import asyncio
     from datetime import date, timedelta
 
     _ns = {"$not": {"$regex": "^Settled"}}
@@ -154,7 +154,6 @@ async def get_items(
     summary: bool = False,
     current_user: dict = Depends(get_current_user_dep),
 ):
-    import asyncio
     query = {}
     if name:
         query["name"] = name
@@ -222,7 +221,6 @@ async def get_refs(name: Optional[str] = None, pending_only: bool = False, curre
 
 @router.get("/bills/next-ref")
 async def get_next_ref(date: str, current_user: dict = Depends(get_current_user_dep)):
-    import asyncio
     try:
         parts = date.split("-")
         date_suffix = f"{parts[2]}{parts[1]}{parts[0][2:]}"

@@ -1,6 +1,7 @@
 """
 Labour router.
 """
+import asyncio
 from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
@@ -17,7 +18,6 @@ router = APIRouter()
 
 @router.get("/labour")
 async def get_labour_items(filter_type: str = "All", filter_karigar: str = "All", view_mode: str = "unpaid", current_user: dict = Depends(get_current_user_dep)):
-    import asyncio
     paid = view_mode == "paid"
 
     tail_query = None

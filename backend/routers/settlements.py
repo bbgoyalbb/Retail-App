@@ -1,6 +1,7 @@
 """
 Settlements router.
 """
+import asyncio
 from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
@@ -18,7 +19,6 @@ router = APIRouter()
 
 @router.get("/settlements/balances")
 async def get_settlement_balances(name: Optional[str] = None, ref: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
-    import asyncio
     if not ref:
         return {"fabric": 0, "tailoring": 0, "embroidery": 0, "addon": 0, "advance": 0}
 

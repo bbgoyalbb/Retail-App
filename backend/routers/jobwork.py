@@ -1,6 +1,7 @@
 """
 Jobwork router.
 """
+import asyncio
 from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
@@ -195,7 +196,6 @@ async def edit_embroidery(req: EmbEditRequest, current_user: dict = Depends(get_
 
 @router.get("/jobwork/filters")
 async def get_jobwork_filters(current_user: dict = Depends(get_current_user_dep)):
-    import asyncio
     order_nos, dates, delivery_dates = await asyncio.gather(
         db.items.distinct("order_no", {"order_no": {"$ne": "N/A"}}),
         db.items.distinct("date"),

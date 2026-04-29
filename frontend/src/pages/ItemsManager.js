@@ -208,14 +208,15 @@ export default function ItemsManager() {
   const [mismatchPrompt, setMismatchPrompt] = useState(null);
   const [reSettlePrompt, setReSettlePrompt] = useState(null);
 
+  const [articleTypeOptions, setArticleTypeOptions] = useState(SECTIONS.tailoring.fields.find(f => f.key === "article_type")?.options || []);
+
   // Settings
   useEffect(() => {
     getSettings().then(res => {
       const s = res?.data || {};
       setTailoringRates(s.tailoring_rates || {});
       if (Array.isArray(s.article_types) && s.article_types.length > 0) {
-        const field = SECTIONS.tailoring.fields.find(f => f.key === "article_type");
-        if (field) field.options = ["N/A", ...s.article_types];
+        setArticleTypeOptions(["N/A", ...s.article_types]);
       }
     }).catch(() => {});
     getCustomers().then(res => setCustomers(res.data || [])).catch(() => {});
@@ -246,10 +247,10 @@ export default function ItemsManager() {
   const hasAdvancedFilters = searchDateFrom || searchDateTo || searchStatus !== "All" || searchPayment !== "All" || searchMinAmt || searchMaxAmt || searchCustomer !== "All";
   const isSearchMode = !!(debouncedName || hasAdvancedFilters);
 
-  // Full-search via /search API — fetches all matching items (up to 500)
+  // Full-search via /search API — fetches first 50 matching items
   const runSearch = useCallback(async () => {
     setSearchLoading(true);
-    const params = { q: debouncedName || "", limit: 500, skip: 0 };
+    const params = { q: debouncedName || "", limit: 50, skip: 0 };
     if (searchCustomer !== "All") params.customer = searchCustomer;
     if (searchDateFrom) params.date_from = searchDateFrom;
     if (searchDateTo) params.date_to = searchDateTo;
@@ -537,7 +538,11 @@ export default function ItemsManager() {
     invalidateItemsCache(); loadData();
   };
 
-  const _sf = selectedSection ? SECTIONS[selectedSection] : null;
+  const _sf = selectedSection ? (
+    selectedSection === "tailoring"
+      ? { ...SECTIONS.tailoring, fields: SECTIONS.tailoring.fields.map(f => f.key === "article_type" ? { ...f, options: articleTypeOptions } : f) }
+      : SECTIONS[selectedSection]
+  ) : null;
   const _isAdv = _sf?.isAdvanceSection;
 
   // ─── Render ───────────────────────────────────────────────

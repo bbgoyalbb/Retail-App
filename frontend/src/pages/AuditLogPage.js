@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback, useRef } from "react";
 import { listAuditLogs, listUsers } from "@/api";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowClockwise, Funnel, X } from "@phosphor-icons/react";
@@ -36,15 +36,18 @@ export default function AuditLogPage() {
   const [filterDateTo, setFilterDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
+  const filtersRef = useRef({ filterUser, filterAction, filterDateFrom, filterDateTo });
+  useEffect(() => { filtersRef.current = { filterUser, filterAction, filterDateFrom, filterDateTo }; }, [filterUser, filterAction, filterDateFrom, filterDateTo]);
+
   // Load users for filter dropdown
   useEffect(() => {
     listUsers().then(res => setUsers(res || [])).catch(() => setUsers([]));
   }, []);
 
-  const fetchLogs = useCallback(async (pageNum = 0, currentFilters = null) => {
+  const fetchLogs = useCallback(async (pageNum = 0, overrideFilters = null) => {
     setLoading(true);
     try {
-      const filters = currentFilters || { filterUser, filterAction, filterDateFrom, filterDateTo };
+      const filters = overrideFilters ?? filtersRef.current;
       const params = { 
         limit: PAGE_SIZE, 
         skip: pageNum * PAGE_SIZE,
@@ -63,22 +66,20 @@ export default function AuditLogPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast, filterUser, filterAction, filterDateFrom, filterDateTo]);
+  }, [toast]);
 
   const clearFilters = () => {
+    const cleared = { filterUser: "", filterAction: "", filterDateFrom: "", filterDateTo: "" };
     setFilterUser("");
     setFilterAction("");
     setFilterDateFrom("");
     setFilterDateTo("");
+    filtersRef.current = cleared;
     setPage(0);
-    fetchLogs(0, { filterUser: "", filterAction: "", filterDateFrom: "", filterDateTo: "" });
+    fetchLogs(0, cleared);
   };
 
-  // Initial fetch only on mount
-  useEffect(() => { 
-    fetchLogs(0); 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { fetchLogs(0); }, [fetchLogs]);
 
   const goPage = (n) => { setPage(n); fetchLogs(n); };
 

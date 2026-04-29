@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List
 import uuid
+from pymongo import UpdateOne
 
 
 PENNY_TOLERANCE = 0.01
@@ -180,6 +181,7 @@ async def normalize_low_risk_data(db, limit: int = 100) -> dict:
     items_updated = 0
     advances_updated = 0
 
+    bulk_item_ops = []
     for item in items:
         updates = {}
         checks = [
@@ -201,7 +203,7 @@ async def normalize_low_risk_data(db, limit: int = 100) -> dict:
                     updates[field] = value
 
         if updates:
-            await db.items.update_one({"id": item["id"]}, {"$set": updates})
+            bulk_item_ops.append(UpdateOne({"id": item["id"]}, {"$set": updates}))
             items_updated += 1
             if len(changes) < limit:
                 changes.append({
@@ -212,6 +214,8 @@ async def normalize_low_risk_data(db, limit: int = 100) -> dict:
                     "barcode": item.get("barcode"),
                     "updates": updates,
                 })
+    if bulk_item_ops:
+        await db.items.bulk_write(bulk_item_ops, ordered=False)
 
     advance_totals = {}
     for adv in advances:
@@ -219,11 +223,12 @@ async def normalize_low_risk_data(db, limit: int = 100) -> dict:
         amount = round_money(adv.get("amount", 0))
         advance_totals[ref] = round_money(advance_totals.get(ref, 0) + amount)
 
+    bulk_adv_ops = []
     for ref, total in advance_totals.items():
         if total < -0.01:
             negative_entries = [a for a in advances if a.get("ref") == ref and round_money(a.get("amount", 0)) < 0 and a.get("mode") != "Adjusted"]
             for adv in negative_entries:
-                await db.advances.update_one({"id": adv["id"]}, {"$set": {"mode": "Adjusted"}})
+                bulk_adv_ops.append(UpdateOne({"id": adv["id"]}, {"$set": {"mode": "Adjusted"}}))
                 advances_updated += 1
                 if len(changes) < limit:
                     changes.append({
@@ -233,6 +238,8 @@ async def normalize_low_risk_data(db, limit: int = 100) -> dict:
                         "name": adv.get("name"),
                         "updates": {"mode": "Adjusted"},
                     })
+    if bulk_adv_ops:
+        await db.advances.bulk_write(bulk_adv_ops, ordered=False)
 
     return {
         "items_updated": items_updated,
@@ -247,6 +254,8 @@ async def repair_high_risk_data(db, limit: int = 100) -> dict:
     item_updates = 0
     advances_created = 0
     changes = []
+    bulk_item_ops = []
+    carry_adv_docs = []
 
     for item in items:
         updates = {}
@@ -329,7 +338,7 @@ async def repair_high_risk_data(db, limit: int = 100) -> dict:
                 })
 
         if updates:
-            await db.items.update_one({"id": item["id"]}, {"$set": updates})
+            bulk_item_ops.append(UpdateOne({"id": item["id"]}, {"$set": updates}))
             item_updates += 1
 
         for carry in carry_forwards:
@@ -343,7 +352,7 @@ async def repair_high_risk_data(db, limit: int = 100) -> dict:
                 "tally": False,
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
-            await db.advances.insert_one(adv)
+            carry_adv_docs.append(adv)
             advances_created += 1
             if len(changes) < limit:
                 changes.append({
@@ -353,6 +362,11 @@ async def repair_high_risk_data(db, limit: int = 100) -> dict:
                     "amount": adv["amount"],
                     "mode": adv["mode"],
                 })
+
+    if bulk_item_ops:
+        await db.items.bulk_write(bulk_item_ops, ordered=False)
+    if carry_adv_docs:
+        await db.advances.insert_many(carry_adv_docs)
 
     return {
         "items_updated": item_updates,
