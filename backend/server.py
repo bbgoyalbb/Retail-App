@@ -16,6 +16,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import auth as auth_module  # noqa: F401 — imported for side-effects (security obj)
@@ -77,7 +78,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(log_file, encoding="utf-8"),
+        RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"),
     ],
 )
 logger = logging.getLogger(__name__)

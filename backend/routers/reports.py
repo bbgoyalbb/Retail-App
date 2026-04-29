@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, StreamingResponse
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
+import html as html_mod
 import uuid
 import re
 from bson import ObjectId
@@ -21,7 +22,7 @@ router = APIRouter()
 async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref"), format: str = Query(default="standard", alias="format"), current_user: dict = Depends(get_current_user_dep)):
     from fastapi.responses import HTMLResponse
 
-    items = await db.items.find({"ref": ref_id}, {"_id": 0}).to_list(100)
+    items = await db.items.find({"ref": ref_id}, {"_id": 0}).to_list(1000)
     if not items:
         raise HTTPException(status_code=404, detail="No items found for this reference")
 
@@ -32,14 +33,14 @@ async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref
     GST_RATE = float(s.get("gst_rate", DEFAULT_SETTINGS["gst_rate"]))
     brand_color = s.get("firm_name_color", "#C86B4D")
     brand_light = f"{brand_color}15"
-    firm_name = s.get("firm_name", DEFAULT_SETTINGS["firm_name"])
-    firm_address = s.get("firm_address", DEFAULT_SETTINGS["firm_address"])
-    firm_phones = s.get("firm_phones", DEFAULT_SETTINGS["firm_phones"])
-    firm_gstin = s.get("firm_gstin", DEFAULT_SETTINGS["firm_gstin"])
+    firm_name    = html_mod.escape(str(s.get("firm_name",    DEFAULT_SETTINGS["firm_name"])))
+    firm_address = html_mod.escape(str(s.get("firm_address", DEFAULT_SETTINGS["firm_address"])))
+    firm_phones  = html_mod.escape(str(s.get("firm_phones",  DEFAULT_SETTINGS["firm_phones"])))
+    firm_gstin   = html_mod.escape(str(s.get("firm_gstin",   DEFAULT_SETTINGS["firm_gstin"])))
     firm_logo = s.get("firm_logo", DEFAULT_SETTINGS.get("firm_logo", None))
 
-    customer_name = items[0].get("name", "N/A")
-    order_date = items[0].get("date", "N/A")
+    customer_name = html_mod.escape(str(items[0].get("name", "N/A")))
+    order_date     = html_mod.escape(str(items[0].get("date", "N/A")))
     
     # Collect payment modes (deduplicated, strip "Settled - " prefix)
     all_modes = set()
@@ -83,15 +84,15 @@ async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref
         badges = []
         if item.get("tailoring_status") not in ("N/A", None, "", "Not Required"):
             art_type = item.get("article_type", "Item")
-            badges.append(f'<span class="item-badge">✂ {art_type}</span>')
+            badges.append(f'<span class="item-badge">✂ {html_mod.escape(str(art_type))}</span>')
         if item.get("addon_desc"):
-            badges.append(f'<span class="item-badge addon">+ {item.get("addon_desc", "")}</span>')
+            badges.append(f'<span class="item-badge addon">+ {html_mod.escape(str(item.get("addon_desc", "")))}</span>')
         badges_html = f'<div>{" ".join(badges)}</div>' if badges else ""
         
         items_html += f"""
         <tr>
           <td>
-            <div class="item-barcode">{item.get("barcode", "N/A")}</div>
+            <div class="item-barcode">{html_mod.escape(str(item.get("barcode", "N/A")))}</div>
             {badges_html}
           </td>
           <td>{float(item.get("qty", 0)):.2f}</td>
@@ -110,12 +111,12 @@ async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref
             emb_display = emb if emb not in ("N/A", "", None, "Not Required") else "—"
             tail_rows += f"""
             <tr>
-              <td>{ti.get("barcode", "N/A")}</td>
-              <td>{ti.get("article_type", "—")}</td>
-              <td>{ti.get("order_no", "—")}</td>
-              <td>{ti.get("delivery_date", "—")}</td>
-              <td>{ti.get("tailoring_status", "—")}</td>
-              <td>{emb_display}</td>
+              <td>{html_mod.escape(str(ti.get("barcode", "N/A")))}</td>
+              <td>{html_mod.escape(str(ti.get("article_type", "—")))}</td>
+              <td>{html_mod.escape(str(ti.get("order_no", "—")))}</td>
+              <td>{html_mod.escape(str(ti.get("delivery_date", "—")))}</td>
+              <td>{html_mod.escape(str(ti.get("tailoring_status", "—")))}</td>
+              <td>{html_mod.escape(str(emb_display))}</td>
             </tr>"""
         tailoring_html = f"""
         <div class="inv-tailoring">
@@ -154,7 +155,7 @@ async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref
             amt = float(item.get("fabric_amount", 0))
             thermal_items += f"""
             <div style="border-bottom:1px dashed #D6D1C4;padding:4px 0;">
-              <div style="font-size:10px;">{item.get('barcode','N/A')[:20]}</div>
+              <div style="font-size:10px;">{html_mod.escape(str(item.get('barcode','N/A'))[:20])}</div>
               <div style="display:flex;justify-content:space-between;font-size:10px;">
                 <span>{item.get('qty',0)}m × ₹{fmt(item.get('price',0))}</span>
                 <span>₹{fmt(amt)}</span>
@@ -181,9 +182,9 @@ async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref
 </style>
 </head>
 <body>
-  <div class="center firm">{firm_name[:24]}</div>
-  <div class="center meta">{firm_phones}<br/>Ref: {ref_id}</div>
-  <div style="margin-bottom:8px;"><b>{customer_name[:20]}</b></div>
+  <div class="center firm">{html_mod.escape(firm_name[:24])}</div>
+  <div class="center meta">{html_mod.escape(firm_phones)}<br/>Ref: {html_mod.escape(ref_id)}</div>
+  <div style="margin-bottom:8px;"><b>{html_mod.escape(customer_name[:20])}</b></div>
   {thermal_items}
   <div class="total" style="display:flex;justify-content:space-between;">
     <span>TOTAL</span>
@@ -219,28 +220,28 @@ async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref
                 base = round(total_with_gst * 100 / (100 + GST_RATE), 2)  # back-calculate GST-exclusive base
                 gst  = round(total_with_gst - base, 2)
                 disc_str = f"₹{fmt(disc_amt)}" if disc_pct > 0 else "—"
-                desc = f'<div class="sec-barcode">{item.get("barcode","N/A")}</div>'
+                desc = f'<div class="sec-barcode">{html_mod.escape(str(item.get("barcode","N/A")))}</div>'
                 cols = [desc, f"{qty:.2f}", f"₹{fmt(price)}", f"{disc_pct:.0f}%", disc_str, f"₹{fmt(base)}", f"₹{fmt(gst)}", f"₹{fmt(amt)}"]
             elif section_label == "Tailoring":
                 tail_amt = float(item.get("tailoring_amount", 0))
                 gst = 0.0
                 base = tail_amt
-                article = item.get("article_type", "—") or "—"
-                order_no = item.get("order_no", "—") or "—"
-                delivery = item.get("delivery_date", "—") or "—"
-                desc = f'<div class="sec-barcode">{item.get("barcode","N/A")}</div><div class="sec-sub">{article}</div>'
+                article  = html_mod.escape(str(item.get("article_type",  "—") or "—"))
+                order_no = html_mod.escape(str(item.get("order_no",       "—") or "—"))
+                delivery = html_mod.escape(str(item.get("delivery_date",  "—") or "—"))
+                desc = f'<div class="sec-barcode">{html_mod.escape(str(item.get("barcode","N/A")))}</div><div class="sec-sub">{article}</div>'
                 cols = [desc, order_no, delivery, f"₹{fmt(tail_amt)}"]
             elif section_label == "Embroidery":
                 emb_amt = float(item.get("embroidery_amount", 0))
                 gst = 0.0
                 base = emb_amt
-                desc = f'<div class="sec-barcode">{item.get("barcode","N/A")}</div>'
+                desc = f'<div class="sec-barcode">{html_mod.escape(str(item.get("barcode","N/A")))}</div>'
                 cols = [desc, f"₹{fmt(emb_amt)}"]
             elif section_label == "Add-on":
                 ao_amt = float(item.get("addon_amount", 0))
                 gst = 0.0
                 base = ao_amt
-                desc = f'<div class="sec-barcode">{item.get("addon_desc","Add-on")}</div>'
+                desc = f'<div class="sec-barcode">{html_mod.escape(str(item.get("addon_desc","Add-on")))}</div>'
                 cols = [desc, f"₹{fmt(ao_amt)}"]  # 2 cols only
             else:
                 cols = ["—","—","—","—","—","—","—","—"]

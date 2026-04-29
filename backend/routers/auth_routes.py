@@ -101,12 +101,22 @@ async def upload_logo(file: UploadFile = File(...), current_user: dict = Depends
         raise HTTPException(status_code=400, detail="Only image files allowed")
     if file.size and file.size > 1024 * 1024:
         raise HTTPException(status_code=400, detail="Image too large (max 1MB)")
+    contents = await file.read()
+    try:
+        from PIL import Image
+        import io as _io
+        img = Image.open(_io.BytesIO(contents))
+        img.verify()
+        img_format = img.format
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid or corrupt image file")
+    ext = (img_format or "png").lower()
+    if ext == "jpeg":
+        ext = "jpg"
     upload_dir = ROOT_DIR / "static" / "uploads"
     upload_dir.mkdir(parents=True, exist_ok=True)
-    ext = file.filename.split(".")[-1].lower() if "." in file.filename else "png"
     safe_name = f"logo_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{os.urandom(4).hex()}.{ext}"
     file_path = upload_dir / safe_name
-    contents = await file.read()
     with open(file_path, "wb") as f:
         f.write(contents)
     return {"url": f"/uploads/{safe_name}"}

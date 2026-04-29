@@ -66,7 +66,9 @@ async def import_excel(
 
         if 'Item Details' in wb.sheetnames:
             ws = wb['Item Details']
-            for row in ws.iter_rows(min_row=2, max_row=ws.max_row, values_only=True):
+            for row in ws.iter_rows(min_row=2, max_row=ws.max_row or None, values_only=True):
+                if not any(cell is not None for cell in row):
+                    break
                 if not row[0]:
                     continue
 
@@ -122,7 +124,9 @@ async def import_excel(
 
         if 'Advances' in wb.sheetnames:
             ws2 = wb['Advances']
-            for row in ws2.iter_rows(min_row=2, max_row=ws2.max_row, values_only=True):
+            for row in ws2.iter_rows(min_row=2, max_row=ws2.max_row or None, values_only=True):
+                if not any(cell is not None for cell in row):
+                    break
                 if not row[0]:
                     continue
                 dt = row[0]

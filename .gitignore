@@ -58,11 +58,15 @@ __pycache__/
 venv/
 .venv/
 
-# Backend: secrets, SSL certs, compiled frontend build
+# Backend: secrets, SSL certs, compiled frontend build, user uploads
 backend/.env
 backend/ssl.key
 backend/ssl.crt
 backend/frontend/
+backend/static/uploads/
+
+# Git config — should not be tracked in version control
+.gitconfig
 
 # Development tools
 chainlit.md
