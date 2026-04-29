@@ -102,6 +102,8 @@ memory/test_credentials.md
 .env.*
 !.env.example
 !**/.env.example
+!.env.sample
+!**/.env.sample
 *.env
 credentials.json
 *.pem

@@ -738,7 +738,7 @@ export default function ItemsManager() {
       </div>{/* end LEFT COLUMN */}
 
       {/* Detail pane — full-height sibling column */}
-      <div className={`flex-shrink-0 bg-[var(--surface)] overflow-hidden w-full sm:w-72 lg:w-[30vw] flex flex-col ${detailOpen ? "flex" : "hidden sm:flex"}`}>
+      <div className={`flex-shrink-0 bg-[var(--surface)] overflow-hidden w-full sm:w-60 md:w-72 lg:w-[30vw] flex flex-col ${detailOpen ? "flex" : "hidden sm:flex"}`}>
         <OrderDetailPane
           selectedGroups={selectedGroups}
           advances={advances}

@@ -187,13 +187,13 @@ export default function UsersPage() {
           <div className="p-8 text-center text-[var(--text-secondary)] text-sm">No users found.</div>
         ) : (
           <div className="overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-[var(--border-strong)]">
-            <table className="w-full min-w-[560px] text-sm">
+            <table className="w-full min-w-[580px] text-sm">
               <thead>
                 <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg)]">
                   <th className="text-left px-3 py-3 text-xs uppercase tracking-widest text-[var(--text-secondary)] font-medium w-[170px]">User</th>
                   <th className="text-left px-3 py-3 text-xs uppercase tracking-widest text-[var(--text-secondary)] font-medium w-[90px]">Role</th>
                   <th className="text-left px-3 py-3 text-xs uppercase tracking-widest text-[var(--text-secondary)] font-medium w-[80px]">Status</th>
-                  <th className="text-left px-3 py-3 text-xs uppercase tracking-widest text-[var(--text-secondary)] font-medium hidden sm:table-cell">Created</th>
+                  <th className="text-left px-3 py-3 text-xs uppercase tracking-widest text-[var(--text-secondary)] font-medium hidden md:table-cell">Created</th>
                   <th className="px-3 py-3" />
                 </tr>
               </thead>
@@ -216,7 +216,7 @@ export default function UsersPage() {
                       : <span className="flex items-center gap-1 text-red-500 text-xs"><XCircle size={14} weight="fill" />Disabled</span>
                     }
                   </td>
-                  <td className="px-3 py-3 text-xs text-[var(--text-secondary)] hidden sm:table-cell">
+                  <td className="px-3 py-3 text-xs text-[var(--text-secondary)] hidden md:table-cell">
                     {u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}
                   </td>
                   <td className="px-3 py-3">
