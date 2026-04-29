@@ -364,16 +364,22 @@ async def get_db_stats(current_user: dict = Depends(get_current_user_dep)):
 
 @router.get("/db/audit")
 async def get_db_audit(limit: int = 100, current_user: dict = Depends(get_current_user_dep)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can access the data audit")
     safe_limit = max(1, min(limit, 500))
     return await dq_generate_data_audit(db, safe_limit)
 
 @router.post("/db/normalize")
 async def normalize_db_data(limit: int = 100, current_user: dict = Depends(get_current_user_dep)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can normalize data")
     safe_limit = max(1, min(limit, 500))
     return await dq_normalize_low_risk_data(db, safe_limit)
 
 @router.post("/db/repair")
 async def repair_db_data(limit: int = 100, current_user: dict = Depends(get_current_user_dep)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can repair data")
     safe_limit = max(1, min(limit, 500))
     return await dq_repair_high_risk_data(db, safe_limit)
 
