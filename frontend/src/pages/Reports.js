@@ -324,7 +324,6 @@ export default function Reports() {
           <div className="bg-[var(--surface)] border border-[var(--border-subtle)] p-6 rounded-sm">
             <h3 className="font-heading text-base font-medium mb-4">Payment Mode Distribution</h3>
             {summary.payment_modes?.length > 0 ? (
-              {/* Responsive height: mobile 192px, tablet 256px, desktop 320px */}
               <div className="h-48 sm:h-64 lg:h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -354,7 +353,6 @@ export default function Reports() {
           <div className="bg-[var(--surface)] border border-[var(--border-subtle)] p-6 rounded-sm">
             <h3 className="font-heading text-base font-medium mb-4">Article Type Distribution</h3>
             {summary.article_types?.length > 0 ? (
-              {/* Responsive height: mobile 192px, tablet 256px, desktop 320px */}
               <div className="h-48 sm:h-64 lg:h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={summary.article_types} layout="vertical">
