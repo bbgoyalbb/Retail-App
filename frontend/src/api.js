@@ -19,17 +19,6 @@ api.interceptors.request.use(
   (err) => Promise.reject(err)
 );
 
-/**
- * Returns an axios GET call bound to an AbortController.
- * Usage: const { request, abort } = apiGet("/endpoint");
- * Call abort() in useEffect cleanup to cancel on unmount.
- */
-export const apiGet = (path, params) => {
-  const controller = new AbortController();
-  const request = api.get(path, { params, signal: controller.signal });
-  return { request, abort: () => controller.abort() };
-};
-
 // Normalize error messages from backend detail field
 api.interceptors.response.use(
   (res) => res,

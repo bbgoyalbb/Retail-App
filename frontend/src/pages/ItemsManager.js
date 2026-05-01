@@ -9,12 +9,13 @@ import { fmt } from "@/lib/fmt";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import {
   PencilSimple, Trash, X, Printer, CaretDown, CaretRight, Check, Plus, CheckCircle,
-  CurrencyDollar, Scissors, Tag, MagnifyingGlass, Funnel,
+  CurrencyDollar, Scissors, Tag,
 } from "@phosphor-icons/react";
 import InvoiceModal from "@/components/InvoiceModal";
 import SettlementPanel from "@/components/SettlementPanel";
 import OrderDetailPane from "@/components/OrderDetailPane";
 import { TailoringOverlay, AddOnOverlay } from "@/components/OrderOverlays";
+import { ItemsFilterBar } from "@/components/items";
 
 // ─── Section config ───────────────────────────────────────────
 const SECTIONS = {
@@ -124,7 +125,7 @@ const computeFabric = (price, qty, disc) =>
   Math.round((price - price * (disc || 0) / 100) * qty);
 const computePending = (total, received) => Math.round(total - (received || 0));
 
-// ─── Status badge ─────────────────────────────────────────────
+// ─── Status badge (keep for edit panel use) ────────────────────
 const StatusBadge = ({ settled, cancelled, pending }) => {
   if (cancelled) return (
     <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[var(--error)]/10 text-[var(--error)] font-medium">Cancelled</span>
@@ -138,14 +139,6 @@ const StatusBadge = ({ settled, cancelled, pending }) => {
 };
 
 // ─── Main page ────────────────────────────────────────────────
-const SEARCH_DATE_PRESETS = [
-  { label: "Today",        from: new Date().toISOString().split("T")[0], to: new Date().toISOString().split("T")[0] },
-  { label: "This Week",   from: new Date(Date.now() - ((new Date().getDay()||7)-1)*86400000).toISOString().split("T")[0], to: new Date().toISOString().split("T")[0] },
-  { label: "This Month",  from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0], to: new Date().toISOString().split("T")[0] },
-  { label: "Last Month",  from: new Date(new Date().getFullYear(), new Date().getMonth()-1, 1).toISOString().split("T")[0], to: new Date(new Date().getFullYear(), new Date().getMonth(), 0).toISOString().split("T")[0] },
-  { label: "Last 90 Days",from: new Date(Date.now() - 89*86400000).toISOString().split("T")[0], to: new Date().toISOString().split("T")[0] },
-];
-
 export default function ItemsManager() {
   const searchRef = useRef(null);
   const location = useLocation();
@@ -553,111 +546,23 @@ export default function ItemsManager() {
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
       {/* ── TOP BAR ── */}
-      <div className="flex-shrink-0 bg-[var(--surface)] border-b border-[var(--border-subtle)]">
-        {/* Row 1: controls left + tabs right */}
-        <div className="flex items-center gap-2 px-3 sm:px-4 py-2">
-          {/* Left: sort */}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <button onClick={() => setSortDir(d => d==="desc"?"asc":"desc")}
-              className="flex items-center gap-1.5 px-2 py-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] rounded-sm hover:bg-[var(--bg)] transition-colors text-xs"
-              title="Toggle sort order">
-              {sortDir==="desc" ? <CaretDown size={13}/> : <CaretRight size={13} className="-rotate-90"/>}
-              <span className="hidden sm:inline">Order Date: {sortDir==="desc" ? "Newest" : "Oldest"}</span>
-            </button>
-          </div>
-
-          {/* Spacer */}
-          <div className="flex-1"/>
-
-          {/* Right: tabs */}
-          <div className="flex items-center gap-0.5 bg-[var(--bg)] border border-[var(--border-subtle)] rounded-sm p-0.5 overflow-x-auto no-scrollbar flex-shrink-0">
-            {[{k:"unsettled",l:"Pending"},{k:"awaiting",l:"Awaiting"},{k:"settled",l:"Settled"},{k:"all",l:"All"}].map(t => (
-              <button key={t.k} onClick={() => { setSettleTab(t.k); setSelectedRefs(new Set()); }}
-                className={`px-2.5 py-1 text-xs font-medium rounded-sm transition-all whitespace-nowrap flex-shrink-0 ${settleTab===t.k?"bg-[var(--brand)] text-white shadow-sm":"text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]"}`}>
-                {t.l}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Row 2: search bar + filter toggle */}
-        <div className="flex items-center gap-2 px-3 sm:px-4 pb-2">
-          <div className="relative flex-1 min-w-0">
-            <MagnifyingGlass size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] pointer-events-none"/>
-            <input ref={searchRef} type="text" value={nameFilter} onChange={e => setNameFilter(e.target.value)}
-              placeholder="Search by name, barcode, ref, article type, karigar…"
-              className="w-full pl-7 pr-6 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)] bg-[var(--surface)]"/>
-            {nameFilter && <button onClick={() => setNameFilter("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X size={11}/></button>}
-          </div>
-          <button onClick={() => setShowFilters(f => !f)}
-            className={`flex items-center gap-1.5 px-2 py-1.5 text-xs border rounded-sm transition-colors flex-shrink-0 ${(showFilters||hasAdvancedFilters)?"bg-[var(--brand)] text-white border-[var(--brand)]":"border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]"}`}>
-            <Funnel size={13}/><span className="hidden sm:inline">Filters{hasAdvancedFilters ? " ·" : ""}</span>
-          </button>
-          {isSearchMode && <button onClick={clearSearch} className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--error)] border border-[var(--border-subtle)] rounded-sm flex-shrink-0" title="Clear search"><X size={13}/></button>}
-          {message && (
-            <div className={`text-xs px-2.5 py-1.5 rounded-sm border flex-shrink-0 ${message.type==="success"?"bg-[#455D4A10] border-[var(--success)] text-[var(--success)]":"bg-[#9E473D10] border-[var(--error)] text-[var(--error)]"}`}>
-              {message.text}
-            </div>
-          )}
-        </div>
-
-        {/* Filter panel */}
-        {showFilters && (
-          <div className="px-3 sm:px-4 pb-3 border-t border-[var(--border-subtle)] pt-2.5 space-y-2.5">
-            <div className="flex flex-wrap gap-1">
-              {SEARCH_DATE_PRESETS.map(p => (
-                <button key={p.label} onClick={() => { setSearchDateFrom(p.from); setSearchDateTo(p.to); }}
-                  className={`px-2.5 py-1 text-[10px] font-medium rounded-sm border transition-colors ${
-                    searchDateFrom === p.from && searchDateTo === p.to
-                      ? "bg-[var(--brand)] text-white border-[var(--brand)]"
-                      : "border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
-                  }`}>{p.label}</button>
-              ))}
-              {(searchDateFrom || searchDateTo) && (
-                <button onClick={() => { setSearchDateFrom(""); setSearchDateTo(""); }}
-                  className="px-2.5 py-1 text-[10px] rounded-sm border border-[var(--border-subtle)] text-[var(--error)] hover:bg-[#9E473D08]">Clear dates</button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              <div>
-                <label className="text-[9px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1">Customer</label>
-                <select value={searchCustomer} onChange={e => setSearchCustomer(e.target.value)} className="w-full px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm bg-[var(--surface)]">
-                  <option value="All">All</option>
-                  {customers.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[9px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1">Date From</label>
-                <DatePickerInput value={searchDateFrom} onChange={setSearchDateFrom} placeholder="From date"/>
-              </div>
-              <div>
-                <label className="text-[9px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1">Date To</label>
-                <DatePickerInput value={searchDateTo} onChange={setSearchDateTo} placeholder="To date"/>
-              </div>
-              <div>
-                <label className="text-[9px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1">Tailoring Status</label>
-                <select value={searchStatus} onChange={e => setSearchStatus(e.target.value)} className="w-full px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm bg-[var(--surface)]">
-                  {["All","N/A","Awaiting Order","Pending","Stitched","Delivered"].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[9px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1">Payment</label>
-                <select value={searchPayment} onChange={e => setSearchPayment(e.target.value)} className="w-full px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm bg-[var(--surface)]">
-                  {["All","Pending","Settled"].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-[9px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1">Min Amount</label>
-                <input type="number" value={searchMinAmt} onChange={e => setSearchMinAmt(e.target.value)} placeholder="₹0" className="w-full px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm bg-[var(--surface)]"/>
-              </div>
-              <div>
-                <label className="text-[9px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1">Max Amount</label>
-                <input type="number" value={searchMaxAmt} onChange={e => setSearchMaxAmt(e.target.value)} placeholder="₹99999" className="w-full px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm bg-[var(--surface)]"/>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <ItemsFilterBar
+        nameFilter={nameFilter} setNameFilter={setNameFilter}
+        settleTab={settleTab} setSettleTab={setSettleTab} setSelectedRefs={setSelectedRefs}
+        sortDir={sortDir} setSortDir={setSortDir}
+        showFilters={showFilters} setShowFilters={setShowFilters} hasAdvancedFilters={hasAdvancedFilters}
+        isSearchMode={isSearchMode} clearSearch={clearSearch}
+        message={message}
+        searchRef={searchRef}
+        searchDateFrom={searchDateFrom} setSearchDateFrom={setSearchDateFrom}
+        searchDateTo={searchDateTo} setSearchDateTo={setSearchDateTo}
+        searchCustomer={searchCustomer} setSearchCustomer={setSearchCustomer}
+        searchStatus={searchStatus} setSearchStatus={setSearchStatus}
+        searchPayment={searchPayment} setSearchPayment={setSearchPayment}
+        searchMinAmt={searchMinAmt} setSearchMinAmt={setSearchMinAmt}
+        searchMaxAmt={searchMaxAmt} setSearchMaxAmt={setSearchMaxAmt}
+        customers={customers}
+      />
 
       {/* ── BODY ── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
