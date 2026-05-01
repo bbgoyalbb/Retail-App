@@ -141,33 +141,13 @@ async function run() {
   await p.waitForTimeout(300);
   await shotFull(p, '01_daybook_tallied_full');
 
-  // Un-tally first entry to see the Pending tab populated
-  // tap the green tally button on the first entry's first category
-  const tallyBtns = p.locator('.md\\:hidden button[aria-label*="Un-tally"], .md\\:hidden button[aria-label*="tally"]');
-  const tallyCount = await tallyBtns.count();
-  console.log(`    Found ${tallyCount} tally buttons in mobile view`);
-  if (tallyCount > 0) {
-    await tallyBtns.first().tap();
-    await p.waitForTimeout(800);
-    await shot(p, '01_daybook_after_untally_action');
-  }
-
-  // Go to Pending to see the untallied entry
+  // View Pending tab to see untallied entries (read-only, no modifications)
   await tapText(p, 'Pending');
   await p.waitForTimeout(600);
-  await shot(p, '01_daybook_pending_with_entry');
+  await shot(p, '01_daybook_pending_entries');
   await scrollMain(p, 600);
   await p.waitForTimeout(400);
   await shot(p, '01_daybook_pending_entry_cards');
-
-  // Tally it back via "Tally all" button
-  const tallyAllBtn = p.locator('button:has-text("Tally all")').first();
-  if (await tallyAllBtn.isVisible().catch(() => false)) {
-    await shot(p, '01_daybook_tally_all_button');
-    await tallyAllBtn.tap();
-    await p.waitForTimeout(800);
-    await shot(p, '01_daybook_after_tally_all');
-  }
 
   // Date filter — today
   await scrollMain(p, 0);
@@ -319,22 +299,7 @@ async function run() {
   await p.waitForTimeout(500);
   await shot(p, '03_newbill_payment_section');
 
-  // Select Cash payment mode
-  await p.locator('button:has-text("Cash"), label:has-text("Cash")').first().tap().catch(() => {});
-  await p.waitForTimeout(300);
-  await shot(p, '03_newbill_cash_selected');
-
-  // Mark as Settled
-  await p.locator('label:has-text("Settled") input[type="checkbox"], input[type="checkbox"]').first().tap().catch(() => {});
-  await p.waitForTimeout(300);
-  await shot(p, '03_newbill_fabric_settled');
-
-  // Enable Needs Tailoring
-  await p.locator('label:has-text("Needs Tailoring") input, label:has-text("Tailoring") input').first().tap().catch(async () => {
-    await p.locator('input[type="checkbox"]').nth(1).tap().catch(() => {});
-  });
-  await p.waitForTimeout(300);
-  await shot(p, '03_newbill_tailoring_enabled');
+  // Note: Avoid clicking checkboxes that modify data - just screenshot the form state
 
   // Open Configure Tailoring modal
   await p.locator('button:has-text("Configure Tailoring"), button:has-text("Tailoring")').first().tap().catch(() => {});
