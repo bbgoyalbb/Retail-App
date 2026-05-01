@@ -147,14 +147,31 @@ async def import_excel(
                 advances_count = len(advances)
 
         if mode == "replace":
-            await db.items.delete_many({})
-            await db.advances.delete_many({})
-
-        if items:
-            await db.items.insert_many(items)
-
-        if advances:
-            await db.advances.insert_many(advances)
+            # Atomic replace using transaction (same pattern as restore)
+            try:
+                async with await db.client.start_session() as session:
+                    async with session.start_transaction():
+                        await db.items.delete_many({}, session=session)
+                        await db.advances.delete_many({}, session=session)
+                        if items:
+                            await db.items.insert_many(items, session=session)
+                        if advances:
+                            await db.advances.insert_many(advances, session=session)
+            except Exception as txn_err:
+                # Fallback for standalone MongoDB (no replica set)
+                logger.warning(f"Transaction not available for import: {txn_err}. Falling back to non-atomic replace.")
+                await db.items.delete_many({})
+                await db.advances.delete_many({})
+                if items:
+                    await db.items.insert_many(items)
+                if advances:
+                    await db.advances.insert_many(advances)
+        else:
+            # Append mode - no deletion needed
+            if items:
+                await db.items.insert_many(items)
+            if advances:
+                await db.advances.insert_many(advances)
 
         return {
             "message": f"Import successful! {items_count} items and {advances_count} advances imported.",
