@@ -648,7 +648,18 @@ export default function ItemsManager() {
       </div>{/* end LEFT COLUMN */}
 
       {/* Detail pane — full-height sibling column */}
-      <div className={`flex-shrink-0 bg-[var(--surface)] overflow-hidden w-full sm:w-60 md:w-72 lg:w-[30vw] flex flex-col ${detailOpen ? "flex" : "hidden sm:flex"}`}>
+      {/* Responsive widths: mobile full screen, tablet ~45%, desktop sidebar */}
+      <div className={`flex-shrink-0 bg-[var(--surface)] overflow-hidden w-full sm:w-[55%] md:w-[45%] lg:w-[35%] xl:w-[30vw] flex flex-col ${detailOpen ? "flex" : "hidden sm:flex"}`}>
+        {/* Back to list button - visible on mobile/tablet when detail is open */}
+        {detailOpen && (
+          <button
+            onClick={() => setDetailOpen(false)}
+            className="sm:hidden flex items-center gap-1 px-3 py-2 text-xs text-[var(--brand)] hover:bg-[var(--bg)] border-b border-[var(--border-subtle)]"
+          >
+            <CaretRight size={14} className="rotate-180" />
+            Back to list
+          </button>
+        )}
         <OrderDetailPane
           selectedGroups={selectedGroups}
           advances={advances}
