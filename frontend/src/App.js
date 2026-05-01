@@ -85,6 +85,10 @@ function OfflineBanner() {
     window.addEventListener("offline", off);
     return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
   }, []);
+  // Set CSS custom property for content padding adjustment
+  useEffect(() => {
+    document.documentElement.style.setProperty("--offline-banner-h", offline ? "28px" : "0px");
+  }, [offline]);
   if (!offline) return null;
   return (
     <div className="fixed top-0 left-0 right-0 z-[110] bg-amber-500 text-white text-xs font-medium text-center py-1.5 px-4 shadow-md">
@@ -154,7 +158,8 @@ function AppShell() {
       <main className="flex-1 overflow-hidden min-w-0 flex flex-col relative">
         <MobileTopBar title={PAGE_TITLES[location.pathname] ?? "Retail Book"} onMenuClick={() => handleSetOpen(!sidebarOpen)} />
         <MobileBottomTabBar onOpenSidebar={() => handleSetOpen(true)} />
-        <div ref={contentRef} className="flex-1 overflow-y-auto p-4 pt-16 pb-20 md:p-6 md:pt-6 md:pb-6 lg:p-8 page-in">
+        <div ref={contentRef} className="flex-1 overflow-y-auto p-4 pt-[calc(4rem+var(--offline-banner-h,0px))] pb-20 md:p-6 md:pt-[calc(1.5rem+var(--offline-banner-h,0px))] md:pb-6 lg:p-8 lg:pt-[calc(2rem+var(--offline-banner-h,0px))] page-in">
+          <div className="max-w-[1400px] mx-auto w-full">
           <ErrorBoundary>
             <Suspense fallback={<PageLoader />}>
               <KeyboardShortcuts />
@@ -183,6 +188,7 @@ function AppShell() {
               </Routes>
             </Suspense>
           </ErrorBoundary>
+          </div>
         </div>
       </main>
       <Toaster />

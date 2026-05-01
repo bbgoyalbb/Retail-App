@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { X, ArrowSquareOut, Printer } from "@phosphor-icons/react";
 import { getInvoiceUrl } from "@/api";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 export default function InvoiceModal({ billRef, onClose }) {
   const url = getInvoiceUrl(billRef);
+  const trapRef = useFocusTrap(true);
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -15,7 +17,7 @@ export default function InvoiceModal({ billRef, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center sm:p-4">
-      <div className="bg-[var(--surface)] rounded-none sm:rounded-sm w-full sm:max-w-3xl h-full sm:h-[85vh] flex flex-col shadow-2xl">
+      <div ref={trapRef} className="bg-[var(--surface)] rounded-none sm:rounded-sm w-full sm:max-w-3xl h-full sm:h-[85vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
           <p className="font-heading text-sm font-semibold text-[var(--text-primary)]">Invoice Preview — {billRef}</p>
@@ -30,23 +32,30 @@ export default function InvoiceModal({ billRef, onClose }) {
               <ArrowSquareOut size={16} />
             </a>
             <button
-              onClick={() => {
-                if (isMobile) {
-                  window.open(url, "_blank");
-                } else {
+              onClick={async () => {
+                // Mobile: try native share sheet first, then fallback to window.open
+                if (isMobile && navigator.share) {
                   try {
-                    const iframe = document.getElementById("invoice-iframe");
-                    if (iframe?.contentWindow?.print) {
-                      iframe.contentWindow.print();
-                    } else {
-                      window.open(url, "_blank");
-                    }
-                  } catch {
-                    window.open(url, "_blank");
+                    await navigator.share({ url, title: `Invoice ${billRef}` });
+                    return;
+                  } catch (e) {
+                    // User cancelled or share failed — fall through to window.open
                   }
                 }
+                // Desktop: try iframe print, fallback to window.open
+                try {
+                  const iframe = document.getElementById("invoice-iframe");
+                  if (iframe?.contentWindow?.print) {
+                    iframe.contentWindow.print();
+                  } else {
+                    const w = window.open(url, "_blank");
+                    w?.addEventListener("load", () => w.print(), { once: true });
+                  }
+                } catch {
+                  window.open(url, "_blank");
+                }
               }}
-              title={isMobile ? "Open to Print" : "Print"}
+              title={isMobile ? "Share / Print" : "Print"}
               className="p-1.5 rounded-sm hover:bg-[var(--bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               <Printer size={16} />

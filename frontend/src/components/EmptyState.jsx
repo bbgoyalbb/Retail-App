@@ -2,7 +2,7 @@ import { Scissors, ArrowRight } from "@phosphor-icons/react";
 
 export function EmptyState({ title, description, action, onAction, icon: Icon = Scissors }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+    <div className="flex flex-col items-start sm:items-center justify-center py-12 px-4 text-left sm:text-center">
       <div className="w-16 h-16 rounded-full bg-[var(--bg)] border border-[var(--border-subtle)] flex items-center justify-center mb-4">
         <Icon size={28} className="text-[var(--brand)]" />
       </div>

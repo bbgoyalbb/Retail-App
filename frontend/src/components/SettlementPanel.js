@@ -3,6 +3,7 @@ import { getBalances, processSettlement, getSettings } from "@/api";
 import { invalidate } from "@/lib/dataEvents";
 import { fmt } from "@/lib/fmt";
 import { CurrencyDollar, X, CheckCircle, CaretDown, CaretRight } from "@phosphor-icons/react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 /**
  * SettlementPanel — multi-ref capable settlement overlay.
@@ -185,10 +186,12 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
   };
 
   const isMulti = orders.length > 1;
+  const trapRef = useFocusTrap(true);
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div
+        ref={trapRef}
         className="bg-[var(--surface)] border border-[var(--border-subtle)] rounded-t-lg sm:rounded-sm shadow-2xl w-full sm:max-w-xl max-h-[78vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >

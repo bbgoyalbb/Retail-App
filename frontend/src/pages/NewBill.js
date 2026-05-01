@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createBill, getCustomers, getInvoiceUrl, getSettings, invalidateCustomersCache, getNextBillRef } from "@/api";
 import { invalidate } from "@/lib/dataEvents";
 import { Plus, FloppyDisk, Spinner } from "@phosphor-icons/react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import InvoiceModal from "@/components/InvoiceModal";
 import { BillLineItemRow, ItemInputForm, PaymentSummaryPanel, BillSuccessPanel } from "@/components/bill";
@@ -785,6 +786,7 @@ export default function NewBill() {
 function TailoringModal({ items, setItems, customerName, articleTypes, onClose }) {
   const [splitItem, setSplitItem] = useState(null);
   const [splitError, setSplitError] = useState(null);
+  const trapRef = useFocusTrap(true);
 
   // Escape key handler for accessibility
   useEffect(() => {
@@ -1008,7 +1010,7 @@ function TailoringModal({ items, setItems, customerName, articleTypes, onClose }
       aria-labelledby="tailoring-modal-title"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-5xl bg-[var(--surface)] rounded-sm border border-[var(--border-subtle)] shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div ref={trapRef} className="w-full max-w-5xl bg-[var(--surface)] rounded-sm border border-[var(--border-subtle)] shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
         <div className="px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
           <h3 id="tailoring-modal-title" className="font-heading text-base">Configure Tailoring for Current Bill ({customerName || 'No Customer'})</h3>
           <button onClick={onClose} className="p-1 text-[var(--text-secondary)] hover:bg-[var(--bg)] rounded-sm" aria-label="Close"><X size={16} /></button>

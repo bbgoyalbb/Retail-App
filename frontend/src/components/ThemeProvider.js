@@ -9,7 +9,10 @@ const ThemeContext = createContext({
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem("theme") || "light";
+      const stored = localStorage.getItem("theme");
+      if (stored) return stored;
+      // Check system preference on first load
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     } catch {
       return "light";
     }

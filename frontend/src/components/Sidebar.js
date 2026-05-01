@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { getDaybookPendingCount, getPublicSettings, BACKEND_URL } from "@/api";
 import {
   House, Receipt, Kanban,
@@ -65,6 +66,7 @@ export default function Sidebar({ open, setOpen }) {
   }, []);
 
   const handleLogout = () => setConfirmLogout(true);
+  const logoutTrapRef = useFocusTrap(confirmLogout);
 
   // Desktop: collapsed = icon-only rail
   const [collapsed, setCollapsed] = useState(() => {
@@ -280,7 +282,7 @@ export default function Sidebar({ open, setOpen }) {
       {/* Logout confirmation dialog */}
       {confirmLogout && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-          <div className="bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm shadow-xl w-full max-w-xs p-5 space-y-4">
+          <div ref={logoutTrapRef} className="bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm shadow-xl w-full max-w-xs p-5 space-y-4">
             <div>
               <p className="text-sm font-semibold text-[var(--text-primary)]">Sign out?</p>
               <p className="text-xs text-[var(--text-secondary)] mt-1">You will be returned to the login screen.</p>
