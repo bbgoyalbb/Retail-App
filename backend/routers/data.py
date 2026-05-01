@@ -111,10 +111,11 @@ async def import_excel(
                     "addon_received": safe_float(row[34]),
                     "addon_pending": safe_float(row[35]),
                     "karigar": safe_str(row[36]) if len(row) > 36 else "N/A",
-                    "tally_fabric": False,
-                    "tally_tailoring": False,
-                    "tally_embroidery": False,
-                    "tally_addon": False,
+                    # Read tally columns if present in Excel, otherwise default to False
+                    "tally_fabric": bool(row[37]) if len(row) > 37 and row[37] not in (None, "", "N/A") else False,
+                    "tally_tailoring": bool(row[38]) if len(row) > 38 and row[38] not in (None, "", "N/A") else False,
+                    "tally_embroidery": bool(row[39]) if len(row) > 39 and row[39] not in (None, "", "N/A") else False,
+                    "tally_addon": bool(row[40]) if len(row) > 40 and row[40] not in (None, "", "N/A") else False,
                     "created_at": datetime.now(timezone.utc).isoformat(),
                 }
                 items.append(item)
@@ -138,7 +139,8 @@ async def import_excel(
                     "ref": str(row[2]).strip() if row[2] else "",
                     "amount": float(row[3]) if row[3] else 0,
                     "mode": str(row[4]).strip() if row[4] else "",
-                    "tally": False,
+                    # Read tally column if present in Excel, otherwise default to False
+                    "tally": bool(row[5]) if len(row) > 5 and row[5] not in (None, "", "N/A") else False,
                     "created_at": datetime.now(timezone.utc).isoformat(),
                 }
                 advances.append(adv)
