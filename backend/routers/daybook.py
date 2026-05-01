@@ -207,6 +207,10 @@ async def tally_entries(req: TallyRequest, current_user: dict = Depends(get_curr
             item_query[pay_date_field] = req.date
         await db.items.update_many(item_query, {"$set": {tally_field: tally_value}})
 
+    # Audit log the tally action
+    await audit_log(db, req.action, current_user, "daybook", ",".join(req.entry_ids[:10]),  # Limit to first 10 refs
+                    {"category": req.category, "date": req.date, "count": len(req.entry_ids)})
+
     return {"message": f"{len(req.entry_ids)} entries {req.action}ed"}
 
 # ==========================================
