@@ -86,7 +86,7 @@ export default function Dashboard() {
     return (
       <div className="space-y-6">
         <div className="h-8 w-48 bg-[var(--border-subtle)] animate-pulse rounded-sm" />
-        <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1,2,3,4].map(i => <div key={i} className="h-28 bg-[var(--surface)] border border-[var(--border-subtle)] animate-pulse rounded-sm" />)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -133,7 +133,7 @@ export default function Dashboard() {
 
       {/* Today's Summary Banner */}
       {data.total_items > 0 && (
-        <div className="bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm px-5 py-3.5 flex flex-wrap items-center gap-x-8 gap-y-2">
+        <div className="bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm px-5 py-3.5 flex flex-col xs:flex-row xs:flex-wrap xs:items-center gap-3 xs:gap-x-8 xs:gap-y-2">
           <div className="flex items-center gap-2">
             <CalendarCheck size={16} className="text-[var(--brand)]" weight="duotone" />
             <span className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)]">Today</span>
@@ -168,7 +168,7 @@ export default function Dashboard() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={TrendUp} label="Revenue Collected" value={`₹${fmt(data.total_revenue)}`}
           sub={`${data.total_items} transactions`} color="var(--success)" trend={data.revenue_trend} />
         <StatCard icon={Warning} label="Total Outstanding" value={`₹${fmt(totalPending)}`}
