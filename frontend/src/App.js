@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
 import BackToTop from "@/components/BackToTop";
 import MobileTopBar from "@/components/MobileTopBar";
+import MobileBottomTabBar from "@/components/MobileBottomTabBar";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
@@ -152,7 +153,8 @@ function AppShell() {
       <BackToTop />
       <main className="flex-1 overflow-hidden min-w-0 flex flex-col relative">
         <MobileTopBar title={PAGE_TITLES[location.pathname] ?? "Retail Book"} onMenuClick={() => handleSetOpen(!sidebarOpen)} />
-        <div ref={contentRef} className="flex-1 overflow-y-auto p-4 pt-16 md:p-6 md:pt-6 lg:p-8 page-in">
+        <MobileBottomTabBar onOpenSidebar={() => handleSetOpen(true)} />
+        <div ref={contentRef} className="flex-1 overflow-y-auto p-4 pt-16 pb-20 md:p-6 md:pt-6 md:pb-6 lg:p-8 page-in">
           <ErrorBoundary>
             <Suspense fallback={<PageLoader />}>
               <KeyboardShortcuts />
