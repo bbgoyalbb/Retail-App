@@ -182,19 +182,19 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-[var(--border-subtle)] overflow-x-auto [&::-webkit-scrollbar]:hidden">
+      {/* Tabs with scroll-snap for crisp stops on mobile */}
+      <div className="flex gap-1 border-b border-[var(--border-subtle)] overflow-x-auto [&::-webkit-scrollbar]:hidden scroll-snap-type-x mandatory">
         {[
           { key: "revenue", label: "Revenue", icon: TrendUp },
           { key: "customers", label: "Customers", icon: Users },
           { key: "breakdown", label: "Breakdown", icon: ChartBar },
-        ].map(t => (
+        ].map((t, key) => (
           <button
-            key={t.key}
+            key={key}
             data-testid={`report-tab-${t.key}`}
             onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0
-              ${tab === t.key ? 'border-[var(--brand)] text-[var(--brand)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap scroll-snap-align-start -mb-px flex-shrink-0 ${
+              tab === t.key ? 'border-[var(--brand)] text-[var(--brand)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           >
             <t.icon size={16} /> {t.label}
           </button>
@@ -211,8 +211,9 @@ export default function Reports() {
                 No data available for selected period
               </div>
             )}
-            <div style={{ width: "100%", height: 350 }}>
-              <ResponsiveContainer>
+            {/* Responsive height: mobile 192px, tablet 256px, desktop 320px */}
+            <div className="h-48 sm:h-64 lg:h-80">
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
                   <XAxis dataKey="_id" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
@@ -227,8 +228,9 @@ export default function Reports() {
 
           <div className="bg-[var(--surface)] border border-[var(--border-subtle)] p-6 rounded-sm">
             <h3 className="font-heading text-base font-medium mb-4">Revenue Trend (Received)</h3>
-            <div style={{ width: "100%", height: 300 }}>
-              <ResponsiveContainer>
+            {/* Responsive height: mobile 192px, tablet 256px, desktop 320px */}
+            <div className="h-48 sm:h-64 lg:h-80">
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
                   <XAxis dataKey="_id" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
@@ -249,7 +251,43 @@ export default function Reports() {
           <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
             <h3 className="font-heading text-base font-medium">Customer Revenue Ranking</h3>
           </div>
-          <div className="overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-[var(--border-strong)]">
+
+          {/* Mobile card view - stacked layout */}
+          <div className="sm:hidden divide-y divide-[var(--border-subtle)]">
+            {customerData.map((c, i) => (
+              <div key={c.name} className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs text-[var(--text-secondary)] w-5">{i + 1}</span>
+                    <button 
+                      onClick={() => navigate(`/items?name=${encodeURIComponent(c.name)}`)} 
+                      className="text-sm font-medium hover:text-[var(--brand)] hover:underline text-left"
+                    >
+                      {c.name}
+                    </button>
+                  </div>
+                  <span className="font-mono text-xs text-[var(--text-secondary)]">{c.refs_count} bills</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <span className="text-[var(--text-secondary)] block">Fabric</span>
+                    <span className="font-mono">₹{fmt(c.total_fabric)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[var(--text-secondary)] block">Received</span>
+                    <span className="font-mono text-[var(--success)]">₹{fmt(c.total_received)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[var(--text-secondary)] block">Pending</span>
+                    <span className="font-mono text-[var(--warning)]">₹{fmt(c.total_pending)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="hidden sm:block overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-[var(--border-strong)]">
             <table className="w-full min-w-[640px]" data-testid="customer-report-table">
               <thead>
                 <tr className="bg-[var(--bg)]">
@@ -286,8 +324,9 @@ export default function Reports() {
           <div className="bg-[var(--surface)] border border-[var(--border-subtle)] p-6 rounded-sm">
             <h3 className="font-heading text-base font-medium mb-4">Payment Mode Distribution</h3>
             {summary.payment_modes?.length > 0 ? (
-              <div style={{ width: "100%", height: 300 }}>
-                <ResponsiveContainer>
+              {/* Responsive height: mobile 192px, tablet 256px, desktop 320px */}
+              <div className="h-48 sm:h-64 lg:h-80">
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={summary.payment_modes}
@@ -315,8 +354,9 @@ export default function Reports() {
           <div className="bg-[var(--surface)] border border-[var(--border-subtle)] p-6 rounded-sm">
             <h3 className="font-heading text-base font-medium mb-4">Article Type Distribution</h3>
             {summary.article_types?.length > 0 ? (
-              <div style={{ width: "100%", height: 300 }}>
-                <ResponsiveContainer>
+              {/* Responsive height: mobile 192px, tablet 256px, desktop 320px */}
+              <div className="h-48 sm:h-64 lg:h-80">
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={summary.article_types} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
                     <XAxis type="number" tick={{ fontSize: 10 }} />
