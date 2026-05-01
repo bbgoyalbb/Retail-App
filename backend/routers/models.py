@@ -2,9 +2,12 @@
 Shared Pydantic models, constants, and pure helper functions.
 No DB access here — no side effects on import.
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+
+# Financial validation tolerance (from data_quality.py)
+PENNY_TOLERANCE = 0.01
 
 
 # ==========================================
@@ -168,6 +171,46 @@ class ItemUpdateRequest(BaseModel):
     cancelled: Optional[bool] = None
     cancelled_at: Optional[str] = None
     cancelled_ref: Optional[str] = None
+
+    @model_validator(mode='after')
+    def validate_financial_consistency(self):
+        """
+        Validate that pending + received ≈ amount for each payment category.
+        This prevents data entry errors where amounts don't balance.
+        """
+        categories = [
+            ('fabric_amount', 'fabric_received', 'fabric_pending'),
+            ('tailoring_amount', 'tailoring_received', 'tailoring_pending'),
+            ('embroidery_amount', 'embroidery_received', 'embroidery_pending'),
+            ('addon_amount', 'addon_received', 'addon_pending'),
+        ]
+
+        for amount_field, received_field, pending_field in categories:
+            amount = getattr(self, amount_field, None)
+            received = getattr(self, received_field, None)
+            pending = getattr(self, pending_field, None)
+
+            # Skip validation if any field is not provided (None means "don't change")
+            if amount is None or received is None or pending is None:
+                continue
+
+            # Skip validation if amount is 0 (no payment expected)
+            if amount == 0 and received == 0 and pending == 0:
+                continue
+
+            # Check if received + pending ≈ amount (within tolerance)
+            actual_sum = (received or 0) + (pending or 0)
+            expected = amount or 0
+
+            if abs(actual_sum - expected) > PENNY_TOLERANCE:
+                raise ValueError(
+                    f"Financial inconsistency in {amount_field.replace('_amount', '')}: "
+                    f"received ({received or 0}) + pending ({pending or 0}) = {actual_sum}, "
+                    f"but amount is {expected}. "
+                    f"Difference: {abs(actual_sum - expected):.2f} exceeds tolerance ({PENNY_TOLERANCE})"
+                )
+
+        return self
 
 
 class ItemCreateRequest(BaseModel):

@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createBill, getCustomers, getInvoiceUrl, getSettings, invalidateCustomersCache, getNextBillRef } from "@/api";
 import { invalidate } from "@/lib/dataEvents";
-import { Plus, Trash, FloppyDisk, Barcode, Printer, PencilSimple, X, Scissors, ArrowsSplit, CheckCircle, Spinner } from "@phosphor-icons/react";
+import { Plus, FloppyDisk, Spinner } from "@phosphor-icons/react";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import InvoiceModal from "@/components/InvoiceModal";
+import { BillLineItemRow, ItemInputForm, PaymentSummaryPanel, BillSuccessPanel } from "@/components/bill";
 
 export default function NewBill() {
   const navigate = useNavigate();
@@ -457,29 +458,13 @@ export default function NewBill() {
       )}
 
       {showPostSave && lastBillRef && (
-        <div className="bg-[var(--surface)] border-2 border-[var(--success)] rounded-sm p-6 space-y-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[var(--success)]">Bill Saved Successfully</p>
-              <p className="font-heading text-2xl font-semibold tracking-tight mt-1" style={{ color: "var(--brand)" }}>Ref: {lastBillRef}</p>
-              <p className="font-mono text-lg text-[var(--text-primary)] mt-1">₹{lastBillTotal.toLocaleString('en-IN')}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle size={32} weight="fill" className="text-[var(--success)]" />
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row flex-wrap gap-3 pt-2">
-            <button onClick={() => setShowInvoice(true)} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[var(--success)] text-white rounded-sm hover:bg-[#3d4d3f]">
-              <Printer size={16} /> View Invoice
-            </button>
-            <button onClick={() => window.open(getInvoiceUrl(lastBillRef), '_blank')} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium border border-[var(--border-subtle)] rounded-sm hover:border-[var(--brand)]">
-              <Printer size={16} weight="bold" /> Print
-            </button>
-            <button onClick={createAnotherBill} className="w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[var(--brand)] text-white rounded-sm hover:bg-[var(--brand-hover)]">
-              <Plus size={16} weight="bold" /> Create Another Bill
-            </button>
-          </div>
-        </div>
+        <BillSuccessPanel
+          billRef={lastBillRef}
+          total={lastBillTotal}
+          onViewInvoice={() => setShowInvoice(true)}
+          onPrint={() => window.open(getInvoiceUrl(lastBillRef), '_blank')}
+          onCreateAnother={createAnotherBill}
+        />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -536,20 +521,23 @@ export default function NewBill() {
           </div>
 
           <h3 className="font-heading text-base font-medium pt-2">Add Items</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-6 gap-3">
-            <div className="relative col-span-2 sm:col-span-2">
-              <input ref={barcodeRef} data-testid="barcode-input" value={barcode} onChange={e => setBarcode(e.target.value)} placeholder="Barcode / Item No." maxLength={60} className="w-full px-3 py-2 pr-10 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" onKeyDown={e => enterNav(e, qtyRef)} />
-              <button data-testid="scan-barcode-btn" onClick={() => setShowScanner(true)} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 text-[var(--brand)] hover:bg-[#C86B4D10] rounded-sm" title="Scan with camera">
-                <Barcode size={18} weight="duotone" />
-              </button>
-            </div>
-            <input ref={qtyRef} data-testid="qty-input" value={qty} onChange={e => setQty(e.target.value)} placeholder="Qty (m)" type="number" step="0.1" className="px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" onKeyDown={e => enterNav(e, priceRef)} />
-            <input ref={priceRef} data-testid="price-input" value={price} onChange={e => setPrice(e.target.value)} placeholder="Price/m" type="number" className="px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" onKeyDown={e => enterNav(e, discountRef)} />
-            <input ref={discountRef} data-testid="discount-input" value={discount} onChange={e => setDiscount(e.target.value)} placeholder="Disc%" type="number" className="px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addItem(); } }} />
-            <button data-testid="add-item-btn" onClick={addItem} className="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium bg-[var(--brand)] text-white rounded-sm hover:bg-[var(--brand-hover)] transition-all duration-200 hover:translate-y-[-1px]">
-              {editingIndex !== null ? <><FloppyDisk size={16} weight="bold" /> Update</> : <><Plus size={16} weight="bold" /> Add</>}
-            </button>
-          </div>
+          <ItemInputForm
+            barcode={barcode}
+            qty={qty}
+            price={price}
+            discount={discount}
+            editingIndex={editingIndex}
+            refs={{ barcodeRef, qtyRef, priceRef, discountRef }}
+            onChange={(field, val) => {
+              if (field === 'barcode') setBarcode(val);
+              else if (field === 'qty') setQty(val);
+              else if (field === 'price') setPrice(val);
+              else if (field === 'discount') setDiscount(val);
+            }}
+            onAdd={addItem}
+            onOpenScanner={() => setShowScanner(true)}
+            onKeyNav={(e, nextRef) => enterNav(e, nextRef)}
+          />
 
           {editingIndex !== null && (
             <div className="flex justify-end">
@@ -560,170 +548,53 @@ export default function NewBill() {
           {showScanner && <BarcodeScanner onScan={(code) => { setBarcode(code); setShowScanner(false); setTimeout(() => qtyRef.current?.focus(), 100); }} onClose={() => setShowScanner(false)} />}
 
           {items.length > 0 && (
-            <div>
-              {/* Mobile card list */}
-              <div className="sm:hidden space-y-2" data-testid="bill-items-table">
-                {items.map((item, i) => {
-                  const isEditing = editingIndex === i;
-                  return (
-                    <div key={i} className={`border rounded-sm p-3 ${isEditing ? 'border-[var(--brand)] bg-[#C86B4D06]' : 'border-[var(--border-subtle)] bg-[var(--surface)]'}`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className={`text-sm font-medium truncate ${isEditing ? 'text-[var(--brand)]' : ''}`}>{item.barcode}</p>
-                          <div className="flex gap-1 mt-1 flex-wrap">
-                            {item.tailoring?.enabled && <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#5C8A9E15] text-[var(--info)] font-medium">✂ {item.tailoring.article_type || 'Tailoring'}</span>}
-                            {item.addon?.enabled && (item.addon.items || []).some(a => parseFloat(a.amount) > 0) && <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#C86B4D15] text-[var(--brand)] font-medium">+ Add-on</span>}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <button onClick={() => editItem(i)} className={`p-2 rounded-sm ${isEditing ? 'text-[var(--brand)] bg-[#C86B4D15]' : 'text-[var(--info)] hover:bg-[#5C8A9E10]'}`}><PencilSimple size={15} /></button>
-                          <button onClick={() => removeItem(i)} className="p-2 rounded-sm text-[var(--error)] hover:bg-[#9E473D10]"><Trash size={15} /></button>
-                        </div>
-                      </div>
-                      <div className="mt-2 flex gap-4 text-xs font-mono text-[var(--text-secondary)]">
-                        <span>{item.qty}m</span>
-                        <span>₹{item.price}/m</span>
-                        {parseFloat(item.discount) > 0 && <span>{item.discount}% off</span>}
-                        <span className="ml-auto font-semibold text-[var(--text-primary)]">₹{item.total.toLocaleString('en-IN')}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className="flex justify-between items-center px-1 pt-1 text-xs text-[var(--text-secondary)] border-t border-[var(--border-subtle)]">
-                  <span>{items.length} item{items.length !== 1 ? 's' : ''}</span>
-                  <span className="font-mono font-semibold text-[var(--text-primary)]">₹{items.reduce((s, it) => s + it.total, 0).toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-
-              {/* Desktop table */}
-              <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full" data-testid="bill-items-table">
-                <thead>
-                  <tr className="bg-[var(--bg)]">
-                    <th className="text-left px-3 py-2 text-xs uppercase tracking-[0.1em] font-semibold text-[var(--text-secondary)]">Item</th>
-                    <th className="text-right px-3 py-2 text-xs uppercase tracking-[0.1em] font-semibold text-[var(--text-secondary)]">Qty</th>
-                    <th className="text-right px-3 py-2 text-xs uppercase tracking-[0.1em] font-semibold text-[var(--text-secondary)]">Price</th>
-                    <th className="text-right px-3 py-2 text-xs uppercase tracking-[0.1em] font-semibold text-[var(--text-secondary)]">Disc%</th>
-                    <th className="text-right px-3 py-2 text-xs uppercase tracking-[0.1em] font-semibold text-[var(--text-secondary)]">Total</th>
-                    <th className="px-3 py-2 text-right text-xs uppercase tracking-[0.1em] font-semibold text-[var(--text-secondary)]">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, i) => {
-                    const isEditing = editingIndex === i;
-                    return (
-                      <tr key={i} className={`border-b border-[var(--border-subtle)] transition-colors ${isEditing ? 'bg-[#C86B4D08] outline outline-1 outline-[var(--brand)]' : 'hover:bg-[var(--bg)]'}`}>
-                        <td className="px-3 py-2 text-sm">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {isEditing && <PencilSimple size={12} className="text-[var(--brand)] flex-shrink-0" weight="fill" />}
-                            <span className={isEditing ? 'text-[var(--brand)] font-medium' : ''}>{item.barcode}</span>
-                          </div>
-                          <div className="flex gap-1 mt-0.5 flex-wrap">
-                            {item.tailoring?.enabled && <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#5C8A9E15] text-[var(--info)] font-medium">✂ {item.tailoring.article_type || 'Tailoring'}</span>}
-                            {item.addon?.enabled && (item.addon.items || []).some(a => parseFloat(a.amount) > 0) && <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#C86B4D15] text-[var(--brand)] font-medium">+ Add-on</span>}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 font-mono text-sm text-right">{item.qty}</td>
-                        <td className="px-3 py-2 font-mono text-sm text-right">₹{item.price}</td>
-                        <td className="px-3 py-2 font-mono text-sm text-right">{item.discount}%</td>
-                        <td className="px-3 py-2 font-mono text-sm text-right font-medium">₹{item.total}</td>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => editItem(i)} className={`min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 sm:p-1 rounded-sm transition-colors flex items-center justify-center ${isEditing ? 'text-[var(--brand)] bg-[#C86B4D15]' : 'text-[var(--info)] hover:bg-[#5C8A9E10]'}`} title="Edit row" aria-label="Edit row"><PencilSimple size={16} /></button>
-                            <button onClick={() => removeItem(i)} className="text-[var(--error)] hover:bg-[#9E473D10] min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 sm:p-1 rounded-sm flex items-center justify-center" title="Delete row" aria-label="Delete row"><Trash size={16} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                {items.length > 0 && (
-                  <tfoot className="bg-[var(--bg)] border-t border-[var(--border-subtle)]">
-                    <tr>
-                      <td colSpan="4" className="px-3 py-2 text-xs text-[var(--text-secondary)]">
-                        {items.length} item{items.length !== 1 ? 's' : ''}
-                      </td>
-                      <td className="px-3 py-2 font-mono text-sm font-medium text-right">
-                        ₹{items.reduce((sum, item) => sum + item.total, 0).toLocaleString('en-IN')}
-                      </td>
-                      <td className="px-3 py-2"></td>
-                    </tr>
-                  </tfoot>
-                )}
-              </table>
+            <div className="space-y-2" data-testid="bill-items-list">
+              {items.map((item, i) => (
+                <BillLineItemRow
+                  key={i}
+                  item={item}
+                  index={i}
+                  isEditing={editingIndex === i}
+                  onEdit={editItem}
+                  onRemove={removeItem}
+                  onOpenTailoring={(idx) => {
+                    setEditingIndex(idx);
+                    setShowTailoringModal(true);
+                  }}
+                  onOpenAddon={(idx) => {
+                    setEditingIndex(idx);
+                    setShowAddonModal(true);
+                  }}
+                />
+              ))}
+              <div className="flex justify-between items-center px-3 py-2 text-sm text-[var(--text-secondary)] border-t border-[var(--border-subtle)] bg-[var(--bg)] rounded-sm">
+                <span>{items.length} item{items.length !== 1 ? 's' : ''}</span>
+                <span className="font-mono font-semibold text-[var(--text-primary)]">
+                  ₹{items.reduce((s, it) => s + it.total, 0).toLocaleString('en-IN')}
+                </span>
               </div>
             </div>
           )}
         </div>
 
         {/* Payment Panel */}
-        <div className="bg-[var(--surface)] border border-[var(--border-subtle)] p-6 rounded-sm space-y-4">
-          <h3 className="font-heading text-base font-medium">Payment</h3>
-
-          <div className="p-4 bg-[var(--bg)] rounded-sm border-l-2" style={{ borderLeftColor: "var(--brand)" }}>
-            <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[var(--text-secondary)]">Grand Total</p>
-            <p data-testid="grand-total" className="font-heading text-3xl font-semibold tracking-tight mt-1" style={{ color: "var(--brand)" }}>₹{grandTotal.toLocaleString('en-IN')}</p>
-            {items.length > 0 && <p className="text-xs text-[var(--text-secondary)] mt-1">{items.length} item{items.length !== 1 ? 's' : ''}</p>}
-          </div>
-
-          <div>
-            <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">Amount Received</label>
-            <input ref={amountRef} data-testid="amount-paid-input" type="number" min="0" value={amountPaid} onChange={e => setAmountPaid(e.target.value)} onKeyDown={e => enterNav(e, payDateRef)} className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" placeholder="Amount received" />
-          </div>
-
-          {amountPaid !== "" && (
-            <div className={`p-3 rounded-sm border text-sm font-mono font-medium flex justify-between ${
-              grandTotal - (parseFloat(amountPaid) || 0) > 0
-                ? 'bg-[#D4984210] border-[var(--warning)] text-[var(--warning)]'
-                : grandTotal - (parseFloat(amountPaid) || 0) < 0
-                  ? 'bg-[#5C8A9E10] border-[var(--info)] text-[var(--info)]'
-                  : 'bg-[#455D4A10] border-[var(--success)] text-[var(--success)]'
-            }`}>
-              <span>{grandTotal - (parseFloat(amountPaid) || 0) > 0 ? 'Balance Due' : grandTotal - (parseFloat(amountPaid) || 0) < 0 ? 'Change' : 'Fully Paid'}</span>
-              <span>₹{Math.abs(grandTotal - (parseFloat(amountPaid) || 0)).toLocaleString('en-IN')}</span>
-            </div>
-          )}
-
-          <div>
-            <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">Payment Date</label>
-            <input ref={payDateRef} data-testid="pay-date-input" type="date" value={payDate} onChange={e => setPayDate(e.target.value)} onKeyDown={e => enterNav(e, settledRef)} className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
-          </div>
-
-          <div>
-            <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-2">Payment Mode</label>
-            <div className="flex flex-wrap gap-2">
-              {paymentModes.map(mode => (
-                <button key={mode} data-testid={`mode-${mode.toLowerCase().replace(/[\s\[\]]/g, '-')}`} onClick={() => toggleMode(mode)} className={`px-3 py-1.5 text-xs font-medium rounded-sm border transition-all duration-200 ${selectedModes.includes(mode) ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-[var(--brand)]'}`}>
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-3 pt-2">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input ref={settledRef} data-testid="settle-checkbox" type="checkbox" checked={isSettled} onChange={e => setIsSettled(e.target.checked)} onKeyDown={e => enterNav(e, tailoringRef)} className="w-4 h-4 rounded-sm accent-[var(--brand)]" />
-              <span className="text-sm">Mark as Settled</span>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input ref={tailoringRef} data-testid="tailoring-checkbox" type="checkbox" checked={needsTailoring} onChange={e => setNeedsTailoring(e.target.checked)} onKeyDown={e => enterNav(e, saveBtnRef)} className="w-4 h-4 rounded-sm accent-[var(--brand)]" />
-              <span className="text-sm">Needs Tailoring</span>
-            </label>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={openTailoringConfig} className="px-3 py-2 text-xs border border-[var(--border-subtle)] rounded-sm hover:border-[var(--brand)] flex items-center justify-center gap-1.5">
-              <Scissors size={12} /> Configure Tailoring
-            </button>
-            <button type="button" onClick={openAddonConfig} className="px-3 py-2 text-xs border border-[var(--border-subtle)] rounded-sm hover:border-[var(--brand)] flex items-center justify-center gap-1.5">
-              <Plus size={12} /> Configure Add-ons
-            </button>
-          </div>
-
-          <button ref={saveBtnRef} data-testid="save-bill-btn" onClick={handleSave} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSave(); } }} disabled={saving} className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium bg-[var(--brand)] text-white rounded-sm hover:bg-[var(--brand-hover)] transition-all duration-200 hover:translate-y-[-1px] disabled:opacity-50">
-            {saving ? "Saving..." : <><FloppyDisk size={18} weight="bold" /> Save Bill</>}
-          </button>
-        </div>
+        <PaymentSummaryPanel
+          grandTotal={grandTotal}
+          amountPaid={amountPaid}
+          selectedModes={selectedModes}
+          isSettled={isSettled}
+          payDate={payDate}
+          paymentModes={paymentModes}
+          canSubmit={items.length > 0}
+          saving={saving}
+          refs={{ amountRef, settledRef, saveBtnRef, payDateRef, tailoringRef }}
+          onAmountPaidChange={setAmountPaid}
+          onModeToggle={toggleMode}
+          onSettledChange={setIsSettled}
+          onPayDateChange={setPayDate}
+          onSave={handleSave}
+          onKeyNav={(e, nextRef) => enterNav(e, nextRef)}
+        />
       </div>
 
       {/* Mobile sticky summary bar - visible only on small screens */}
