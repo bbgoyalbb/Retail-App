@@ -128,10 +128,21 @@ export default function LoginPage() {
             </div>
             <button
               type="submit"
-              disabled={busy}
-              className="w-full py-2.5 text-sm font-semibold bg-[var(--brand)] text-white rounded-sm hover:bg-[var(--brand-hover)] disabled:opacity-60 transition-all duration-150 active:scale-[0.99] tracking-wide mt-2"
+              disabled={busy || !username || !password}
+              className={`w-full py-2.5 text-sm font-semibold rounded-sm transition-all duration-150 active:scale-[0.99] tracking-wide mt-2 flex items-center justify-center gap-2 ${
+                busy || !username || !password
+                  ? 'bg-[var(--brand)]/60 text-white/80 cursor-not-allowed'
+                  : 'bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]'
+              }`}
             >
-              {busy ? "Signing in…" : "Sign In"}
+              {busy ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Signing in…
+                </>
+              ) : (
+                "Sign In"
+              )}
             </button>
           </form>
         </div>
@@ -142,8 +153,8 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right side - decorative panel (desktop only) */}
-      <div className="hidden lg:block lg:flex-1 relative bg-[#2D2A26] overflow-hidden">
+      {/* Right side - decorative panel (tablet and desktop) */}
+      <div className="hidden md:flex md:flex-1 relative bg-[#2D2A26] overflow-hidden">
         {/* CSS-only woven fabric pattern — no external dependency */}
         <div className="absolute inset-0 opacity-20" style={{
           backgroundImage: `repeating-linear-gradient(
