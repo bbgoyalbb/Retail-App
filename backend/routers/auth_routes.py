@@ -81,6 +81,11 @@ async def get_settings(current_user: dict = Depends(get_current_user_dep)):
 async def update_settings(data: dict, current_user: dict = Depends(get_current_user_dep)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can update settings")
+    # Validate hex color format if provided
+    if "firm_name_color" in data:
+        color = data["firm_name_color"]
+        if color and not re.fullmatch(r'#[0-9a-fA-F]{3,6}', color):
+            raise HTTPException(status_code=400, detail="Invalid color format. Use hex like #C86B4D or #fff")
     # Deduplicate list fields before saving
     for list_key in ("payment_modes", "addon_items", "article_types"):
         if isinstance(data.get(list_key), list):

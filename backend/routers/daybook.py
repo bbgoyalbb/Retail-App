@@ -5,7 +5,7 @@ import asyncio
 import time
 from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 import uuid
 import re
 from bson import ObjectId
@@ -23,6 +23,12 @@ _DAYBOOK_DATES_TTL: float = 60.0
 
 @router.get("/daybook")
 async def get_daybook(date_filter: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
+    # Default to last 12 months when no date filter specified (prevents unbounded scans)
+    if not date_filter or date_filter == "All":
+        twelve_months_ago = (datetime.now(timezone.utc) - timedelta(days=365)).strftime("%Y-%m-%d")
+    else:
+        twelve_months_ago = None
+    
     # Key: (date, ref) — each unique pay-date × ref combination is a separate row
     entries = {}
 
@@ -47,6 +53,14 @@ async def get_daybook(date_filter: Optional[str] = None, current_user: dict = De
             {"embroidery_pay_date": date_filter},
             {"addon_pay_date": date_filter},
         ]
+    elif twelve_months_ago:
+        # Restrict to last 12 months of payment dates
+        item_query["$or"] = [
+            {"fabric_pay_date": {"$gte": twelve_months_ago}},
+            {"tailoring_pay_date": {"$gte": twelve_months_ago}},
+            {"embroidery_pay_date": {"$gte": twelve_months_ago}},
+            {"addon_pay_date": {"$gte": twelve_months_ago}},
+        ]
 
     _DAYBOOK_PROJ = {
         "_id": 0, "ref": 1, "name": 1,
@@ -55,7 +69,7 @@ async def get_daybook(date_filter: Optional[str] = None, current_user: dict = De
         "embroidery_pay_date": 1, "embroidery_received": 1, "embroidery_pay_mode": 1, "tally_embroidery": 1,
         "addon_pay_date": 1,      "addon_received": 1,      "addon_pay_mode": 1,      "tally_addon": 1,
     }
-    items = await db.items.find(item_query if date_filter and date_filter != "All" else {}, _DAYBOOK_PROJ).to_list(2000)
+    items = await db.items.find(item_query if (date_filter and date_filter != "All") or twelve_months_ago else {}, _DAYBOOK_PROJ).to_list(2000)
 
     categories = [
         ("fabric",     "fabric_pay_date",     "fabric_received",     "fabric_pay_mode",     "tally_fabric"),

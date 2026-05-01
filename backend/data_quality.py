@@ -184,62 +184,96 @@ _PAYMENT_PROJ = {
 }
 _ADV_PROJ = {"_id": 0, "id": 1, "ref": 1, "name": 1, "amount": 1, "mode": 1, "date": 1}
 
-async def normalize_low_risk_data(db, limit: int = 100) -> dict:
-    items, advances = await asyncio.gather(
-        db.items.find({}, _PAYMENT_PROJ).to_list(10000),
-        db.advances.find({}, _ADV_PROJ).to_list(5000),
-    )
+async def _fetch_items_batch(db, projection, batch_size: int = 500):
+    """Fetch items in batches to avoid loading entire collection into memory."""
+    cursor = db.items.find({}, projection)
+    batch = []
+    async for doc in cursor:
+        batch.append(doc)
+        if len(batch) >= batch_size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
 
+async def _fetch_advances_batch(db, projection, batch_size: int = 500):
+    """Fetch advances in batches to avoid loading entire collection into memory."""
+    cursor = db.advances.find({}, projection)
+    batch = []
+    async for doc in cursor:
+        batch.append(doc)
+        if len(batch) >= batch_size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
+
+async def normalize_low_risk_data(db, limit: int = 100) -> dict:
     changes = []
     items_updated = 0
     advances_updated = 0
+    total_items_scanned = 0
+    total_advances_scanned = 0
 
+    # Process items in batches
     bulk_item_ops = []
-    for item in items:
-        updates = {}
-        checks = [
-            ("fabric_amount", "fabric_received", "fabric_pending", "fabric_pay_mode"),
-            ("tailoring_amount", "tailoring_received", "tailoring_pending", "tailoring_pay_mode"),
-            ("embroidery_amount", "embroidery_received", "embroidery_pending", "embroidery_pay_mode"),
-            ("addon_amount", "addon_received", "addon_pending", "addon_pay_mode"),
-        ]
+    async for items_batch in _fetch_items_batch(db, _PAYMENT_PROJ, batch_size=500):
+        total_items_scanned += len(items_batch)
+        for item in items_batch:
+            updates = {}
+            checks = [
+                ("fabric_amount", "fabric_received", "fabric_pending", "fabric_pay_mode"),
+                ("tailoring_amount", "tailoring_received", "tailoring_pending", "tailoring_pay_mode"),
+                ("embroidery_amount", "embroidery_received", "embroidery_pending", "embroidery_pay_mode"),
+                ("addon_amount", "addon_received", "addon_pending", "addon_pay_mode"),
+            ]
 
-        for check in checks:
-            normalized = normalize_payment_field(item, *check)
-            for field, value in normalized.items():
-                current_value = item.get(field)
-                if isinstance(value, (int, float)):
-                    changed = round_money(current_value) != round_money(value)
-                else:
-                    changed = current_value != value
-                if changed:
-                    updates[field] = value
+            for check in checks:
+                normalized = normalize_payment_field(item, *check)
+                for field, value in normalized.items():
+                    current_value = item.get(field)
+                    if isinstance(value, (int, float)):
+                        changed = round_money(current_value) != round_money(value)
+                    else:
+                        changed = current_value != value
+                    if changed:
+                        updates[field] = value
 
-        if updates:
-            bulk_item_ops.append(UpdateOne({"id": item["id"]}, {"$set": updates}))
-            items_updated += 1
-            if len(changes) < limit:
-                changes.append({
-                    "kind": "item",
-                    "item_id": item.get("id"),
-                    "ref": item.get("ref"),
-                    "name": item.get("name"),
-                    "barcode": item.get("barcode"),
-                    "updates": updates,
-                })
+            if updates:
+                bulk_item_ops.append(UpdateOne({"id": item["id"]}, {"$set": updates}))
+                items_updated += 1
+                if len(changes) < limit:
+                    changes.append({
+                        "kind": "item",
+                        "item_id": item.get("id"),
+                        "ref": item.get("ref"),
+                        "name": item.get("name"),
+                        "barcode": item.get("barcode"),
+                        "updates": updates,
+                    })
+        # Flush batch operations every 500 items to keep memory bounded
+        if len(bulk_item_ops) >= 500:
+            await db.items.bulk_write(bulk_item_ops, ordered=False)
+            bulk_item_ops = []
+    # Flush remaining operations
     if bulk_item_ops:
         await db.items.bulk_write(bulk_item_ops, ordered=False)
 
+    # Process advances in batches
     advance_totals = {}
-    for adv in advances:
-        ref = adv.get("ref", "")
-        amount = round_money(adv.get("amount", 0))
-        advance_totals[ref] = round_money(advance_totals.get(ref, 0) + amount)
+    all_advances = []
+    async for advances_batch in _fetch_advances_batch(db, _ADV_PROJ, batch_size=500):
+        total_advances_scanned += len(advances_batch)
+        for adv in advances_batch:
+            all_advances.append(adv)
+            ref = adv.get("ref", "")
+            amount = round_money(adv.get("amount", 0))
+            advance_totals[ref] = round_money(advance_totals.get(ref, 0) + amount)
 
     bulk_adv_ops = []
     for ref, total in advance_totals.items():
         if total < -0.01:
-            negative_entries = [a for a in advances if a.get("ref") == ref and round_money(a.get("amount", 0)) < 0 and a.get("mode") != "Adjusted"]
+            negative_entries = [a for a in all_advances if a.get("ref") == ref and round_money(a.get("amount", 0)) < 0 and a.get("mode") != "Adjusted"]
             for adv in negative_entries:
                 bulk_adv_ops.append(UpdateOne({"id": adv["id"]}, {"$set": {"mode": "Adjusted"}}))
                 advances_updated += 1
@@ -257,125 +291,137 @@ async def normalize_low_risk_data(db, limit: int = 100) -> dict:
     return {
         "items_updated": items_updated,
         "advances_updated": advances_updated,
+        "scanned": {"items": total_items_scanned, "advances": total_advances_scanned},
         "changes": changes,
         "audit_after": await generate_data_audit(db, limit),
     }
 
 
 async def repair_high_risk_data(db, limit: int = 100) -> dict:
-    items = await db.items.find({}, _PAYMENT_PROJ).to_list(10000)
     item_updates = 0
     advances_created = 0
+    total_items_scanned = 0
     changes = []
     bulk_item_ops = []
     carry_adv_docs = []
 
-    for item in items:
-        updates = {}
-        carry_forwards = []
-        checks = [
-            ("fabric", "fabric_amount", "fabric_received", "fabric_pending", "fabric_pay_mode", "fabric_pay_date"),
-            ("tailoring", "tailoring_amount", "tailoring_received", "tailoring_pending", "tailoring_pay_mode", "tailoring_pay_date"),
-            ("embroidery", "embroidery_amount", "embroidery_received", "embroidery_pending", "embroidery_pay_mode", "embroidery_pay_date"),
-            ("addon", "addon_amount", "addon_received", "addon_pending", "addon_pay_mode", "addon_pay_date"),
-        ]
+    async for items_batch in _fetch_items_batch(db, _PAYMENT_PROJ, batch_size=500):
+        total_items_scanned += len(items_batch)
+        for item in items_batch:
+            updates = {}
+            carry_forwards = []
+            checks = [
+                ("fabric", "fabric_amount", "fabric_received", "fabric_pending", "fabric_pay_mode", "fabric_pay_date"),
+                ("tailoring", "tailoring_amount", "tailoring_received", "tailoring_pending", "tailoring_pay_mode", "tailoring_pay_date"),
+                ("embroidery", "embroidery_amount", "embroidery_received", "embroidery_pending", "embroidery_pay_mode", "embroidery_pay_date"),
+                ("addon", "addon_amount", "addon_received", "addon_pending", "addon_pay_mode", "addon_pay_date"),
+            ]
 
-        for label, amount_field, received_field, pending_field, mode_field, date_field in checks:
-            total = round_money(item.get(amount_field, 0))
-            received = round_money(item.get(received_field, 0))
-            pending = round_money(item.get(pending_field, 0))
-            original_mode = item.get(mode_field, "N/A") or "N/A"
+            for label, amount_field, received_field, pending_field, mode_field, date_field in checks:
+                total = round_money(item.get(amount_field, 0))
+                received = round_money(item.get(received_field, 0))
+                pending = round_money(item.get(pending_field, 0))
+                original_mode = item.get(mode_field, "N/A") or "N/A"
 
-            if total <= 0 and received <= 0 and pending <= 0:
-                continue
+                if total <= 0 and received <= 0 and pending <= 0:
+                    continue
 
-            excess = 0.0
-            corrected_received = received
-            corrected_pending = pending
+                excess = 0.0
+                corrected_received = received
+                corrected_pending = pending
 
-            # Skip intentional over-payments — do not clamp them.
-            if received > total + 0.01 or pending < -0.01:
-                continue
+                # Skip intentional over-payments — do not clamp them.
+                if received > total + 0.01 or pending < -0.01:
+                    continue
 
-            if corrected_pending >= 0 and corrected_received <= total + 0.01:
-                corrected_pending = round_money(max(0, total - corrected_received))
+                if corrected_pending >= 0 and corrected_received <= total + 0.01:
+                    corrected_pending = round_money(max(0, total - corrected_received))
 
-            corrected_mode = original_mode
-            corrected_status = determine_payment_status(corrected_pending, corrected_received)
-            if corrected_status == "Pending":
-                corrected_mode = "Pending"
-            elif corrected_status == "Settled":
-                suffix = ""
-                if " - " in str(original_mode):
-                    suffix = original_mode.split(" - ", 1)[1].strip()
-                    if suffix.startswith("Partially Settled - "):
-                        suffix = suffix[len("Partially Settled - "):].strip()
-                corrected_mode = f"Settled - {suffix}" if suffix else "Settled"
-            elif total <= 0:
-                corrected_mode = "N/A"
+                corrected_mode = original_mode
+                corrected_status = determine_payment_status(corrected_pending, corrected_received)
+                if corrected_status == "Pending":
+                    corrected_mode = "Pending"
+                elif corrected_status == "Settled":
+                    suffix = ""
+                    if " - " in str(original_mode):
+                        suffix = original_mode.split(" - ", 1)[1].strip()
+                        if suffix.startswith("Partially Settled - "):
+                            suffix = suffix[len("Partially Settled - "):].strip()
+                    corrected_mode = f"Settled - {suffix}" if suffix else "Settled"
+                elif total <= 0:
+                    corrected_mode = "N/A"
 
-            field_updates = {
-                received_field: corrected_received,
-                pending_field: corrected_pending,
-                mode_field: corrected_mode,
-            }
+                field_updates = {
+                    received_field: corrected_received,
+                    pending_field: corrected_pending,
+                    mode_field: corrected_mode,
+                }
 
-            changed_fields = {}
-            for field, value in field_updates.items():
-                current_value = item.get(field)
-                if isinstance(value, (int, float)):
-                    changed = round_money(current_value) != round_money(value)
-                else:
-                    changed = current_value != value
-                if changed:
-                    changed_fields[field] = value
-                    updates[field] = value
+                changed_fields = {}
+                for field, value in field_updates.items():
+                    current_value = item.get(field)
+                    if isinstance(value, (int, float)):
+                        changed = round_money(current_value) != round_money(value)
+                    else:
+                        changed = current_value != value
+                    if changed:
+                        changed_fields[field] = value
+                        updates[field] = value
 
-            if excess > 0.01:
-                carry_forwards.append({
-                    "category": label,
-                    "amount": excess,
-                    "date": item.get(date_field) if item.get(date_field) and item.get(date_field) != "N/A" else item.get("date"),
-                })
-                changed_fields["carry_forward"] = excess
+                if excess > 0.01:
+                    carry_forwards.append({
+                        "category": label,
+                        "amount": excess,
+                        "date": item.get(date_field) if item.get(date_field) and item.get(date_field) != "N/A" else item.get("date"),
+                    })
+                    changed_fields["carry_forward"] = excess
 
-            if changed_fields and len(changes) < limit:
-                changes.append({
-                    "kind": "item_repair",
-                    "item_id": item.get("id"),
-                    "ref": item.get("ref"),
-                    "name": item.get("name"),
-                    "barcode": item.get("barcode"),
-                    "category": label,
-                    "updates": changed_fields,
-                })
+                if changed_fields and len(changes) < limit:
+                    changes.append({
+                        "kind": "item_repair",
+                        "item_id": item.get("id"),
+                        "ref": item.get("ref"),
+                        "name": item.get("name"),
+                        "barcode": item.get("barcode"),
+                        "category": label,
+                        "updates": changed_fields,
+                    })
 
-        if updates:
-            bulk_item_ops.append(UpdateOne({"id": item["id"]}, {"$set": updates}))
-            item_updates += 1
+            if updates:
+                bulk_item_ops.append(UpdateOne({"id": item["id"]}, {"$set": updates}))
+                item_updates += 1
 
-        for carry in carry_forwards:
-            adv = {
-                "id": str(uuid.uuid4()),
-                "date": carry["date"] or item.get("date"),
-                "name": item.get("name", ""),
-                "ref": item.get("ref", ""),
-                "amount": carry["amount"],
-                "mode": f"Auto Carry Forward - {carry['category'].title()}",
-                "tally": False,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-            }
-            carry_adv_docs.append(adv)
-            advances_created += 1
-            if len(changes) < limit:
-                changes.append({
-                    "kind": "advance_created",
-                    "ref": adv["ref"],
-                    "name": adv["name"],
-                    "amount": adv["amount"],
-                    "mode": adv["mode"],
-                })
+            for carry in carry_forwards:
+                adv = {
+                    "id": str(uuid.uuid4()),
+                    "date": carry["date"] or item.get("date"),
+                    "name": item.get("name", ""),
+                    "ref": item.get("ref", ""),
+                    "amount": carry["amount"],
+                    "mode": f"Auto Carry Forward - {carry['category'].title()}",
+                    "tally": False,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                }
+                carry_adv_docs.append(adv)
+                advances_created += 1
+                if len(changes) < limit:
+                    changes.append({
+                        "kind": "advance_created",
+                        "ref": adv["ref"],
+                        "name": adv["name"],
+                        "amount": adv["amount"],
+                        "mode": adv["mode"],
+                    })
 
+        # Flush batch operations every 500 items to keep memory bounded
+        if len(bulk_item_ops) >= 500:
+            await db.items.bulk_write(bulk_item_ops, ordered=False)
+            bulk_item_ops = []
+        if len(carry_adv_docs) >= 500:
+            await db.advances.insert_many(carry_adv_docs)
+            carry_adv_docs = []
+
+    # Flush remaining operations
     if bulk_item_ops:
         await db.items.bulk_write(bulk_item_ops, ordered=False)
     if carry_adv_docs:
@@ -384,72 +430,76 @@ async def repair_high_risk_data(db, limit: int = 100) -> dict:
     return {
         "items_updated": item_updates,
         "advances_created": advances_created,
+        "scanned": {"items": total_items_scanned},
         "changes": changes,
         "audit_after": await generate_data_audit(db, limit),
     }
 
 
 async def generate_data_audit(db, limit: int = 100) -> dict:
-    items, advances = await asyncio.gather(
-        db.items.find({}, _PAYMENT_PROJ).to_list(10000),
-        db.advances.find({}, _ADV_PROJ).to_list(5000),
-    )
-
     issue_counts = {}
     issues = []
+    total_items_scanned = 0
+    total_advances_scanned = 0
 
     def push_issue(issue: dict):
         issue_counts[issue["type"]] = issue_counts.get(issue["type"], 0) + 1
         if len(issues) < limit:
             issues.append(issue)
 
-    for item in items:
-        base_info = {
-            "item_id": item.get("id"),
-            "ref": item.get("ref"),
-            "name": item.get("name"),
-            "barcode": item.get("barcode"),
-            "date": item.get("date"),
-        }
+    # Process items in batches to avoid loading entire collection
+    async for items_batch in _fetch_items_batch(db, _PAYMENT_PROJ, batch_size=500):
+        total_items_scanned += len(items_batch)
+        for item in items_batch:
+            base_info = {
+                "item_id": item.get("id"),
+                "ref": item.get("ref"),
+                "name": item.get("name"),
+                "barcode": item.get("barcode"),
+                "date": item.get("date"),
+            }
 
-        checks = [
-            ("fabric_amount", "fabric_received", "fabric_pending", "fabric_pay_mode", "fabric"),
-            ("tailoring_amount", "tailoring_received", "tailoring_pending", "tailoring_pay_mode", "tailoring"),
-            ("embroidery_amount", "embroidery_received", "embroidery_pending", "embroidery_pay_mode", "embroidery"),
-            ("addon_amount", "addon_received", "addon_pending", "addon_pay_mode", "addon"),
-        ]
+            checks = [
+                ("fabric_amount", "fabric_received", "fabric_pending", "fabric_pay_mode", "fabric"),
+                ("tailoring_amount", "tailoring_received", "tailoring_pending", "tailoring_pay_mode", "tailoring"),
+                ("embroidery_amount", "embroidery_received", "embroidery_pending", "embroidery_pay_mode", "embroidery"),
+                ("addon_amount", "addon_received", "addon_pending", "addon_pay_mode", "addon"),
+            ]
 
-        for check in checks:
-            for issue in analyze_payment_field(item, *check):
-                push_issue({**base_info, **issue})
+            for check in checks:
+                for issue in analyze_payment_field(item, *check):
+                    push_issue({**base_info, **issue})
 
-        emb_labour = round_money(item.get("emb_labour_amount", 0))
-        if emb_labour > 0 and item.get("embroidery_status") not in ["Finished", "In Progress"]:
-            push_issue({
-                **base_info,
-                "type": "embroidery_labour_status_mismatch",
-                "category": "embroidery_labour",
-                "message": "Embroidery labour exists while embroidery status is not in progress/finished",
-                "emb_labour_amount": emb_labour,
-                "embroidery_status": item.get("embroidery_status"),
-            })
+            emb_labour = round_money(item.get("emb_labour_amount", 0))
+            if emb_labour > 0 and item.get("embroidery_status") not in ["Finished", "In Progress"]:
+                push_issue({
+                    **base_info,
+                    "type": "embroidery_labour_status_mismatch",
+                    "category": "embroidery_labour",
+                    "message": "Embroidery labour exists while embroidery status is not in progress/finished",
+                    "emb_labour_amount": emb_labour,
+                    "embroidery_status": item.get("embroidery_status"),
+                })
 
+    # Process advances in batches
     advance_total_by_ref = {}
-    for adv in advances:
-        ref = adv.get("ref", "")
-        amount = round_money(adv.get("amount", 0))
-        advance_total_by_ref[ref] = round_money(advance_total_by_ref.get(ref, 0) + amount)
-        if amount < 0 and adv.get("mode") != "Adjusted":
-            push_issue({
-                "ref": ref,
-                "name": adv.get("name"),
-                "type": "negative_advance_non_adjustment",
-                "category": "advance",
-                "message": "Negative advance entry is not marked as Adjusted",
-                "amount": amount,
-                "mode": adv.get("mode"),
-                "date": adv.get("date"),
-            })
+    async for advances_batch in _fetch_advances_batch(db, _ADV_PROJ, batch_size=500):
+        total_advances_scanned += len(advances_batch)
+        for adv in advances_batch:
+            ref = adv.get("ref", "")
+            amount = round_money(adv.get("amount", 0))
+            advance_total_by_ref[ref] = round_money(advance_total_by_ref.get(ref, 0) + amount)
+            if amount < 0 and adv.get("mode") != "Adjusted":
+                push_issue({
+                    "ref": ref,
+                    "name": adv.get("name"),
+                    "type": "negative_advance_non_adjustment",
+                    "category": "advance",
+                    "message": "Negative advance entry is not marked as Adjusted",
+                    "amount": amount,
+                    "mode": adv.get("mode"),
+                    "date": adv.get("date"),
+                })
 
     for ref, total in advance_total_by_ref.items():
         if total < -0.01:
@@ -463,8 +513,8 @@ async def generate_data_audit(db, limit: int = 100) -> dict:
 
     return {
         "scanned": {
-            "items": len(items),
-            "advances": len(advances),
+            "items": total_items_scanned,
+            "advances": total_advances_scanned,
         },
         "total_issues": sum(issue_counts.values()),
         "issue_counts": dict(sorted(issue_counts.items(), key=lambda kv: (-kv[1], kv[0]))),

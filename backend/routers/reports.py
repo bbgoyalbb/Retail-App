@@ -31,8 +31,6 @@ async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref
     s = merge_settings(stored_settings)
 
     GST_RATE = float(s.get("gst_rate", DEFAULT_SETTINGS["gst_rate"]))
-    brand_color = s.get("firm_name_color", "#C86B4D")
-    brand_light = f"{brand_color}15"
     firm_name    = html_mod.escape(str(s.get("firm_name",    DEFAULT_SETTINGS["firm_name"])))
     firm_address = html_mod.escape(str(s.get("firm_address", DEFAULT_SETTINGS["firm_address"])))
     firm_phones  = html_mod.escape(str(s.get("firm_phones",  DEFAULT_SETTINGS["firm_phones"])))

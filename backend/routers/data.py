@@ -162,8 +162,8 @@ async def import_excel(
             "advances_count": advances_count,
         }
     except Exception as e:
-        logger.error(f"Import error: {e}")
-        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+        logger.error(f"Import error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Import failed. Check the file format and try again.")
 
 # ==========================================
 # EXCEL EXPORT
@@ -335,13 +335,27 @@ async def restore_database(
 
         # ===== RESTORE PHASE =====
         # Only delete after full validation passes
-        await db.items.delete_many({})
-        await db.advances.delete_many({})
-
-        if items:
-            await db.items.insert_many(items)
-        if advances:
-            await db.advances.insert_many(advances)
+        # Wrap in MongoDB transaction for atomicity (requires replica set)
+        from motor.motor_asyncio import AsyncIOMotorClientSession
+        try:
+            # Try to use a session for transaction (requires MongoDB replica set)
+            async with await db.client.start_session() as session:
+                async with session.start_transaction():
+                    await db.items.delete_many({}, session=session)
+                    await db.advances.delete_many({}, session=session)
+                    if items:
+                        await db.items.insert_many(items, session=session)
+                    if advances:
+                        await db.advances.insert_many(advances, session=session)
+        except Exception as txn_err:
+            # Fallback for standalone MongoDB (no replica set) - log warning and proceed without transaction
+            logger.warning(f"MongoDB transaction failed (expected for standalone MongoDB): {txn_err}. Proceeding with non-atomic restore.")
+            await db.items.delete_many({})
+            await db.advances.delete_many({})
+            if items:
+                await db.items.insert_many(items)
+            if advances:
+                await db.advances.insert_many(advances)
 
         return {
             "message": f"Restore successful! {items_count} items and {advances_count} advances restored.",
@@ -353,8 +367,8 @@ async def restore_database(
     except HTTPException:
         raise  # Re-raise HTTP exceptions as-is
     except Exception as e:
-        logger.error(f"Restore error: {e}")
-        raise HTTPException(status_code=500, detail=f"Restore failed: {str(e)}")
+        logger.error(f"Restore error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Restore failed. Check server logs for details.")
 
 @router.get("/db/stats")
 async def get_db_stats(current_user: dict = Depends(get_current_user_dep)):
