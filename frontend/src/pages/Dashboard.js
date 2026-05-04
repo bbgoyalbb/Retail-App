@@ -42,7 +42,7 @@ function StatCard({ icon: Icon, label, value, sub, color = "var(--brand)", trend
       <div className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] font-semibold text-[var(--text-secondary)] mb-2 leading-tight">{label}</p>
+            <p className="text-[11px] sm:text-[11px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] mb-2 leading-tight">{label}</p>
             <p className="font-heading text-base sm:text-2xl font-semibold tracking-tight leading-snug" style={{ color }}>{value}</p>
             {sub && <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2">{sub}</p>}
           </div>

@@ -1,4 +1,5 @@
-import { Check, FloppyDisk } from "@phosphor-icons/react";
+import { Check, FloppyDisk, Scissors } from "@phosphor-icons/react";
+import { DatePickerInput } from "@/components/DatePickerInput";
 
 /**
  * PaymentSummaryPanel - Payment modes, totals, and settlement controls
@@ -8,6 +9,7 @@ import { Check, FloppyDisk } from "@phosphor-icons/react";
  * @param {string} props.amountPaid - Amount paid input value
  * @param {string[]} props.selectedModes - Selected payment modes
  * @param {boolean} props.isSettled - Whether bill is marked as settled
+ * @param {boolean} props.needsTailoring - Whether bill needs tailoring (sets all items to Awaiting Order)
  * @param {string} props.payDate - Payment date
  * @param {string[]} props.paymentModes - Available payment modes from config
  * @param {boolean} props.canSubmit - Whether form can be submitted
@@ -16,6 +18,7 @@ import { Check, FloppyDisk } from "@phosphor-icons/react";
  * @param {Function} props.onAmountPaidChange - Callback for amount paid changes
  * @param {Function} props.onModeToggle - Callback(mode) for payment mode toggle
  * @param {Function} props.onSettledChange - Callback for settled checkbox
+ * @param {Function} props.onNeedsTailoringChange - Callback for needs tailoring checkbox
  * @param {Function} props.onPayDateChange - Callback for payment date changes
  * @param {Function} props.onSave - Callback to save the bill
  * @param {Function} props.onKeyNav - Callback for Enter key navigation
@@ -25,6 +28,7 @@ export default function PaymentSummaryPanel({
   amountPaid,
   selectedModes,
   isSettled,
+  needsTailoring,
   payDate,
   paymentModes,
   canSubmit,
@@ -33,6 +37,7 @@ export default function PaymentSummaryPanel({
   onAmountPaidChange,
   onModeToggle,
   onSettledChange,
+  onNeedsTailoringChange,
   onPayDateChange,
   onSave,
   onKeyNav
@@ -125,16 +130,32 @@ export default function PaymentSummaryPanel({
           <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">
             Payment Date
           </label>
-          <input
+          <DatePickerInput
             ref={refs.payDateRef}
             data-testid="pay-date-input"
-            type="date"
             value={payDate}
-            onChange={(e) => onPayDateChange(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
+            onChange={onPayDateChange}
+            placeholder="Payment date"
           />
         </div>
       </div>
+
+      {/* Needs Tailoring Checkbox */}
+      <label className="flex items-center gap-3 p-3 border border-[var(--border-subtle)] rounded-sm cursor-pointer hover:bg-[var(--bg)] transition-colors">
+        <input
+          ref={refs.tailoringRef}
+          data-testid="needs-tailoring-checkbox"
+          type="checkbox"
+          checked={!!needsTailoring}
+          onChange={(e) => onNeedsTailoringChange(e.target.checked)}
+          className="w-4 h-4 accent-[var(--brand)]"
+        />
+        <Scissors size={16} className="text-[var(--brand)] flex-shrink-0" />
+        <span className="text-sm font-medium">Needs Tailoring</span>
+        <span className="text-xs text-[var(--text-secondary)] ml-auto">
+          Sets all items to Awaiting Order
+        </span>
+      </label>
 
       {/* Settled Checkbox */}
       <label className="flex items-center gap-3 p-3 border border-[var(--border-subtle)] rounded-sm cursor-pointer hover:bg-[var(--bg)] transition-colors">

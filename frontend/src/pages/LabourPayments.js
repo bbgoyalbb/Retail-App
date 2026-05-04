@@ -3,6 +3,7 @@ import { getLabourItems, getKarigars, payLabour, deleteLabourPayment, getSetting
 import { dataEvents } from "@/lib/dataEvents";
 import { fmt } from "@/lib/fmt";
 import { UsersThree, CurrencyDollar, CheckCircle, Circle, CaretDown, CaretRight, Trash, PencilSimple, X } from "@phosphor-icons/react";
+import { DatePickerInput } from "@/components/DatePickerInput";
 
 export default function LabourPayments() {
   const [viewMode, setViewMode] = useState("unpaid"); // "unpaid" | "paid"
@@ -587,7 +588,7 @@ No paid entries`}
 
           <div>
             <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">Payment Date</label>
-            <input data-testid="labour-pay-date" type="date" value={payDate} onChange={e => setPayDate(e.target.value)} className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+            <DatePickerInput data-testid="labour-pay-date" value={payDate} onChange={setPayDate} placeholder="Payment date" />
           </div>
 
           <div>

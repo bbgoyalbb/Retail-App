@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getSettings, addAddons, assignTailoring, splitTailoring, getItems, invalidateItemsCache } from "@/api";
+import { DatePickerInput } from "@/components/DatePickerInput";
 import { X, Check, Plus, Trash, Scissors, Tag, PlusCircle, ArrowsSplit } from "@phosphor-icons/react";
 
 const EMB_OPTIONS = ["Not Required","Required"];
@@ -179,8 +180,7 @@ export function TailoringOverlay({ group, onClose, onSuccess }) {
                           className="w-20 px-2 py-1 border border-[var(--border-subtle)] rounded-sm focus:ring-1 focus:ring-[var(--brand)] bg-[var(--surface)]"/>
                       </td>
                       <td className="px-2 py-2">
-                        <input type="date" value={a.delivery_date} onChange={e => update(i, "delivery_date", e.target.value)}
-                          className="w-32 px-2 py-1 border border-[var(--border-subtle)] rounded-sm focus:ring-1 focus:ring-[var(--brand)] bg-[var(--surface)]"/>
+                        <DatePickerInput value={a.delivery_date} onChange={(val) => update(i, "delivery_date", val)} placeholder="Delivery date" />
                       </td>
                       <td className="px-2 py-2">
                         <select value={a.article_type} onChange={e => update(i, "article_type", e.target.value)}

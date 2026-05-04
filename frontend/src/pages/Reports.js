@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
@@ -61,6 +61,8 @@ const DATE_PRESETS = [
 export default function Reports() {
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const chartRef = useRef(null);
+  const [chartWidth, setChartWidth] = useState(800);
   const COLORS = useMemo(() => getChartColors(), [theme]);
   const [tab, setTab] = useState("revenue");
   const [period, setPeriod] = useState("daily");
@@ -71,6 +73,23 @@ export default function Reports() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Track chart container width for responsive tick intervals
+  useEffect(() => {
+    const updateWidth = () => {
+      if (chartRef.current) setChartWidth(chartRef.current.offsetWidth);
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  // Calculate tick interval based on chart width and data length
+  const getTickInterval = (dataLength) => {
+    if (chartWidth < 480) return Math.max(1, Math.floor(dataLength / 4));
+    if (chartWidth < 640) return Math.max(1, Math.floor(dataLength / 6));
+    return 0; // Show all ticks
+  };
 
   useEffect(() => {
     const loadReports = async () => {
@@ -212,11 +231,18 @@ export default function Reports() {
               </div>
             )}
             {/* Responsive height: mobile 192px, tablet 256px, desktop 320px */}
-            <div className="h-48 sm:h-64 lg:h-80">
+            <div className="h-48 sm:h-64 lg:h-80" ref={chartRef}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-                  <XAxis dataKey="_id" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
+                  <XAxis 
+                    dataKey="_id" 
+                    tick={{ fontSize: chartWidth < 480 ? 8 : 10 }} 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={60}
+                    interval={getTickInterval(revenueData.length)}
+                  />
                   <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar dataKey="fabric_total" name="Total" fill="var(--brand)" radius={[2, 2, 0, 0]} />
@@ -233,7 +259,14 @@ export default function Reports() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-                  <XAxis dataKey="_id" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
+                  <XAxis 
+                    dataKey="_id" 
+                    tick={{ fontSize: chartWidth < 480 ? 8 : 10 }} 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={60}
+                    interval={getTickInterval(revenueData.length)}
+                  />
                   <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
                   <Tooltip content={<CustomTooltip />} />
                   <Line type="monotone" dataKey="fabric_received" name="Fabric" stroke="var(--brand)" strokeWidth={2} dot={{ r: 3 }} />

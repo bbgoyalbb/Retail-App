@@ -104,7 +104,7 @@ const FC = "w-full px-2 py-1.5 text-xs border border-[var(--border-subtle)] roun
 const renderFieldInput = (field, itemId, value, onChange) => {
   switch (field.type) {
     case "date":
-      return <input type="date" value={value || ""} onChange={e => onChange(itemId, field.key, e.target.value)} className={FC}/>;
+      return <DatePickerInput value={value || ""} onChange={(val) => onChange(itemId, field.key, val)} placeholder={field.label} />;
     case "number":
       return <input type="number" step={field.step || 1} value={value ?? 0}
         onChange={e => onChange(itemId, field.key, parseFloat(e.target.value) || 0)}
@@ -631,9 +631,9 @@ export default function ItemsManager() {
                         </div>
                         {/* Actions — always visible */}
                         <div className="flex items-center gap-0 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                          <button onClick={() => setTailoringGroup(group)} className="p-1 text-[var(--info)] hover:bg-[#5C8A9E15] rounded-sm" title="Assign Tailoring"><Scissors size={11}/></button>
-                          <button onClick={() => setAddonGroup(group)} className="p-1 text-[var(--brand)] hover:bg-[#C86B4D10] rounded-sm" title="Add Add-on"><Tag size={11}/></button>
-                          <button onClick={() => setInvoiceRef(group.ref)} className="p-1 text-[var(--text-secondary)] hover:bg-[var(--bg)] rounded-sm" title="Invoice"><Printer size={11}/></button>
+                          <button onClick={() => setTailoringGroup(group)} className="p-1 text-[var(--info)] hover:bg-[#5C8A9E15] rounded-sm" title="Assign Tailoring" aria-label="Assign Tailoring"><Scissors size={11}/></button>
+                          <button onClick={() => setAddonGroup(group)} className="p-1 text-[var(--brand)] hover:bg-[#C86B4D10] rounded-sm" title="Add Add-on" aria-label="Add Add-on"><Tag size={11}/></button>
+                          <button onClick={() => setInvoiceRef(group.ref)} className="p-1 text-[var(--text-secondary)] hover:bg-[var(--bg)] rounded-sm" title="Invoice" aria-label="Print Invoice"><Printer size={11}/></button>
                         </div>
                       </div>
                     </div>
@@ -690,7 +690,7 @@ export default function ItemsManager() {
                 <h2 className="font-heading text-xl font-medium">Select Section to Edit</h2>
                 <p className="text-sm text-[var(--text-secondary)] mt-1">{editMode==="order"?`${editItems.length} items`:"1 item"}</p>
               </div>
-              <button onClick={() => { setShowSectionSelector(false); setEditItems([]); }} className="p-1.5 hover:bg-[var(--bg)] rounded-sm text-[var(--text-secondary)]"><X size={16}/></button>
+              <button onClick={() => { setShowSectionSelector(false); setEditItems([]); }} className="p-1.5 hover:bg-[var(--bg)] rounded-sm text-[var(--text-secondary)]" aria-label="Close"><X size={16}/></button>
             </div>
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {Object.entries(SECTIONS).map(([key, section]) => (
@@ -714,7 +714,7 @@ export default function ItemsManager() {
                 <h2 className="font-heading text-lg font-medium">{_sf.label}</h2>
                 <p className="text-xs text-[var(--text-secondary)] mt-0.5">{editMode==="order"?`${editItems.length} items`:"1 item"} · {_sf.description}</p>
               </div>
-              <button onClick={cancelEdit} className="p-1.5 hover:bg-[var(--bg)] rounded-sm text-[var(--text-secondary)]"><X size={18}/></button>
+              <button onClick={cancelEdit} className="p-1.5 hover:bg-[var(--bg)] rounded-sm text-[var(--text-secondary)]" aria-label="Close"><X size={18}/></button>
             </div>
 
             <div className="flex-1 overflow-auto p-4">
@@ -736,7 +736,7 @@ export default function ItemsManager() {
                           {Object.entries(advanceData).map(([id, adv]) => (
                             <tr key={id} className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[#C86B4D04]">
                               {_sf.fields.map(f => <td key={f.key} className="px-2 py-2">{renderFieldInput(f, id, adv[f.key], handleAdvChange)}</td>)}
-                              <td className="px-2 py-2 text-center"><button onClick={() => markAdvDelete(id)} className="p-1 text-[var(--error)] hover:bg-[#9E473D10] rounded-sm"><Trash size={13}/></button></td>
+                              <td className="px-2 py-2 text-center"><button onClick={() => markAdvDelete(id)} className="p-1 text-[var(--error)] hover:bg-[#9E473D10] rounded-sm" aria-label="Delete advance"><Trash size={13}/></button></td>
                             </tr>
                           ))}
                         </tbody>
@@ -755,7 +755,7 @@ export default function ItemsManager() {
                           {newAdvances.map((adv, idx) => (
                             <tr key={adv.id} className="border-b border-[var(--border-subtle)] last:border-0 bg-[#455D4A05]">
                               {_sf.fields.map(f => <td key={f.key} className="px-2 py-2">{renderFieldInput(f, idx, adv[f.key], handleNewAdvChange)}</td>)}
-                              <td className="px-2 py-2 text-center"><button onClick={() => removeNewAdvance(idx)} className="p-1 text-[var(--error)] hover:bg-[#9E473D10] rounded-sm"><X size={13}/></button></td>
+                              <td className="px-2 py-2 text-center"><button onClick={() => removeNewAdvance(idx)} className="p-1 text-[var(--error)] hover:bg-[#9E473D10] rounded-sm" aria-label="Remove"><X size={13}/></button></td>
                             </tr>
                           ))}
                         </tbody>

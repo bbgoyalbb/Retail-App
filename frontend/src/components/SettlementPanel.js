@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { getBalances, processSettlement, getSettings } from "@/api";
 import { invalidate } from "@/lib/dataEvents";
 import { fmt } from "@/lib/fmt";
+import { DatePickerInput } from "@/components/DatePickerInput";
 import { CurrencyDollar, X, CheckCircle, CaretDown, CaretRight } from "@phosphor-icons/react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
@@ -264,8 +265,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">Payment Date</label>
-                  <input type="date" value={payDate} onChange={e => setPayDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)] bg-[var(--surface)]" />
+                  <DatePickerInput value={payDate} onChange={setPayDate} placeholder="Payment date" />
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">Amount Received <span className="text-[var(--error)]">*</span></label>

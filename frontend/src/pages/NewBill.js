@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createBill, getCustomers, getInvoiceUrl, getSettings, invalidateCustomersCache, getNextBillRef } from "@/api";
 import { invalidate } from "@/lib/dataEvents";
-import { Plus, FloppyDisk, Spinner } from "@phosphor-icons/react";
+import { Plus, FloppyDisk, Spinner, WifiSlash } from "@phosphor-icons/react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { DatePickerInput } from "@/components/DatePickerInput";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import InvoiceModal from "@/components/InvoiceModal";
 import { BillLineItemRow, ItemInputForm, PaymentSummaryPanel, BillSuccessPanel } from "@/components/bill";
@@ -11,6 +12,20 @@ import { BillLineItemRow, ItemInputForm, PaymentSummaryPanel, BillSuccessPanel }
 export default function NewBill() {
   const navigate = useNavigate();
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
+  
+  // Online/offline state
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   // App config loaded from settings
   const [config, setConfig] = useState({
     customers: [],
@@ -446,7 +461,7 @@ export default function NewBill() {
   };
 
   return (
-    <div data-testid="new-bill-page" className="space-y-6 pb-32 lg:pb-6">
+    <div data-testid="new-bill-page" className="space-y-6 pb-24 lg:pb-6">
       <div>
         <h1 className="font-heading text-2xl sm:text-3xl font-light tracking-tight">New Bill</h1>
         <p className="text-sm text-[var(--text-secondary)] mt-1">Create a new fabric sale entry</p>
@@ -498,7 +513,13 @@ export default function NewBill() {
             </div>
             <div>
               <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">Order Date</label>
-              <input ref={dateRef} data-testid="order-date-input" type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} onKeyDown={e => enterNav(e, barcodeRef)} className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+              <DatePickerInput 
+                ref={dateRef}
+                data-testid="order-date-input"
+                value={orderDate} 
+                onChange={setOrderDate} 
+                onKeyDown={e => enterNav(e, barcodeRef)}
+              />
             </div>
             <div>
               <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">
@@ -584,6 +605,7 @@ export default function NewBill() {
           amountPaid={amountPaid}
           selectedModes={selectedModes}
           isSettled={isSettled}
+          needsTailoring={needsTailoring}
           payDate={payDate}
           paymentModes={paymentModes}
           canSubmit={items.length > 0}
@@ -592,6 +614,7 @@ export default function NewBill() {
           onAmountPaidChange={setAmountPaid}
           onModeToggle={toggleMode}
           onSettledChange={setIsSettled}
+          onNeedsTailoringChange={setNeedsTailoring}
           onPayDateChange={setPayDate}
           onSave={handleSave}
           onKeyNav={(e, nextRef) => enterNav(e, nextRef)}
@@ -603,6 +626,13 @@ export default function NewBill() {
         className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--surface)] border-t border-[var(--border-subtle)] p-3 shadow-lg z-50"
         style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))' }}
       >
+        {/* Offline indicator */}
+        {!isOnline && (
+          <div className="flex items-center gap-2 px-3 py-2 mb-2 bg-[#9E473D10] border border-[var(--error)] rounded-sm text-[var(--error)] text-xs">
+            <WifiSlash size={14} />
+            <span>You're offline. Connect to save.</span>
+          </div>
+        )}
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">Grand Total</p>
@@ -615,10 +645,17 @@ export default function NewBill() {
           </div>
           <button 
             onClick={handleSave} 
-            disabled={saving || items.length === 0} 
+            disabled={saving || items.length === 0 || !isOnline} 
             className="flex items-center gap-2 px-4 py-3 text-sm font-medium bg-[var(--brand)] text-white rounded-sm hover:bg-[var(--brand-hover)] disabled:opacity-50 whitespace-nowrap"
+            title={!isOnline ? "You're offline. Connect to save." : ""}
           >
-            {saving ? <Spinner size={16} className="animate-spin" /> : <><FloppyDisk size={16} weight="bold" /> Save Bill</>}
+            {saving ? <Spinner size={16} className="animate-spin" /> : (
+              <>
+                {!isOnline && <WifiSlash size={16} weight="bold" />}
+                <FloppyDisk size={16} weight="bold" /> 
+                Save Bill
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -1048,11 +1085,10 @@ function TailoringModal({ items, setItems, customerName, articleTypes, onClose }
                       </div>
                       <div>
                         <label className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)] block mb-1">Delivery</label>
-                        <input 
-                          type="date" 
+                        <DatePickerInput 
                           value={item.tailoring?.delivery_date || ""} 
-                          onChange={e => updateItemTailoring(idx, { delivery_date: e.target.value })} 
-                          className="w-full px-2 py-1.5 text-sm border border-[var(--border-subtle)] rounded-sm"
+                          onChange={(val) => updateItemTailoring(idx, { delivery_date: val })} 
+                          placeholder="Select date"
                         />
                       </div>
                     </div>
@@ -1121,7 +1157,14 @@ function TailoringModal({ items, setItems, customerName, articleTypes, onClose }
                   <td className="px-2 py-2 text-sm">{item.barcode}</td>
                   <td className="px-2 py-2 text-sm">{item.qty}</td>
                   <td className="px-2 py-2"><input value={item.tailoring?.order_no || ""} onChange={e => updateItemTailoring(idx, { order_no: e.target.value })} disabled={!item.tailoring?.enabled} maxLength={30} className="w-full px-2 py-1.5 text-sm border border-[var(--border-subtle)] rounded-sm disabled:opacity-50" /></td>
-                  <td className="px-2 py-2"><input type="date" value={item.tailoring?.delivery_date || ""} onChange={e => updateItemTailoring(idx, { delivery_date: e.target.value })} disabled={!item.tailoring?.enabled} className="w-full px-2 py-1.5 text-sm border border-[var(--border-subtle)] rounded-sm disabled:opacity-50" /></td>
+                  <td className="px-2 py-2">
+                        <DatePickerInput 
+                          value={item.tailoring?.delivery_date || ""} 
+                          onChange={(val) => updateItemTailoring(idx, { delivery_date: val })} 
+                          disabled={!item.tailoring?.enabled}
+                          placeholder="Select date"
+                        />
+                      </td>
                   <td className="px-2 py-2">
                     <select value={item.tailoring?.article_type || (articleTypes[0] || "Shirt")} onChange={e => updateItemTailoring(idx, { article_type: e.target.value })} disabled={!item.tailoring?.enabled} className="w-full px-2 py-1.5 text-sm border border-[var(--border-subtle)] rounded-sm disabled:opacity-50">
                       {articleTypes.map(type => <option key={type} value={type}>{type}</option>)}

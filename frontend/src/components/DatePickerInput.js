@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { format, parseISO, isValid } from "date-fns";
 import { CalendarBlank } from "@phosphor-icons/react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -9,9 +9,13 @@ import { Calendar } from "@/components/ui/calendar";
  * value: ISO date string "YYYY-MM-DD" or ""
  * onChange: (isoString) => void
  * placeholder: string
+ * disabled: boolean
  * className: extra classes for the trigger button
  */
-export function DatePickerInput({ value, onChange, placeholder = "Pick a date", className = "" }) {
+export const DatePickerInput = forwardRef(function DatePickerInput(
+  { value, onChange, placeholder = "Pick a date", disabled = false, className = "", "data-testid": testId, onKeyDown },
+  ref
+) {
   const [open, setOpen] = useState(false);
 
   const parsed = value ? parseISO(value) : undefined;
@@ -28,15 +32,19 @@ export function DatePickerInput({ value, onChange, placeholder = "Pick a date", 
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open && !disabled} onOpenChange={(v) => !disabled && setOpen(v)}>
       <PopoverTrigger asChild>
         <button
+          ref={ref}
           type="button"
-          className={`flex items-center gap-2 px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)] bg-[var(--surface)] text-left ${!display ? "text-[var(--text-secondary)]" : "text-[var(--text-primary)]"} ${className}`}
+          data-testid={testId}
+          disabled={disabled}
+          onKeyDown={onKeyDown}
+          className={`flex items-center gap-2 px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)] bg-[var(--surface)] text-left disabled:opacity-50 disabled:cursor-not-allowed ${!display ? "text-[var(--text-secondary)]" : "text-[var(--text-primary)]"} ${className}`}
         >
           <CalendarBlank size={14} className="flex-shrink-0 text-[var(--text-secondary)]" />
           <span className="flex-1 truncate">{display || placeholder}</span>
-          {value && (
+          {value && !disabled && (
             <span
               role="button"
               tabIndex={0}
@@ -60,4 +68,4 @@ export function DatePickerInput({ value, onChange, placeholder = "Pick a date", 
       </PopoverContent>
     </Popover>
   );
-}
+});

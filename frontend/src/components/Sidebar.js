@@ -106,7 +106,7 @@ export default function Sidebar({ open, setOpen }) {
       {/* Mobile overlay */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/30 z-40 md:hidden"
+          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
           onClick={() => setOpen(false)}
           aria-hidden="true"
         />
@@ -116,10 +116,10 @@ export default function Sidebar({ open, setOpen }) {
       <aside
         data-testid="sidebar"
         className={`
-          fixed md:static inset-y-0 left-0 z-40 bg-[var(--surface)] border-r border-[var(--border-subtle)]
+          fixed lg:static inset-y-0 left-0 z-40 bg-[var(--surface)] border-r border-[var(--border-subtle)]
           flex flex-col transition-all duration-200 flex-shrink-0
-          ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-          ${collapsed ? 'md:w-[60px]' : 'w-[240px]'}
+          ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${collapsed ? 'lg:w-[60px]' : 'w-[240px]'}
         `}
       >
         {/* Logo */}
@@ -139,7 +139,7 @@ export default function Sidebar({ open, setOpen }) {
             )}
           </div>
           {!collapsed && (
-            <button onClick={() => setOpen(false)} className="md:hidden flex-shrink-0 p-1.5 rounded-sm text-[var(--text-secondary)] hover:bg-[var(--bg)]" aria-label="Close sidebar">
+            <button onClick={() => setOpen(false)} className="lg:hidden flex-shrink-0 p-1.5 rounded-sm text-[var(--text-secondary)] hover:bg-[var(--bg)]" aria-label="Close sidebar">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg>
             </button>
           )}
@@ -221,7 +221,7 @@ export default function Sidebar({ open, setOpen }) {
             </button>
             <button
               onClick={toggleCollapse}
-              className="hidden md:flex flex-1 items-center justify-center gap-2 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)] rounded-sm transition-colors"
+              className="hidden lg:flex flex-1 items-center justify-center gap-2 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)] rounded-sm transition-colors"
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {collapsed

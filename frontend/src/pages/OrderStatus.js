@@ -1,8 +1,20 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { getCustomers, getOrderStatus, markOrderDelivered } from "@/api";
 import { fmt } from "@/lib/fmt";
+import { DatePickerInput } from "@/components/DatePickerInput";
 import { ClipboardText, MagnifyingGlass, CheckCircle } from "@phosphor-icons/react";
 
+
+const STATUS_LABELS = {
+  "Pnd": "Pending",
+  "Stc": "Stitched", 
+  "Dlv": "Delivered",
+  "Emb": "Embroidery",
+  "EFin": "Emb. Finished",
+  "Req": "Required",
+  "Prog": "In Progress",
+  "Fin": "Finished",
+};
 
 function StatusPill({ label, value, tone }) {
   const tones = {
@@ -12,8 +24,13 @@ function StatusPill({ label, value, tone }) {
     muted: "text-[var(--text-secondary)] border-[var(--border-subtle)] bg-[var(--bg)]",
   };
 
+  const fullLabel = STATUS_LABELS[label] || label;
+
   return (
-    <span className={`inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[10px] uppercase tracking-[0.1em] ${tones[tone] || tones.muted}`}>
+    <span 
+      className={`inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[10px] uppercase tracking-[0.1em] ${tones[tone] || tones.muted}`}
+      title={fullLabel}
+    >
       <span>{label}</span>
       <span className="font-mono font-semibold">{value}</span>
     </span>
@@ -137,11 +154,11 @@ export default function OrderStatus() {
           </div>
           <div>
             <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">From</label>
-            <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm" />
+            <DatePickerInput value={fromDate} onChange={setFromDate} placeholder="From date" />
           </div>
           <div>
             <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">To</label>
-            <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm" />
+            <DatePickerInput value={toDate} onChange={setToDate} placeholder="To date" />
           </div>
         </div>
         <div className="mt-3">
