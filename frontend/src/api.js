@@ -197,9 +197,9 @@ export const getPublicSettings = () => {
     return Promise.resolve(_publicSettingsCache);
   }
   return api.get("/settings/public").then(r => {
-    _publicSettingsCache = r;
+    _publicSettingsCache = r.data;
     _publicSettingsCacheTime = Date.now();
-    return r;
+    return r.data;
   });
 };
 export const invalidatePublicSettingsCache = () => { _publicSettingsCache = null; };
