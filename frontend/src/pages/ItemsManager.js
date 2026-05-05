@@ -528,7 +528,7 @@ export default function ItemsManager() {
   };
 
   const handleCancelOrder = async (group) => {
-    const zero = { ...CANCEL_ZERO_PAYLOAD, cancelled_at: new Date().toISOString() };
+    const zero = { ...CANCEL_ZERO_PAYLOAD, cancelled_at: new Date().toISOString(), cancelled_ref: group.ref };
     const results = await Promise.allSettled(group.items.map(item => updateItem(item.id, zero)));
     const ok = results.filter(r => r.status === "fulfilled").length;
     setMessage({ type: ok===group.items.length?"success":"error", text: ok===group.items.length?`Order ${group.ref} cancelled`:`${group.items.length-ok} items failed` });
@@ -537,7 +537,7 @@ export default function ItemsManager() {
   };
 
   const handleCancelItem = async (item) => {
-    const zero = { ...CANCEL_ZERO_PAYLOAD, cancelled_at: new Date().toISOString() };
+    const zero = { ...CANCEL_ZERO_PAYLOAD, cancelled_at: new Date().toISOString(), cancelled_ref: item.ref };
     try { await updateItem(item.id, zero); setMessage({ type:"success", text:`Article ${item.barcode} cancelled` }); }
     catch { setMessage({ type:"error", text:"Failed to cancel article" }); }
     setTimeout(()=>setMessage(null),3000);
