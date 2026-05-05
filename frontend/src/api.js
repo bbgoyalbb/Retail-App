@@ -160,7 +160,15 @@ export const invalidateDaybookPendingCache = () => { _daybookPendingCache = null
 export const tallyEntries = (data) => api.post("/daybook/tally", data);
 
 export const getLabourItems = (params) => api.get("/labour", { params });
-export const getKarigars = () => api.get("/labour/karigars");
+let _karigarsCache = null;
+let _karigarsCacheTime = 0;
+const KARIGARS_CACHE_TTL = 300000; // 5 min — karigar list changes rarely
+export const getKarigars = () => {
+  const now = Date.now();
+  if (_karigarsCache && now - _karigarsCacheTime < KARIGARS_CACHE_TTL) return Promise.resolve(_karigarsCache);
+  return api.get("/labour/karigars").then(res => { _karigarsCache = res; _karigarsCacheTime = Date.now(); return res; });
+};
+export const invalidateKarigarsCache = () => { _karigarsCache = null; };
 export const payLabour = (data) => api.post("/labour/pay", data);
 export const deleteLabourPayment = (data) => api.post("/labour/delete-payment", data);
 

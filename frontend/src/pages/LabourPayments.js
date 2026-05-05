@@ -63,7 +63,7 @@ export default function LabourPayments() {
   const toggleMode = (m) => setSelectedModes(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
 
   const handlePay = async () => {
-    if (selected.length === 0) { setMessage({ type: "error", text: "Select at least one item" }); return; }
+    if (selected.length === 0) { toast({ title: "Nothing selected", description: "Select at least one item", variant: "destructive" }); return; }
 
     const tailoringIds = items.filter(i => selectedSet.has(i.id) && i.labour_type === "Tailoring").map(i => i.id);
     const embroideryIds = items.filter(i => selectedSet.has(i.id) && i.labour_type === "Embroidery").map(i => i.id);

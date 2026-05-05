@@ -20,6 +20,20 @@ const getChartColors = () => {
     "#B35A3E",
   ];
 };
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload) return null;
+  return (
+    <div className="bg-[var(--surface)] border border-[var(--border-subtle)] p-3 rounded-sm shadow-sm">
+      <p className="text-xs font-medium mb-1">{label}</p>
+      {payload.map((p, i) => (
+        <p key={i} className="text-xs" style={{ color: p.color }}>
+          {p.name}: ₹{fmt(p.value)}
+        </p>
+      ))}
+    </div>
+  );
+};
+
 function SummaryCards({ summary }) {
   const cards = [
     { label: "Fabric Total", value: `₹${fmt(summary.total_fabric)}`, color: "var(--brand)" },
@@ -74,14 +88,18 @@ export default function Reports() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Track chart container width for responsive tick intervals
+  // Track chart container width — debounced so resize doesn't setState 60×/sec
   useEffect(() => {
+    let timer;
     const updateWidth = () => {
-      if (chartRef.current) setChartWidth(chartRef.current.offsetWidth);
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (chartRef.current) setChartWidth(chartRef.current.offsetWidth);
+      }, 120);
     };
     updateWidth();
     window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
+    return () => { window.removeEventListener('resize', updateWidth); clearTimeout(timer); };
   }, []);
 
   // Calculate tick interval based on chart width and data length
@@ -91,6 +109,10 @@ export default function Reports() {
     return 0; // Show all ticks
   };
 
+  // Track which tabs have been fetched for the current filter params
+  const fetchedTabs = useRef(new Set());
+  const lastParams = useRef("");
+
   useEffect(() => {
     const loadReports = async () => {
       setLoading(true);
@@ -99,14 +121,24 @@ export default function Reports() {
         const params = { period };
         if (dateFrom) params.date_from = dateFrom;
         if (dateTo) params.date_to = dateTo;
-        const [revenueRes, summaryRes, customerRes] = await Promise.all([
-          getRevenueReport(params),
-          getSummaryReport(params),
-          getCustomerReport(params),
-        ]);
-        setRevenueData(revenueRes.data);
-        setSummary(summaryRes.data);
-        setCustomerData(customerRes.data);
+        const paramsKey = JSON.stringify(params);
+        // Reset tracked tabs when filter params change
+        if (paramsKey !== lastParams.current) {
+          fetchedTabs.current = new Set();
+          lastParams.current = paramsKey;
+        }
+        // Always fetch summary (used by Breakdown tab) + active tab's data
+        const fetches = [getSummaryReport(params)];
+        const needRevenue  = tab === "revenue"   || !fetchedTabs.current.has("revenue");
+        const needCustomer = tab === "customers" || !fetchedTabs.current.has("customers");
+        if (needRevenue)  fetches.push(getRevenueReport(params));
+        if (needCustomer) fetches.push(getCustomerReport(params));
+        const results = await Promise.all(fetches);
+        let idx = 0;
+        setSummary(results[idx++].data);
+        if (needRevenue)  { setRevenueData(results[idx++].data);  fetchedTabs.current.add("revenue"); }
+        if (needCustomer) { setCustomerData(results[idx++].data); fetchedTabs.current.add("customers"); }
+        fetchedTabs.current.add("breakdown");
       } catch (err) {
         setError("Failed to load reports. Please try again.");
       } finally {
@@ -114,22 +146,8 @@ export default function Reports() {
       }
     };
     loadReports();
-  }, [period, dateFrom, dateTo]);
+  }, [period, dateFrom, dateTo, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (!active || !payload) return null;
-    return (
-      <div className="bg-[var(--surface)] border border-[var(--border-subtle)] p-3 rounded-sm shadow-sm">
-        <p className="text-xs font-medium mb-1">{label}</p>
-        {payload.map((p, i) => (
-          <p key={i} className="text-xs" style={{ color: p.color }}>
-            {p.name}: ₹{fmt(p.value)}
-          </p>
-        ))}
-      </div>
-    );
-  };
 
   return (
     <div data-testid="reports-page" className="space-y-6">
