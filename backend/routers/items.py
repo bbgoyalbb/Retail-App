@@ -48,7 +48,8 @@ async def update_item(item_id: str, req: ItemUpdateRequest, current_user: dict =
     update_fields = {f: v for f, v in req.model_dump(exclude_unset=True).items()}
 
     # Recalculate fabric_amount and fabric_pending if price/qty/discount changed
-    if any(f in update_fields for f in ["price", "qty", "discount"]):
+    # Skip recalculation for cancelled items — their amounts are intentionally zeroed.
+    if not item.get("cancelled") and any(f in update_fields for f in ["price", "qty", "discount"]):
         p = update_fields.get("price", item.get("price", 0))
         q = update_fields.get("qty", item.get("qty", 0))
         d = update_fields.get("discount", item.get("discount", 0))
@@ -190,7 +191,7 @@ async def search_items(
         """Escape special regex characters to prevent ReDoS attacks."""
         return re.escape(pattern.strip()) if pattern else ""
     
-    filters = []
+    filters = [{"cancelled": {"$ne": True}}]
 
     if q:
         escaped = safe_regex(q)

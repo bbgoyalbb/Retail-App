@@ -23,7 +23,8 @@ async def get_settlement_balances(name: Optional[str] = None, ref: Optional[str]
         return {"fabric": 0, "tailoring": 0, "embroidery": 0, "addon": 0, "advance": 0}
 
     _ns = {"$not": {"$regex": "^Settled"}}
-    facet_pipeline = [{"$match": {"ref": ref}}, {"$facet": {
+    _nc = {"$ne": True}
+    facet_pipeline = [{"$match": {"ref": ref, "cancelled": _nc}}, {"$facet": {
         "fab":  [{"$match": {"fabric_amount":     {"$gt": 0}, "fabric_pay_mode":     _ns}}, {"$group": {"_id": None, "t": {"$sum": "$fabric_pending"}}}],
         "tail": [{"$match": {"tailoring_amount":  {"$gt": 0}, "tailoring_pay_mode":  _ns}}, {"$group": {"_id": None, "t": {"$sum": "$tailoring_pending"}}}],
         "emb":  [{"$match": {"embroidery_amount": {"$gt": 0}, "embroidery_pay_mode": _ns}}, {"$group": {"_id": None, "t": {"$sum": "$embroidery_pending"}}}],
@@ -71,7 +72,7 @@ async def process_settlement(req: SettlementRequest, current_user: dict = Depend
     # Pool-match is validated on the frontend as a warning, not a hard block here.
 
     # Fetch items ONCE for all categories - prevents 4x database round trips
-    all_items = await db.items.find({"ref": req.ref}, {"_id": 0}).to_list(500)
+    all_items = await db.items.find({"ref": req.ref, "cancelled": {"$ne": True}}, {"_id": 0}).to_list(500)
 
     shared_bulk_ops: list = []
 

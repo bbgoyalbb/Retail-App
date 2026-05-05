@@ -17,10 +17,11 @@ router = APIRouter()
 
 @router.get("/orders")
 async def get_order_numbers(pending_only: bool = False, current_user: dict = Depends(get_current_user_dep)):
+    _nc = {"$ne": True}
     if pending_only:
         _ns = {"$not": {"$regex": "^Settled"}}
         pipeline = [
-            {"$match": {"order_no": {"$nin": ["N/A", "", None]}, "$or": [
+            {"$match": {"cancelled": _nc, "order_no": {"$nin": ["N/A", "", None]}, "$or": [
                 {"fabric_amount": {"$gt": 0}, "fabric_pay_mode": _ns},
                 {"tailoring_amount": {"$gt": 0}, "tailoring_pay_mode": _ns},
                 {"embroidery_amount": {"$gt": 0}, "embroidery_pay_mode": _ns},
@@ -30,7 +31,7 @@ async def get_order_numbers(pending_only: bool = False, current_user: dict = Dep
         ]
         result = await db.items.aggregate(pipeline).to_list(1000)
         return sorted([r["_id"] for r in result if r["_id"]])
-    orders = await db.items.distinct("order_no", {"order_no": {"$nin": ["N/A", "", None]}})
+    orders = await db.items.distinct("order_no", {"cancelled": _nc, "order_no": {"$nin": ["N/A", "", None]}})
     return sorted([o for o in orders if o])
 
 @router.get("/orders/status")
@@ -42,7 +43,7 @@ async def get_order_status(
     limit: int = Query(400, le=2000),
     current_user: dict = Depends(get_current_user_dep),
 ):
-    query = {"order_no": {"$nin": ["N/A", "", None]}}
+    query = {"cancelled": {"$ne": True}, "order_no": {"$nin": ["N/A", "", None]}}
     if customer:
         query["name"] = customer
     if order_no:
@@ -103,7 +104,7 @@ async def mark_order_delivered(
     if not order_no:
         raise HTTPException(status_code=400, detail="order_no is required")
     result = await db.items.update_many(
-        {"order_no": order_no, "tailoring_status": {"$in": ["Pending", "Stitched"]}},
+        {"order_no": order_no, "cancelled": {"$ne": True}, "tailoring_status": {"$in": ["Pending", "Stitched"]}},
         {"$set": {"tailoring_status": "Delivered"}},
     )
     if result.modified_count == 0:

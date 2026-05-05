@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { login as apiLogin, getMe, logoutApi } from "@/api";
+import { login as apiLogin, getMe, logoutApi, invalidateAllCaches } from "@/api";
 
 const AuthContext = createContext(null);
 
@@ -25,6 +25,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const handleExpired = () => {
+      invalidateAllCaches();
       setUser(null);
       setSessionExpired(true);
     };
@@ -43,6 +44,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     try { await logoutApi(); } catch { /* network failure must not prevent local logout */ }
     sessionStorage.removeItem("token");
+    invalidateAllCaches();
     setUser(null);
     setSessionExpired(false);
   }, []);

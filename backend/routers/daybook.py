@@ -45,7 +45,7 @@ async def get_daybook(date_filter: Optional[str] = None, current_user: dict = De
             }
         return entries[key]
 
-    item_query = {}
+    item_query = {"cancelled": {"$ne": True}}
     if date_filter and date_filter != "All":
         item_query["$or"] = [
             {"fabric_pay_date": date_filter},
@@ -151,7 +151,8 @@ async def get_daybook_dates(current_user: dict = Depends(get_current_user_dep)):
 async def get_daybook_pending_count(current_user: dict = Depends(get_current_user_dep)):
     """Return the number of untallied payment entries for today."""
     today = date.today().isoformat()
-    facet_pipeline = [{"$facet": {
+    _nc = {"$ne": True}
+    facet_pipeline = [{"$match": {"cancelled": _nc}}, {"$facet": {
         "fab":  [{"$match": {"fabric_pay_date":     today, "fabric_received":     {"$gt": 0}, "tally_fabric":     {"$ne": True}}}, {"$count": "n"}],
         "tail": [{"$match": {"tailoring_pay_date":  today, "tailoring_received":  {"$gt": 0}, "tally_tailoring":  {"$ne": True}}}, {"$count": "n"}],
         "emb":  [{"$match": {"embroidery_pay_date": today, "embroidery_received": {"$gt": 0}, "tally_embroidery": {"$ne": True}}}, {"$count": "n"}],

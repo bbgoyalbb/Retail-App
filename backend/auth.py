@@ -1,5 +1,6 @@
 """Authentication and audit utilities for the Retail API."""
 import os
+import sys
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -20,18 +21,37 @@ def _load_or_create_secret() -> str:
     if env_val:
         return env_val
     env_file = Path(__file__).parent / ".env"
-    # Try to read existing value from .env file
-    if env_file.exists():
-        for line in env_file.read_text().splitlines():
-            if line.startswith("JWT_SECRET_KEY="):
-                val = line.split("=", 1)[1].strip()
-                if val:
-                    return val
-    # Generate a new stable secret and persist it
-    new_secret = secrets.token_hex(32)
-    with open(env_file, "a") as f:
-        f.write(f"\nJWT_SECRET_KEY={new_secret}\n")
-    return new_secret
+    # Use an exclusive lock so concurrent workers don't both write different secrets.
+    lock_file = Path(__file__).parent / ".jwt_secret.lock"
+    with open(lock_file, "w") as lf:
+        try:
+            if sys.platform == "win32":
+                import msvcrt
+                msvcrt.locking(lf.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(lf, fcntl.LOCK_EX)
+            # Re-read inside the lock — another worker may have written it.
+            if env_file.exists():
+                for line in env_file.read_text().splitlines():
+                    if line.startswith("JWT_SECRET_KEY="):
+                        val = line.split("=", 1)[1].strip()
+                        if val:
+                            return val
+            new_secret = secrets.token_hex(32)
+            with open(env_file, "a") as f:
+                f.write(f"\nJWT_SECRET_KEY={new_secret}\n")
+            return new_secret
+        finally:
+            try:
+                if sys.platform == "win32":
+                    import msvcrt
+                    msvcrt.locking(lf.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(lf, fcntl.LOCK_UN)
+            except OSError:
+                pass
 
 SECRET_KEY = _load_or_create_secret()
 ALGORITHM = "HS256"
@@ -109,14 +129,6 @@ async def get_current_user(
         raise HTTPException(status_code=403, detail="User is disabled")
 
     return user
-
-
-async def require_user_dependency(request, db):
-    """Factory to build a get_current_user callable bound to a specific db."""
-    # FastAPI 0.110.1 compatible: we return a callable that FastAPI can use with Depends
-    async def _get_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-        return await get_current_user(credentials, db)
-    return _get_user
 
 
 async def audit_log(db, action: str, user: dict, entity_type: str = "", entity_id: str = "", details: dict = None):

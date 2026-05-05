@@ -185,8 +185,11 @@ _PAYMENT_PROJ = {
 _ADV_PROJ = {"_id": 0, "id": 1, "ref": 1, "name": 1, "amount": 1, "mode": 1, "date": 1}
 
 async def _fetch_items_batch(db, projection, batch_size: int = 500):
-    """Fetch items in batches to avoid loading entire collection into memory."""
-    cursor = db.items.find({}, projection)
+    """Fetch items in batches to avoid loading entire collection into memory.
+    Cancelled items are intentionally excluded — their zeroed amounts would
+    produce false positives in every data quality check.
+    """
+    cursor = db.items.find({"cancelled": {"$ne": True}}, projection)
     batch = []
     async for doc in cursor:
         batch.append(doc)
@@ -299,17 +302,14 @@ async def normalize_low_risk_data(db, limit: int = 100) -> dict:
 
 async def repair_high_risk_data(db, limit: int = 100) -> dict:
     item_updates = 0
-    advances_created = 0
     total_items_scanned = 0
     changes = []
     bulk_item_ops = []
-    carry_adv_docs = []
 
     async for items_batch in _fetch_items_batch(db, _PAYMENT_PROJ, batch_size=500):
         total_items_scanned += len(items_batch)
         for item in items_batch:
             updates = {}
-            carry_forwards = []
             checks = [
                 ("fabric", "fabric_amount", "fabric_received", "fabric_pending", "fabric_pay_mode", "fabric_pay_date"),
                 ("tailoring", "tailoring_amount", "tailoring_received", "tailoring_pending", "tailoring_pay_mode", "tailoring_pay_date"),
@@ -326,7 +326,6 @@ async def repair_high_risk_data(db, limit: int = 100) -> dict:
                 if total <= 0 and received <= 0 and pending <= 0:
                     continue
 
-                excess = 0.0
                 corrected_received = received
                 corrected_pending = pending
 
@@ -368,14 +367,6 @@ async def repair_high_risk_data(db, limit: int = 100) -> dict:
                         changed_fields[field] = value
                         updates[field] = value
 
-                if excess > 0.01:
-                    carry_forwards.append({
-                        "category": label,
-                        "amount": excess,
-                        "date": item.get(date_field) if item.get(date_field) and item.get(date_field) != "N/A" else item.get("date"),
-                    })
-                    changed_fields["carry_forward"] = excess
-
                 if changed_fields and len(changes) < limit:
                     changes.append({
                         "kind": "item_repair",
@@ -391,45 +382,17 @@ async def repair_high_risk_data(db, limit: int = 100) -> dict:
                 bulk_item_ops.append(UpdateOne({"id": item["id"]}, {"$set": updates}))
                 item_updates += 1
 
-            for carry in carry_forwards:
-                adv = {
-                    "id": str(uuid.uuid4()),
-                    "date": carry["date"] or item.get("date"),
-                    "name": item.get("name", ""),
-                    "ref": item.get("ref", ""),
-                    "amount": carry["amount"],
-                    "mode": f"Auto Carry Forward - {carry['category'].title()}",
-                    "tally": False,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                }
-                carry_adv_docs.append(adv)
-                advances_created += 1
-                if len(changes) < limit:
-                    changes.append({
-                        "kind": "advance_created",
-                        "ref": adv["ref"],
-                        "name": adv["name"],
-                        "amount": adv["amount"],
-                        "mode": adv["mode"],
-                    })
-
         # Flush batch operations every 500 items to keep memory bounded
         if len(bulk_item_ops) >= 500:
             await db.items.bulk_write(bulk_item_ops, ordered=False)
             bulk_item_ops = []
-        if len(carry_adv_docs) >= 500:
-            await db.advances.insert_many(carry_adv_docs)
-            carry_adv_docs = []
 
     # Flush remaining operations
     if bulk_item_ops:
         await db.items.bulk_write(bulk_item_ops, ordered=False)
-    if carry_adv_docs:
-        await db.advances.insert_many(carry_adv_docs)
 
     return {
         "items_updated": item_updates,
-        "advances_created": advances_created,
         "scanned": {"items": total_items_scanned},
         "changes": changes,
         "audit_after": await generate_data_audit(db, limit),

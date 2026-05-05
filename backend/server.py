@@ -39,7 +39,7 @@ if not db_name:
         "DB_NAME is not set. Add it to backend/.env before starting the server."
     )
 
-client = AsyncIOMotorClient(mongo_url)
+client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=5000)
 db = client[db_name]
 
 # Inject db into the shared deps module BEFORE any router is imported.
@@ -67,50 +67,50 @@ _deps.set_db(db)
 async def lifespan(app: FastAPI):
     from pymongo import ASCENDING, DESCENDING
 
-    await db.items.create_index("id",      unique=True, background=True)
-    await db.items.create_index("ref",     background=True)
-    await db.items.create_index("barcode", background=True)
-    await db.items.create_index("name",    background=True)
-    await db.items.create_index("date",    background=True)
-    await db.items.create_index("order_no", background=True)
-    await db.items.create_index("karigar", background=True)
+    await db.items.create_index("id",      unique=True)
+    await db.items.create_index("ref")
+    await db.items.create_index("barcode")
+    await db.items.create_index("name")
+    await db.items.create_index("date")
+    await db.items.create_index("order_no")
+    await db.items.create_index("karigar")
+    await db.items.create_index("cancelled")
 
-    await db.items.create_index([(  "tailoring_status", ASCENDING), ("date",            DESCENDING)], background=True)
-    await db.items.create_index([(  "ref",              ASCENDING), ("fabric_pay_mode",  ASCENDING)], background=True)
-    await db.items.create_index([(  "name",             ASCENDING), ("fabric_pay_mode",  ASCENDING)], background=True)
-    await db.items.create_index([(  "tailoring_status", ASCENDING), ("labour_paid",      ASCENDING)], background=True)
-    await db.items.create_index([(  "embroidery_status", ASCENDING), ("emb_labour_paid",  ASCENDING)], background=True)
-    await db.items.create_index([(  "embroidery_status", ASCENDING), ("date",             DESCENDING)], background=True)
-    await db.items.create_index("fabric_pay_mode",      background=True)
-    await db.items.create_index("tailoring_pay_mode",   background=True)
-    await db.items.create_index("embroidery_pay_mode",  background=True)
-    await db.items.create_index("addon_pay_mode",       background=True)
+    await db.items.create_index([(  "tailoring_status", ASCENDING), ("date",            DESCENDING)])
+    await db.items.create_index([(  "ref",              ASCENDING), ("fabric_pay_mode",  ASCENDING)])
+    await db.items.create_index([(  "name",             ASCENDING), ("fabric_pay_mode",  ASCENDING)])
+    await db.items.create_index([(  "tailoring_status", ASCENDING), ("labour_paid",      ASCENDING)])
+    await db.items.create_index([(  "embroidery_status", ASCENDING), ("emb_labour_paid",  ASCENDING)])
+    await db.items.create_index([(  "embroidery_status", ASCENDING), ("date",             DESCENDING)])
+    await db.items.create_index("fabric_pay_mode")
+    await db.items.create_index("tailoring_pay_mode")
+    await db.items.create_index("embroidery_pay_mode")
+    await db.items.create_index("addon_pay_mode")
 
-    await db.items.create_index("fabric_pay_date",      background=True)
-    await db.items.create_index("tailoring_pay_date",   background=True)
-    await db.items.create_index("embroidery_pay_date",  background=True)
-    await db.items.create_index("addon_pay_date",       background=True)
-    await db.items.create_index("delivery_date",        background=True)
-    await db.items.create_index([("delivery_date", ASCENDING), ("tailoring_status", ASCENDING)], background=True)
+    await db.items.create_index("fabric_pay_date")
+    await db.items.create_index("tailoring_pay_date")
+    await db.items.create_index("embroidery_pay_date")
+    await db.items.create_index("addon_pay_date")
+    await db.items.create_index("delivery_date")
+    await db.items.create_index([("delivery_date", ASCENDING), ("tailoring_status", ASCENDING)])
     await db.items.create_index(
         [("name", "text"), ("barcode", "text"), ("ref", "text"), ("order_no", "text"), ("karigar", "text"), ("addon_desc", "text")],
-        name="items_text_search", background=True
+        name="items_text_search"
     )
 
-    await db.advances.create_index("id",   unique=True, background=True)
-    await db.advances.create_index("ref",  background=True)
-    await db.advances.create_index("date", background=True)
-    await db.advances.create_index([("ref",  ASCENDING), ("date",  ASCENDING)], background=True)
-    await db.advances.create_index([("date", ASCENDING), ("tally", ASCENDING)], background=True)
-    await db.items.create_index("created_at", background=True)
-    await db.settings.create_index("key", unique=True, background=True)
-    await db.token_blocklist.create_index("jti", unique=True, background=True)
-    await db.token_blocklist.create_index("created_at", expireAfterSeconds=86400, background=True)
-    await db.audit_logs.create_index("timestamp", background=True)
-    await db.audit_logs.create_index("username",  background=True)
-    await db.audit_logs.create_index("action",    background=True)
-    await db.audit_logs.create_index([("timestamp", DESCENDING)], background=True)
-    await db.counters.create_index("created_at", expireAfterSeconds=86400 * 90, background=True)
+    await db.advances.create_index("id",   unique=True)
+    await db.advances.create_index("ref")
+    await db.advances.create_index("date")
+    await db.advances.create_index([("ref",  ASCENDING), ("date",  ASCENDING)])
+    await db.advances.create_index([("date", ASCENDING), ("tally", ASCENDING)])
+    await db.items.create_index("created_at")
+    await db.settings.create_index("key", unique=True)
+    await db.token_blocklist.create_index("jti", unique=True)
+    await db.token_blocklist.create_index("created_at", expireAfterSeconds=86400)
+    await db.audit_logs.create_index("username")
+    await db.audit_logs.create_index("action")
+    await db.audit_logs.create_index([("timestamp", DESCENDING)])
+    await db.counters.create_index("created_at", expireAfterSeconds=86400 * 90)
     logger.info("MongoDB indexes ensured.")
 
     yield
@@ -178,20 +178,7 @@ app.include_router(auth_router,        prefix=PREFIX)
 # ==========================================
 # MIDDLEWARE
 # ==========================================
-app.add_middleware(GZipMiddleware, minimum_size=500)
-
-
-@app.middleware("http")
-async def limit_upload_size(request: Request, call_next):
-    if request.method in ("POST", "PUT", "PATCH"):
-        content_length = request.headers.get("content-length")
-        if content_length and int(content_length) > MAX_UPLOAD_SIZE:
-            return JSONResponse(
-                {"detail": f"Request body too large. Maximum allowed size is {MAX_UPLOAD_SIZE // (1024 * 1024)}MB."},
-                status_code=413,
-            )
-    return await call_next(request)
-
+# NOTE: Middleware must be registered BEFORE routes so Starlette wraps them correctly.
 
 # CORS — fail loudly if not configured in production
 cors_origins = os.environ.get("CORS_ORIGINS")
@@ -211,6 +198,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+
+@app.middleware("http")
+async def limit_upload_size(request: Request, call_next):
+    if request.method in ("POST", "PUT", "PATCH"):
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > MAX_UPLOAD_SIZE:
+            return JSONResponse(
+                {"detail": f"Request body too large. Maximum allowed size is {MAX_UPLOAD_SIZE // (1024 * 1024)}MB."},
+                status_code=413,
+            )
+    return await call_next(request)
+
 
 # ==========================================
 # STATIC FILES & HEALTH

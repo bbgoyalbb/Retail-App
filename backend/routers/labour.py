@@ -21,15 +21,18 @@ async def get_labour_items(filter_type: str = "All", filter_karigar: str = "All"
     paid = view_mode == "paid"
 
     tail_query = None
+    _nc = {"$ne": True}
     if filter_type in ("All", "Tailoring Labour"):
         if paid:
             tail_query = {
+                "cancelled": _nc,
                 "tailoring_status": {"$in": ["Stitched", "Delivered"]},
                 "labour_paid": "Yes",
                 "labour_amount": {"$gt": 0},
             }
         else:
             tail_query = {
+                "cancelled": _nc,
                 "tailoring_status": {"$in": ["Stitched", "Delivered"]},
                 "labour_paid": {"$in": ["N/A", "", None]},
                 "labour_amount": {"$gt": 0},
@@ -39,12 +42,14 @@ async def get_labour_items(filter_type: str = "All", filter_karigar: str = "All"
     if filter_type in ("All", "Embroidery Labour"):
         if paid:
             emb_query = {
+                "cancelled": _nc,
                 "embroidery_status": "Finished",
                 "emb_labour_paid": "Yes",
                 "emb_labour_amount": {"$gt": 0},
             }
         else:
             emb_query = {
+                "cancelled": _nc,
                 "embroidery_status": "Finished",
                 "emb_labour_paid": {"$in": ["N/A", "", None]},
                 "emb_labour_amount": {"$gt": 0},

@@ -108,7 +108,8 @@ function AppShell() {
   const location = useLocation();
 
   useEffect(() => {
-    getPublicSettings().then(s => {
+    getPublicSettings().then(res => {
+      const s = res?.data;
       if (!s?.firm_logo) return;
       const logoUrl = s.firm_logo.startsWith("http") ? s.firm_logo : `${BACKEND_URL}${s.firm_logo}`;
       let link = document.querySelector("link[rel~='icon']");

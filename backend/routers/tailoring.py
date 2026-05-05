@@ -20,7 +20,7 @@ router = APIRouter()
 @router.get("/tailoring/awaiting")
 async def get_awaiting_orders(current_user: dict = Depends(get_current_user_dep)):
     pipeline = [
-        {"$match": {"tailoring_status": "Awaiting Order"}},
+        {"$match": {"tailoring_status": "Awaiting Order", "cancelled": {"$ne": True}}},
         {"$group": {
             "_id": {"name": "$name", "ref": "$ref"},
             "items": {"$push": {

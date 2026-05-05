@@ -32,7 +32,8 @@ async def get_dashboard(current_user: dict = Depends(get_current_user_dep)):
     today = date.today().isoformat()
 
     # Single $facet aggregation covers all pending sums, status counts, revenue, trend — 1 DB round trip
-    facet_pipeline = [{"$facet": {
+    _nc = {"$ne": True}  # not cancelled
+    facet_pipeline = [{"$match": {"cancelled": _nc}}, {"$facet": {
         "fab_pending":  [{"$match": {"fabric_amount":     {"$gt": 0}, "fabric_pay_mode":     _ns}}, {"$group": {"_id": None, "t": {"$sum": "$fabric_pending"}}}],
         "tail_pending": [{"$match": {"tailoring_amount":  {"$gt": 0}, "tailoring_pay_mode":  _ns}}, {"$group": {"_id": None, "t": {"$sum": "$tailoring_pending"}}}],
         "emb_pending":  [{"$match": {"embroidery_amount": {"$gt": 0}, "embroidery_pay_mode": _ns}}, {"$group": {"_id": None, "t": {"$sum": "$embroidery_pending"}}}],
@@ -119,10 +120,11 @@ async def get_dashboard(current_user: dict = Depends(get_current_user_dep)):
 
 @router.get("/customers")
 async def get_customers(pending_only: bool = False, current_user: dict = Depends(get_current_user_dep)):
+    _nc = {"$ne": True}
     if pending_only:
         _ns = {"$not": {"$regex": "^Settled"}}
         pipeline = [
-            {"$match": {"$or": [
+            {"$match": {"cancelled": _nc, "$or": [
                 {"fabric_amount": {"$gt": 0}, "fabric_pay_mode": _ns},
                 {"tailoring_amount": {"$gt": 0}, "tailoring_pay_mode": _ns},
                 {"embroidery_amount": {"$gt": 0}, "embroidery_pay_mode": _ns},
@@ -132,7 +134,7 @@ async def get_customers(pending_only: bool = False, current_user: dict = Depends
         ]
         result = await db.items.aggregate(pipeline).to_list(1000)
         return sorted([r["_id"] for r in result if r["_id"] and r["_id"] != "N/A"])
-    customers = await db.items.distinct("name")
+    customers = await db.items.distinct("name", {"cancelled": _nc})
     return sorted([c for c in customers if c and c != "N/A"])
 
 # ==========================================
@@ -194,7 +196,7 @@ async def get_item(item_id: str, current_user: dict = Depends(get_current_user_d
 
 @router.get("/refs")
 async def get_refs(name: Optional[str] = None, pending_only: bool = False, current_user: dict = Depends(get_current_user_dep)):
-    query = {}
+    query = {"cancelled": {"$ne": True}}
     if name:
         query["name"] = name
     if pending_only:
@@ -305,8 +307,9 @@ async def create_bill(req: CreateBillRequest, current_user: dict = Depends(get_c
         seq = counter_doc.get("seq", 1) if counter_doc else 1
         ref = f"{seq:02d}/{date_suffix}"
 
-        # Final safety net: if ref still collides keep incrementing.
-        while await db.items.find_one({"ref": ref}):
+        # Final safety net: if ref still collides keep incrementing (max 20 retries).
+        _retries = 0
+        while await db.items.find_one({"ref": ref}) and _retries < 20:
             counter_doc = await db.counters.find_one_and_update(
                 {"_id": counter_key},
                 {"$inc": {"seq": 1}},
@@ -315,6 +318,9 @@ async def create_bill(req: CreateBillRequest, current_user: dict = Depends(get_c
             )
             seq = counter_doc.get("seq", 1) if counter_doc else seq + 1
             ref = f"{seq:02d}/{date_suffix}"
+            _retries += 1
+        if _retries >= 20:
+            raise HTTPException(status_code=500, detail="Could not generate a unique bill reference. Please try again.")
     modes_str = ", ".join(req.payment_modes) if req.payment_modes else "Cash"
     tailoring_status = "Awaiting Order" if req.needs_tailoring else "N/A"
 

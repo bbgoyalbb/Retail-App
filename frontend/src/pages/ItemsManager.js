@@ -121,6 +121,19 @@ const renderFieldInput = (field, itemId, value, onChange) => {
   }
 };
 
+const ITEM_DEFAULTS = {
+  price:0, qty:0, discount:0,
+  fabric_amount:0, fabric_received:0, fabric_pending:0, fabric_pay_mode:"N/A", fabric_pay_date:"", tally_fabric:false,
+  tailoring_amount:0, tailoring_received:0, tailoring_pending:0, tailoring_pay_mode:"N/A", tailoring_pay_date:"",
+  tailoring_status:"N/A", article_type:"N/A", order_no:"N/A", delivery_date:"N/A",
+  labour_amount:0, labour_paid:"N/A", labour_pay_date:"", labour_payment_mode:"N/A", tally_tailoring:false,
+  embroidery_amount:0, embroidery_received:0, embroidery_pending:0, embroidery_pay_mode:"N/A", embroidery_pay_date:"",
+  embroidery_status:"N/A", karigar:"N/A", emb_labour_amount:0, emb_labour_paid:"N/A", emb_labour_date:"", emb_labour_payment_mode:"N/A", tally_embroidery:false,
+  addon_amount:0, addon_received:0, addon_pending:0, addon_pay_mode:"N/A", addon_pay_date:"", addon_desc:"N/A", tally_addon:false,
+};
+
+const CANCEL_ZERO_PAYLOAD = { ...ITEM_DEFAULTS, cancelled: true };
+
 const computeFabric = (price, qty, disc) =>
   Math.round((price - price * (disc || 0) / 100) * qty);
 const computePending = (total, received) => Math.round(total - (received || 0));
@@ -425,7 +438,7 @@ export default function ItemsManager() {
   const addNewItem = () => {
     const tempId = `new_${Date.now()}_${Math.random().toString(36).substr(2,9)}`;
     const ref = editItems[0]?.ref || "", name = editItems[0]?.name || "", date = editItems[0]?.date || new Date().toISOString().split("T")[0];
-    const ni = { id:tempId,ref,name,date,barcode:"",price:0,qty:0,discount:0,fabric_amount:0,fabric_received:0,fabric_pending:0,fabric_pay_date:"",fabric_pay_mode:"N/A",tailoring_status:"N/A",article_type:"N/A",order_no:"N/A",delivery_date:"N/A",tailoring_amount:0,tailoring_received:0,tailoring_pending:0,tailoring_pay_date:"",tailoring_pay_mode:"N/A",embroidery_status:"N/A",karigar:"N/A",embroidery_amount:0,embroidery_received:0,embroidery_pending:0,embroidery_pay_date:"",embroidery_pay_mode:"N/A",addon_desc:"N/A",addon_amount:0,addon_received:0,addon_pending:0,addon_pay_date:"",addon_pay_mode:"N/A",labour_amount:0,labour_paid:"N/A",labour_pay_date:"",labour_payment_mode:"N/A",emb_labour_amount:0,emb_labour_paid:"N/A",emb_labour_date:"",emb_labour_payment_mode:"N/A",tally_fabric:false,tally_tailoring:false,tally_embroidery:false,tally_addon:false };
+    const ni = { id:tempId, ref, name, date, barcode:"", ...ITEM_DEFAULTS };
     setEditItems(p=>[...p,ni]); setEditData(p=>({...p,[tempId]:{...ni}})); setOriginalData(p=>({...p,[tempId]:{...ni}})); setNewItemIds(p=>[...p,tempId]);
   };
 
@@ -515,7 +528,7 @@ export default function ItemsManager() {
   };
 
   const handleCancelOrder = async (group) => {
-    const zero = { cancelled:true,cancelled_at:new Date().toISOString(),price:0,qty:0,discount:0,fabric_amount:0,fabric_received:0,fabric_pending:0,fabric_pay_mode:"N/A",tally_fabric:false,tailoring_amount:0,tailoring_received:0,tailoring_pending:0,tailoring_pay_mode:"N/A",tailoring_status:"N/A",article_type:"N/A",order_no:"N/A",delivery_date:"N/A",labour_amount:0,labour_paid:"N/A",tally_tailoring:false,embroidery_amount:0,embroidery_received:0,embroidery_pending:0,embroidery_pay_mode:"N/A",embroidery_status:"N/A",karigar:"N/A",emb_labour_amount:0,emb_labour_paid:"N/A",tally_embroidery:false,addon_amount:0,addon_received:0,addon_pending:0,addon_pay_mode:"N/A",addon_desc:"N/A",tally_addon:false };
+    const zero = { ...CANCEL_ZERO_PAYLOAD, cancelled_at: new Date().toISOString() };
     const results = await Promise.allSettled(group.items.map(item => updateItem(item.id, zero)));
     const ok = results.filter(r => r.status === "fulfilled").length;
     setMessage({ type: ok===group.items.length?"success":"error", text: ok===group.items.length?`Order ${group.ref} cancelled`:`${group.items.length-ok} items failed` });
@@ -524,7 +537,7 @@ export default function ItemsManager() {
   };
 
   const handleCancelItem = async (item) => {
-    const zero = { cancelled:true,cancelled_at:new Date().toISOString(),price:0,qty:0,discount:0,fabric_amount:0,fabric_received:0,fabric_pending:0,fabric_pay_mode:"N/A",tally_fabric:false,tailoring_amount:0,tailoring_received:0,tailoring_pending:0,tailoring_pay_mode:"N/A",tailoring_status:"N/A",article_type:"N/A",order_no:"N/A",delivery_date:"N/A",labour_amount:0,labour_paid:"N/A",tally_tailoring:false,embroidery_amount:0,embroidery_received:0,embroidery_pending:0,embroidery_pay_mode:"N/A",embroidery_status:"N/A",karigar:"N/A",emb_labour_amount:0,emb_labour_paid:"N/A",tally_embroidery:false,addon_amount:0,addon_received:0,addon_pending:0,addon_pay_mode:"N/A",addon_desc:"N/A",tally_addon:false };
+    const zero = { ...CANCEL_ZERO_PAYLOAD, cancelled_at: new Date().toISOString() };
     try { await updateItem(item.id, zero); setMessage({ type:"success", text:`Article ${item.barcode} cancelled` }); }
     catch { setMessage({ type:"error", text:"Failed to cancel article" }); }
     setTimeout(()=>setMessage(null),3000);

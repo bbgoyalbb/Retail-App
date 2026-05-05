@@ -22,7 +22,7 @@ router = APIRouter()
 @router.get("/invoice")
 async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref"), format: str = Query(default="standard", alias="format"), current_user: dict = Depends(get_current_user_dep)):
     items, advances, stored_settings = await asyncio.gather(
-        db.items.find({"ref": ref_id}, {"_id": 0}).to_list(1000),
+        db.items.find({"ref": ref_id, "cancelled": {"$ne": True}}, {"_id": 0}).to_list(1000),
         db.advances.find({"ref": ref_id}, {"_id": 0}).to_list(50),
         db.settings.find_one({"key": "app_settings"}, {"_id": 0}),
     )
@@ -812,7 +812,7 @@ async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref
 
 @router.get("/reports/revenue")
 async def get_revenue_report(period: str = "daily", date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
-    match_query = {}
+    match_query = {"cancelled": {"$ne": True}}
     if date_from:
         match_query.setdefault("date", {})["$gte"] = date_from
     if date_to:
@@ -833,7 +833,7 @@ async def get_revenue_report(period: str = "daily", date_from: Optional[str] = N
     # Push grouping into MongoDB for weekly/monthly — avoids fetching 1000 rows to Python
     if period == "weekly":
         pipeline = [
-            {"$match": match_query} if match_query else {"$match": {}},
+            {"$match": match_query},
             {"$addFields": {"_dt": {"$dateFromString": {"dateString": "$date", "onError": None}}}},
             {"$match": {"_dt": {"$ne": None}}},
             {"$group": {"_id": {"$dateToString": {"format": "%Y-W%V", "date": "$_dt"}}, **_agg_fields}},
@@ -843,7 +843,7 @@ async def get_revenue_report(period: str = "daily", date_from: Optional[str] = N
 
     if period == "monthly":
         pipeline = [
-            {"$match": match_query} if match_query else {"$match": {}},
+            {"$match": match_query},
             {"$addFields": {"_dt": {"$dateFromString": {"dateString": "$date", "onError": None}}}},
             {"$match": {"_dt": {"$ne": None}}},
             {"$group": {"_id": {"$dateToString": {"format": "%Y-%m", "date": "$_dt"}}, **_agg_fields}},
@@ -853,7 +853,7 @@ async def get_revenue_report(period: str = "daily", date_from: Optional[str] = N
 
     # daily — group by date string directly (no parse needed)
     pipeline = [
-        {"$match": match_query} if match_query else {"$match": {}},
+        {"$match": match_query},
         {"$group": {"_id": "$date", **_agg_fields}},
         {"$sort": {"_id": 1}},
         {"$limit": 500},
@@ -862,15 +862,13 @@ async def get_revenue_report(period: str = "daily", date_from: Optional[str] = N
 
 @router.get("/reports/customers")
 async def get_customer_report(date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
-    match_query = {}
+    match_query = {"cancelled": {"$ne": True}}
     if date_from:
         match_query.setdefault("date", {})["$gte"] = date_from
     if date_to:
         match_query.setdefault("date", {})["$lte"] = date_to
 
-    pipeline = []
-    if match_query:
-        pipeline.append({"$match": match_query})
+    pipeline = [{"$match": match_query}]
     pipeline += [
         {"$group": {
             "_id": "$name",
@@ -904,7 +902,7 @@ async def get_customer_report(date_from: Optional[str] = None, date_to: Optional
 
 @router.get("/reports/summary")
 async def get_summary_report(date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
-    match_query = {}
+    match_query = {"cancelled": {"$ne": True}}
     if date_from:
         match_query.setdefault("date", {})["$gte"] = date_from
     if date_to:
@@ -912,7 +910,7 @@ async def get_summary_report(date_from: Optional[str] = None, date_to: Optional[
 
     _ns = {"$not": {"$regex": "^Settled"}}
     pipeline = [
-        {"$match": match_query} if match_query else {"$match": {}},
+        {"$match": match_query},
         {"$facet": {
             "totals": [{"$group": {
                 "_id": None,

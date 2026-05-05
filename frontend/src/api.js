@@ -159,11 +159,18 @@ export const getInvoiceUrl = (ref) => { const t = _authToken(); return `${BACKEN
 // Reports — 30 s in-process cache per param set
 const _reportsCache = new Map();
 const REPORTS_CACHE_TTL = 30000;
+const REPORTS_CACHE_MAX = 50;
 const _cachedReport = (key, fetcher) => {
   const now = Date.now();
   const hit = _reportsCache.get(key);
   if (hit && now - hit.ts < REPORTS_CACHE_TTL) return Promise.resolve(hit.res);
-  return fetcher().then(res => { _reportsCache.set(key, { res, ts: Date.now() }); return res; });
+  return fetcher().then(res => {
+    if (_reportsCache.size >= REPORTS_CACHE_MAX) {
+      _reportsCache.delete(_reportsCache.keys().next().value);
+    }
+    _reportsCache.set(key, { res, ts: Date.now() });
+    return res;
+  });
 };
 export const getRevenueReport  = (params) => _cachedReport(`rev:${JSON.stringify(params)}`,  () => api.get("/reports/revenue",   { params }));
 export const getCustomerReport = (params) => _cachedReport(`cust:${JSON.stringify(params)}`, () => api.get("/reports/customers", { params }));
@@ -190,9 +197,9 @@ export const getPublicSettings = () => {
     return Promise.resolve(_publicSettingsCache);
   }
   return api.get("/settings/public").then(r => {
-    _publicSettingsCache = r.data;
+    _publicSettingsCache = r;
     _publicSettingsCacheTime = Date.now();
-    return r.data;
+    return r;
   });
 };
 export const invalidatePublicSettingsCache = () => { _publicSettingsCache = null; };
@@ -216,6 +223,16 @@ export const updateSettings = (data) => api.put("/settings", data);
 export const uploadLogo = (formData) => api.post("/upload/logo", formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
 });
+
+export const invalidateAllCaches = () => {
+  invalidateCustomersCache();
+  invalidateItemsCache();
+  invalidateAdvancesCache();
+  invalidateDaybookDatesCache();
+  invalidateReportsCache();
+  invalidatePublicSettingsCache();
+  invalidateSettingsCache();
+};
 
 // Auth
 export const login = (username, password) => api.post("/auth/login", { username, password }).then(r => r.data);

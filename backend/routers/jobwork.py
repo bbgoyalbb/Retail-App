@@ -21,6 +21,8 @@ async def add_addons(req: AddOnRequest, current_user: dict = Depends(get_current
     item = await db.items.find_one({"id": req.item_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
+    if item.get("cancelled"):
+        raise HTTPException(status_code=400, detail="Cannot modify a cancelled item")
 
     addon_names = []
     total_amount = 0
@@ -62,7 +64,7 @@ async def get_jobwork(
     delivery_filter: Optional[str] = None,
     current_user: dict = Depends(get_current_user_dep),
 ):
-    query = {}
+    query = {"cancelled": {"$ne": True}}
 
     if tab == "tailoring":
         query["tailoring_status"] = {"$in": ["Pending", "Stitched", "Delivered"]}
@@ -193,10 +195,11 @@ async def edit_embroidery(req: EmbEditRequest, current_user: dict = Depends(get_
 
 @router.get("/jobwork/filters")
 async def get_jobwork_filters(current_user: dict = Depends(get_current_user_dep)):
+    _nc = {"cancelled": {"$ne": True}}
     order_nos, dates, delivery_dates = await asyncio.gather(
-        db.items.distinct("order_no", {"order_no": {"$ne": "N/A"}}),
-        db.items.distinct("date"),
-        db.items.distinct("delivery_date", {"delivery_date": {"$ne": "N/A"}}),
+        db.items.distinct("order_no", {**_nc, "order_no": {"$ne": "N/A"}}),
+        db.items.distinct("date", _nc),
+        db.items.distinct("delivery_date", {**_nc, "delivery_date": {"$ne": "N/A"}}),
     )
     return {
         "order_nos": sorted([o for o in order_nos if o]),

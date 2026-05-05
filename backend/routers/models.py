@@ -5,9 +5,7 @@ No DB access here — no side effects on import.
 from pydantic import BaseModel, Field, model_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-
-# Financial validation tolerance (from data_quality.py)
-PENNY_TOLERANCE = 0.01
+from data_quality import PENNY_TOLERANCE
 
 
 # ==========================================
@@ -178,6 +176,9 @@ class ItemUpdateRequest(BaseModel):
         Validate that pending + received ≈ amount for each payment category.
         This prevents data entry errors where amounts don't balance.
         """
+        if self.cancelled:
+            return self
+
         categories = [
             ('fabric_amount', 'fabric_received', 'fabric_pending'),
             ('tailoring_amount', 'tailoring_received', 'tailoring_pending'),

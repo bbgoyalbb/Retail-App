@@ -19,6 +19,11 @@ from auth import audit_log
 from .models import LoginRequest, UserCreateRequest, DEFAULT_SETTINGS, merge_settings
 from jose import jwt as jose_jwt, JWTError
 from pymongo import ReturnDocument
+try:
+    from PIL import Image as _PILImage
+    _PIL_AVAILABLE = True
+except ImportError:
+    _PIL_AVAILABLE = False
 
 # ==========================================
 # RATE LIMITING
@@ -38,18 +43,17 @@ except ImportError:
 def _check_rate_limit(ip: str) -> None:
     """Raise 429 if this IP has exceeded the login attempt limit."""
     try:
-        # TTLCache: entries auto-expire, just count them
         count = _login_attempts.get(ip, 0)
         if count >= _RATE_LIMIT_MAX:
             raise HTTPException(
                 status_code=429,
                 detail=f"Too many login attempts. Try again in {_RATE_LIMIT_WINDOW // 60} minutes."
             )
+        # Increment AFTER the check so the Nth attempt is allowed, (N+1)th is blocked.
         _login_attempts[ip] = count + 1
     except HTTPException:
         raise
     except Exception:
-        # If TTLCache is full or any other error, fail open (don't block legitimate users)
         pass
 
 def _clear_rate_limit(ip: str) -> None:
@@ -99,6 +103,7 @@ async def update_settings(data: dict, current_user: dict = Depends(get_current_u
         return_document=ReturnDocument.AFTER,
         projection={"_id": 0},
     )
+    await audit_log(db, "update", current_user, "settings", "app_settings", {"fields": list(data.keys())})
     return merge_settings(settings)
 
 # ==========================================
@@ -113,11 +118,14 @@ async def upload_logo(file: UploadFile = File(...), current_user: dict = Depends
         raise HTTPException(status_code=400, detail="Image too large (max 1MB)")
     contents = await file.read()
     try:
-        from PIL import Image
+        if not _PIL_AVAILABLE:
+            raise RuntimeError("Pillow not installed")
         import io as _io
-        img = Image.open(_io.BytesIO(contents))
+        # Open twice: first to read format (verify() invalidates the object),
+        # then to validate integrity.
+        img = _PILImage.open(_io.BytesIO(contents))
+        img_format = img.format  # read format BEFORE verify()
         img.verify()
-        img_format = img.format
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid or corrupt image file")
     ext = (img_format or "png").lower()
@@ -232,7 +240,10 @@ async def update_user(username: str, data: dict, current_user: dict = Depends(ge
         raise HTTPException(status_code=403, detail="Cannot modify the admin account")
     update = {}
     if "full_name" in data: update["full_name"] = data["full_name"]
-    if "role" in data: update["role"] = data["role"]
+    if "role" in data:
+        if data["role"] not in ["admin", "manager", "cashier"]:
+            raise HTTPException(status_code=400, detail="Role must be admin, manager, or cashier")
+        update["role"] = data["role"]
     if "is_active" in data: update["is_active"] = data["is_active"]
     if "allowed_pages" in data: update["allowed_pages"] = data["allowed_pages"]
     if "password" in data and data["password"]:

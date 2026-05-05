@@ -111,11 +111,15 @@ async def import_excel(
                     "addon_received": safe_float(row[34]),
                     "addon_pending": safe_float(row[35]),
                     "karigar": safe_str(row[36]) if len(row) > 36 else "N/A",
+                    "emb_labour_amount": safe_float(row[37]) if len(row) > 37 else 0,
+                    "emb_labour_paid": safe_str(row[38]) if len(row) > 38 else "N/A",
+                    "emb_labour_date": safe_date(row[39]) if len(row) > 39 else "N/A",
+                    "emb_labour_payment_mode": safe_str(row[40]) if len(row) > 40 else "N/A",
                     # Read tally columns if present in Excel, otherwise default to False
-                    "tally_fabric": bool(row[37]) if len(row) > 37 and row[37] not in (None, "", "N/A") else False,
-                    "tally_tailoring": bool(row[38]) if len(row) > 38 and row[38] not in (None, "", "N/A") else False,
-                    "tally_embroidery": bool(row[39]) if len(row) > 39 and row[39] not in (None, "", "N/A") else False,
-                    "tally_addon": bool(row[40]) if len(row) > 40 and row[40] not in (None, "", "N/A") else False,
+                    "tally_fabric": bool(row[41]) if len(row) > 41 and row[41] not in (None, "", "N/A") else False,
+                    "tally_tailoring": bool(row[42]) if len(row) > 42 and row[42] not in (None, "", "N/A") else False,
+                    "tally_embroidery": bool(row[43]) if len(row) > 43 and row[43] not in (None, "", "N/A") else False,
+                    "tally_addon": bool(row[44]) if len(row) > 44 and row[44] not in (None, "", "N/A") else False,
                     "created_at": datetime.now(timezone.utc).isoformat(),
                 }
                 items.append(item)
@@ -210,7 +214,8 @@ async def export_excel(current_user: dict = Depends(get_current_user_dep)):
         "Labour Amount", "Labour Paid?", "Labour Payment Date",
         "Tailoring Payment Mode", "Tailoring Payment Date", "Tailoring Payment Received", "Tailoring Pending Balance",
         "Embroidery Payment Mode", "Embroidery Payment Date", "Embroidery Payment Received", "Embroidery Pending Balance",
-        "Add-On Payment Mode", "Add-On Payment Date", "Add-On Payment Received", "Add-On Pending Balance", "Karigar?"
+        "Add-On Payment Mode", "Add-On Payment Date", "Add-On Payment Received", "Add-On Pending Balance",
+        "Karigar?", "Emb Labour Amount", "Emb Labour Paid?", "Emb Labour Date", "Emb Labour Payment Mode",
     ]
 
     header_fill = PatternFill(start_color="C86B4D", end_color="C86B4D", fill_type="solid")
@@ -231,7 +236,8 @@ async def export_excel(current_user: dict = Depends(get_current_user_dep)):
         "labour_amount", "labour_paid", "labour_pay_date",
         "tailoring_pay_mode", "tailoring_pay_date", "tailoring_received", "tailoring_pending",
         "embroidery_pay_mode", "embroidery_pay_date", "embroidery_received", "embroidery_pending",
-        "addon_pay_mode", "addon_pay_date", "addon_received", "addon_pending", "karigar"
+        "addon_pay_mode", "addon_pay_date", "addon_received", "addon_pending",
+        "karigar", "emb_labour_amount", "emb_labour_paid", "emb_labour_date", "emb_labour_payment_mode",
     ]
 
     for row_idx, item in enumerate(items, 2):
@@ -306,9 +312,6 @@ async def restore_database(
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    # Audit log the restore attempt
-    await audit_log(db, "restore", current_user, "database", "full", {"filename": file.filename})
-    
     if not file.filename.endswith('.json'):
         raise HTTPException(status_code=400, detail="Please upload a .json backup file")
 
@@ -352,10 +355,12 @@ async def restore_database(
         items_count = len(items)
         advances_count = len(advances)
 
+        # Audit log only after validation passes — confirmed it is a real restore attempt
+        await audit_log(db, "restore", current_user, "database", "full", {"filename": file.filename, "items": items_count, "advances": advances_count})
+
         # ===== RESTORE PHASE =====
         # Only delete after full validation passes
         # Wrap in MongoDB transaction for atomicity (requires replica set)
-        from motor.motor_asyncio import AsyncIOMotorClientSession
         try:
             # Try to use a session for transaction (requires MongoDB replica set)
             async with await db.client.start_session() as session:
