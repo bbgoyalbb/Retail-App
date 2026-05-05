@@ -74,8 +74,20 @@ export const invalidateItemsCache = () => { _itemsCache = null; };
 export const getItem = (id) => api.get(`/items/${id}`);
 export const getRefs = (name) => api.get("/refs", { params: { name } });
 export const getOrders = () => api.get("/orders");
-export const getOrderStatus = (params) => api.get("/orders/status", { params });
-export const markOrderDelivered = (order_no) => api.post("/orders/deliver", { order_no });
+const _orderStatusCache = new Map();
+const ORDER_STATUS_TTL = 20000;
+export const getOrderStatus = (params) => {
+  const key = JSON.stringify(params || {});
+  const now = Date.now();
+  const hit = _orderStatusCache.get(key);
+  if (hit && now - hit.ts < ORDER_STATUS_TTL) return Promise.resolve(hit.res);
+  return api.get("/orders/status", { params }).then(res => {
+    _orderStatusCache.set(key, { res, ts: Date.now() });
+    return res;
+  });
+};
+export const invalidateOrderStatusCache = () => _orderStatusCache.clear();
+export const markOrderDelivered = (order_no) => { _orderStatusCache.clear(); return api.post("/orders/deliver", { order_no }); };
 
 export const createBill = (data) => api.post("/bills", data);
 export const getNextBillRef = (date) => api.get("/bills/next-ref", { params: { date } });
@@ -85,12 +97,31 @@ export const splitTailoring = (data) => api.post("/tailoring/split", data);
 
 export const addAddons = (data) => api.post("/addons", data);
 
-export const getJobwork = (params) => api.get("/jobwork", { params });
-export const moveJobwork = (data) => api.post("/jobwork/move", data);
-export const moveJobworkBack = (data) => api.post("/jobwork/move-back", data);
-export const moveJobworkEmb = (data) => api.post("/jobwork/move-emb", data);
-export const editJobworkEmb = (data) => api.post("/jobwork/edit-emb", data);
-export const getJobworkFilters = () => api.get("/jobwork/filters");
+const _jobworkCache = new Map();
+const JOBWORK_CACHE_TTL = 15000;
+export const getJobwork = (params) => {
+  const key = JSON.stringify(params || {});
+  const now = Date.now();
+  const hit = _jobworkCache.get(key);
+  if (hit && now - hit.ts < JOBWORK_CACHE_TTL) return Promise.resolve(hit.res);
+  return api.get("/jobwork", { params }).then(res => {
+    _jobworkCache.set(key, { res, ts: Date.now() });
+    return res;
+  });
+};
+export const invalidateJobworkCache = () => _jobworkCache.clear();
+export const moveJobwork = (data) => { _jobworkCache.clear(); return api.post("/jobwork/move", data); };
+export const moveJobworkBack = (data) => { _jobworkCache.clear(); return api.post("/jobwork/move-back", data); };
+export const moveJobworkEmb = (data) => { _jobworkCache.clear(); return api.post("/jobwork/move-emb", data); };
+export const editJobworkEmb = (data) => { _jobworkCache.clear(); return api.post("/jobwork/edit-emb", data); };
+let _jobworkFiltersCache = null;
+let _jobworkFiltersCacheTime = 0;
+const JOBWORK_FILTERS_TTL = 120000;
+export const getJobworkFilters = () => {
+  const now = Date.now();
+  if (_jobworkFiltersCache && now - _jobworkFiltersCacheTime < JOBWORK_FILTERS_TTL) return Promise.resolve(_jobworkFiltersCache);
+  return api.get("/jobwork/filters").then(res => { _jobworkFiltersCache = res; _jobworkFiltersCacheTime = Date.now(); return res; });
+};
 
 export const getBalances = (params) => api.get("/settlements/balances", { params });
 export const processSettlement = (data) => api.post("/settlements/pay", data);
@@ -111,7 +142,21 @@ export const getDaybookDates = () => {
   });
 };
 export const invalidateDaybookDatesCache = () => { _daybookDatesCache = null; };
-export const getDaybookPendingCount = () => api.get("/daybook/pending-count");
+let _daybookPendingCache = null;
+let _daybookPendingCacheTime = 0;
+const DAYBOOK_PENDING_TTL = 60000;
+export const getDaybookPendingCount = () => {
+  const now = Date.now();
+  if (_daybookPendingCache && now - _daybookPendingCacheTime < DAYBOOK_PENDING_TTL) {
+    return Promise.resolve(_daybookPendingCache);
+  }
+  return api.get("/daybook/pending-count").then(res => {
+    _daybookPendingCache = res;
+    _daybookPendingCacheTime = Date.now();
+    return res;
+  });
+};
+export const invalidateDaybookPendingCache = () => { _daybookPendingCache = null; };
 export const tallyEntries = (data) => api.post("/daybook/tally", data);
 
 export const getLabourItems = (params) => api.get("/labour", { params });
@@ -229,6 +274,9 @@ export const invalidateAllCaches = () => {
   invalidateItemsCache();
   invalidateAdvancesCache();
   invalidateDaybookDatesCache();
+  invalidateDaybookPendingCache();
+  invalidateJobworkCache();
+  invalidateOrderStatusCache();
   invalidateReportsCache();
   invalidatePublicSettingsCache();
   invalidateSettingsCache();

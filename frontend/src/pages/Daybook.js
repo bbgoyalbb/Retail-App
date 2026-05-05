@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { getDaybook, getDaybookDates, tallyEntries } from "@/api";
+import { getDaybook, getDaybookDates, tallyEntries, invalidateDaybookPendingCache } from "@/api";
 import { dataEvents } from "@/lib/dataEvents";
 import { fmt } from "@/lib/fmt";
 import { Check, Circle, Spinner } from "@phosphor-icons/react";
@@ -94,16 +94,16 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
     return activeCats(entry).every(c => ts[c]);
   };
 
-  const visibleEntries = localEntries.filter(entry => {
+  const visibleEntries = useMemo(() => localEntries.filter(entry => {
     if (refFilter  !== "All" && entry.ref  !== refFilter)  return false;
     if (nameFilter !== "All" && entry.name !== nameFilter) return false;
     return viewMode === "pending" ? !isFullyTallied(entry) : isFullyTallied(entry);
-  });
+  }), [localEntries, refFilter, nameFilter, viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const grandTotal = visibleEntries.reduce((s, e) => s + (e.total || 0), 0);
+  const grandTotal = useMemo(() => visibleEntries.reduce((s, e) => s + (e.total || 0), 0), [visibleEntries]);
 
   const NUMERIC_SORT_KEYS = new Set(["fabric", "tailoring", "embroidery", "addon", "advance", "total"]);
-  const sorted = [...visibleEntries].sort((a, b) => {
+  const sorted = useMemo(() => [...visibleEntries].sort((a, b) => {
     let va = a[sortKey];
     let vb = b[sortKey];
     if (NUMERIC_SORT_KEYS.has(sortKey)) {
@@ -118,7 +118,7 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
     }
     const cmp = String(va).localeCompare(String(vb));
     return sortDir === "asc" ? cmp : -cmp;
-  });
+  }), [visibleEntries, sortKey, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Row-level unique key: date + ref
   const rowKey = (entry) => `${entry.date}__${entry.ref}`;
@@ -465,6 +465,7 @@ export default function Daybook() {
 
   const handleCategoryTally = async (ref, date, category, action) => {
     await tallyEntries({ entry_ids: [ref], date, category, action });
+    invalidateDaybookPendingCache();
   };
 
   const summaryStats = (() => {

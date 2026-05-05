@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { getCustomers, getOrderStatus, markOrderDelivered, updateItem, getItems } from "@/api";
+import { getCustomers, getOrderStatus, markOrderDelivered, updateItem, getItems, invalidateOrderStatusCache } from "@/api";
 import { fmt } from "@/lib/fmt";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import { ClipboardText, MagnifyingGlass, CheckCircle, Warning, PencilSimple } from "@phosphor-icons/react";
@@ -96,6 +96,7 @@ export default function OrderStatus() {
       await Promise.all(ids.map(id => updateItem(id, { delivery_date: editingDelivery.value })));
       toast({ title: "Delivery date updated", description: `Order #${editingDelivery.order_no}` });
       setEditingDelivery(null);
+      invalidateOrderStatusCache();
       loadData();
     } catch (e) {
       toast({ title: "Error", description: "Failed to update delivery date", variant: "destructive" });

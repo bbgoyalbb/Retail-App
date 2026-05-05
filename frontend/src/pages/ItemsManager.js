@@ -346,15 +346,20 @@ export default function ItemsManager() {
   const grouped = useMemo(() => buildGrouped(allItems, advances), [allItems, advances]);
   const searchGrouped = useMemo(() => buildGrouped(searchResults, advances), [searchResults, advances]);
 
+  // Pre-compute settled status per ref so the refs memo doesn't call isOrderSettled N×M times
+  const settledMap = useMemo(() => {
+    const m = {};
+    Object.values(grouped).forEach(g => { m[g.ref] = isOrderSettled(g); });
+    return m;
+  }, [grouped]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const refs = useMemo(() => {
-    // In search mode: get the unique matched refs, then resolve full group data from `grouped`
-    // so the order list shows the right refs but detail pane always gets complete items.
     const source = isSearchMode
       ? Object.keys(searchGrouped).map(ref => grouped[ref] || searchGrouped[ref])
       : Object.values(grouped);
     const filtered = isSearchMode ? source.filter(Boolean) : source.filter(g => {
-      if (settleTab === "unsettled") return !isOrderSettled(g);
-      if (settleTab === "settled")   return isOrderSettled(g) && g.totals.total > 0;
+      if (settleTab === "unsettled") return !settledMap[g.ref];
+      if (settleTab === "settled")   return settledMap[g.ref] && g.totals.total > 0;
       if (settleTab === "awaiting")  return g.items.some(i => i.tailoring_status === "Awaiting Order");
       return true;
     });
@@ -362,7 +367,7 @@ export default function ItemsManager() {
       const cmp = String(a.date || "").localeCompare(String(b.date || ""));
       return sortDir === "desc" ? -cmp : cmp;
     });
-  }, [grouped, searchGrouped, isSearchMode, settleTab, sortDir]);
+  }, [grouped, searchGrouped, settledMap, isSearchMode, settleTab, sortDir]);
 
   // Always look up full group from `grouped` so detail pane shows complete order data
   const selectedGroups = useMemo(
