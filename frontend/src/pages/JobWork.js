@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo } from "react";
+﻿import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { getJobwork, moveJobwork, moveJobworkBack, moveJobworkEmb, editJobworkEmb, getJobworkFilters } from "@/api";
 import { ArrowRight, ArrowLeft, Funnel, X, PencilSimple, CheckSquare } from "@phosphor-icons/react";
@@ -46,6 +46,7 @@ function MoveDialog({ title, onConfirm, onCancel, fields }) {
 
 function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, moveBackLabel, sortKey, onSort, sortDir, onItemDoubleClick, editableFields }) {
   const [selected, setSelected] = useState([]);
+  const longPressTimer = useRef(null);
 
   const toggleSelect = (id) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
@@ -62,9 +63,16 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
   };
 
   const handleDoubleClick = (item) => {
-    if (onItemDoubleClick) {
-      onItemDoubleClick(item);
-    }
+    if (onItemDoubleClick) onItemDoubleClick(item);
+  };
+
+  const handleTouchStart = (item) => {
+    if (!onItemDoubleClick) return;
+    longPressTimer.current = setTimeout(() => { onItemDoubleClick(item); }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
   };
 
   return (
@@ -77,7 +85,7 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
         </div>
         <div className="flex gap-1">
           {["order_no", "date", "delivery_date"].map(k => (
-            <button key={k} onClick={() => onSort(k)} className={`px-1.5 py-0.5 text-[9px] uppercase rounded-sm border transition-all ${sortKey === k ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'border-[var(--border-subtle)] text-[var(--text-secondary)]'}`}>
+            <button key={k} onClick={() => onSort(k)} className={`px-2 py-1 text-[10px] uppercase rounded-sm border transition-all min-w-[32px] ${sortKey === k ? 'bg-[var(--brand)] text-white border-[var(--brand)]' : 'border-[var(--border-subtle)] text-[var(--text-secondary)]'}`}>
               {k === "order_no" ? "Ord" : k === "date" ? "Date" : "Del"}
             </button>
           ))}
@@ -96,7 +104,10 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
             className={`px-3 py-2.5 text-sm cursor-pointer transition-colors ${selected.includes(item.id) ? 'bg-[#C86B4D10]' : 'hover:bg-[var(--bg)]'}`} 
             onClick={() => toggleSelect(item.id)}
             onDoubleClick={() => handleDoubleClick(item)}
-            title={onItemDoubleClick ? "Double-click to edit" : undefined}
+            onTouchStart={() => handleTouchStart(item)}
+            onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchEnd}
+            title={onItemDoubleClick ? "Double-click or long-press to edit" : undefined}
           >
             <div className="flex items-center gap-2">
               <input type="checkbox" checked={selected.includes(item.id)} readOnly className="w-3.5 h-3.5 accent-[var(--brand)]" />

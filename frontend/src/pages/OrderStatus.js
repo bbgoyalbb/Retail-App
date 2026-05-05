@@ -196,6 +196,14 @@ export default function OrderStatus() {
           </div>
         )}
 
+      {/* Mobile legend */}
+        <div className="md:hidden px-4 py-2 bg-[var(--bg)] border-b border-[var(--border-subtle)] flex flex-wrap gap-x-3 gap-y-1">
+          {[
+            ["Pnd","Pending"],["Stc","Stitched"],["Dlv","Delivered"],["Emb","Emb. In Progress"],["EFin","Emb. Finished"]
+          ].map(([abbr, full]) => (
+            <span key={abbr} className="text-[10px] text-[var(--text-secondary)]"><span className="font-mono font-semibold text-[var(--text-primary)]">{abbr}</span> = {full}</span>
+          ))}
+        </div>
       {/* Mobile card view */}
         <div className="md:hidden divide-y divide-[var(--border-subtle)]">
           {!loading && rows.length === 0 && (

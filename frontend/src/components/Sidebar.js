@@ -176,7 +176,11 @@ export default function Sidebar({ open, setOpen }) {
                 data-testid={`nav-${item.key}`}
                 aria-label={item.label}
                 aria-current={isActive ? "page" : undefined}
-                onClick={() => { navigate(item.path); setOpen(false); }}
+                onClick={() => {
+                  const ev = new CustomEvent("navigate:request", { cancelable: true, detail: { path: item.path } });
+                  window.dispatchEvent(ev);
+                  if (!ev.defaultPrevented) { navigate(item.path); setOpen(false); }
+                }}
                 onKeyDown={(e) => handleNavKeyDown(e, filteredItems, idx)}
                 className={`
                   group relative w-full flex items-center text-sm rounded-sm transition-all duration-150 active:scale-[0.97]
@@ -189,7 +193,7 @@ export default function Sidebar({ open, setOpen }) {
                 <Icon size={20} weight={isActive ? "fill" : "regular"} className="flex-shrink-0" />
                 {/* Custom tooltip for collapsed mode */}
                 {collapsed && (
-                  <span className="absolute left-full ml-2 px-2 py-1 bg-[var(--surface)] text-[var(--text-primary)] text-xs rounded border border-[var(--border-subtle)] shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                  <span className="absolute left-full ml-2 px-2 py-1 bg-[var(--surface)] text-[var(--text-primary)] text-xs rounded border border-[var(--border-subtle)] shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity pointer-events-none z-50">
                     {item.label}
                   </span>
                 )}

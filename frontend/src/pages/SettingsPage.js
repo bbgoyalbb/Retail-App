@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { getSettings, updateSettings, uploadLogo, invalidatePublicSettingsCache, invalidateSettingsCache, BACKEND_URL } from "@/api";
 import { FloppyDisk, Plus, Trash, CheckCircle, Warning, Keyboard } from "@phosphor-icons/react";
 import { DEFAULT_NUM_SHORTCUTS, DEFAULT_LETTER_SHORTCUTS, loadLetterShortcuts } from "@/components/KeyboardShortcuts";
@@ -11,6 +12,7 @@ const getLogoUrl = (path) => {
 };
 
 export default function SettingsPage() {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState(null);
   const [savedSettings, setSavedSettings] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -67,6 +69,7 @@ export default function SettingsPage() {
     setLetterShortcuts(updated);
   };
 
+  const [navConfirm, setNavConfirm] = useState(null);
   const isDirty = settings && savedSettings && JSON.stringify(settings) !== JSON.stringify(savedSettings);
 
   // Warn on page/tab close with unsaved changes
@@ -74,6 +77,16 @@ export default function SettingsPage() {
     const handler = (e) => { if (isDirty) { e.preventDefault(); e.returnValue = ""; } };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
+  // Intercept sidebar/link navigation when dirty
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e) => {
+      if (e.detail?.path) { e.preventDefault(); setNavConfirm(e.detail.path); }
+    };
+    window.addEventListener("navigate:request", handler);
+    return () => window.removeEventListener("navigate:request", handler);
   }, [isDirty]);
 
   // Clear timeout on unmount to prevent memory leak
@@ -163,6 +176,8 @@ export default function SettingsPage() {
         <div className="bg-[var(--surface)] border border-[var(--border-subtle)] p-6 rounded-sm space-y-4">
           <h3 className="font-heading text-base font-medium">Article Types & Rates</h3>
           <div className="space-y-2">
+            <div className="overflow-x-auto">
+            <div className="min-w-[320px]">
             <div className="grid grid-cols-12 gap-2 text-xs uppercase tracking-[0.1em] font-semibold text-[var(--text-secondary)] px-1">
               <span className="col-span-4">Type</span>
               <span className="col-span-3">Tailoring (₹)</span>
@@ -170,13 +185,15 @@ export default function SettingsPage() {
               <span className="col-span-2"></span>
             </div>
             {settings.article_types?.map(type => (
-              <div key={type} className="grid grid-cols-12 gap-2 items-center">
+              <div key={type} className="grid grid-cols-12 gap-2 items-center mt-2">
                 <span className="col-span-4 text-sm font-medium">{type}</span>
                 <input type="number" value={settings.tailoring_rates?.[type]?.tailoring || 0} onChange={e => updateRate(type, "tailoring", e.target.value)} className="col-span-3 px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm focus:ring-1 focus:ring-[var(--brand)]" />
                 <input type="number" value={settings.tailoring_rates?.[type]?.labour || 0} onChange={e => updateRate(type, "labour", e.target.value)} className="col-span-3 px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm focus:ring-1 focus:ring-[var(--brand)]" />
                 <button onClick={() => removeArticle(type)} className="col-span-2 p-1 text-[var(--error)] hover:bg-[#9E473D10] rounded-sm"><Trash size={14} /></button>
               </div>
             ))}
+            </div>
+            </div>
             <div className="flex gap-2 pt-2">
               <input value={newArticle} onChange={e => setNewArticle(e.target.value)} placeholder="New article type" onKeyDown={e => e.key === "Enter" && addArticle()} className="flex-1 px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm focus:ring-1 focus:ring-[var(--brand)]" />
               <button onClick={addArticle} className="px-3 py-1.5 text-xs bg-[var(--brand)] text-white rounded-sm hover:bg-[var(--brand-hover)]"><Plus size={14} /></button>
@@ -473,6 +490,21 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Unsaved changes navigation guard */}
+      {navConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm shadow-xl w-full max-w-xs p-5 space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Unsaved changes</p>
+              <p className="text-xs text-[var(--text-secondary)] mt-1">You have unsaved settings changes. Leave without saving?</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setNavConfirm(null)} className="flex-1 px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm hover:bg-[var(--bg)] transition-colors">Stay</button>
+              <button onClick={() => { setNavConfirm(null); navigate(navConfirm); }} className="flex-1 px-3 py-2 text-sm bg-[var(--error)] text-white rounded-sm hover:opacity-90 transition-opacity">Leave</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

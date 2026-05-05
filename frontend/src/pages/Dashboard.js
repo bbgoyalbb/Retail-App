@@ -273,7 +273,7 @@ export default function Dashboard() {
                 {data.recent_items.map((item, i) => (
                   <tr key={i} className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[#C86B4D06] transition-colors">
                     <td className="px-4 py-3 font-mono text-xs text-[var(--text-secondary)]">{item.date}</td>
-                    <td className="px-4 py-3 text-sm font-medium truncate max-w-[140px]">{item.name}</td>
+                    <td className="px-4 py-3 text-sm font-medium truncate max-w-[140px]" title={item.name}>{item.name}</td>
                     <td className="hidden sm:table-cell px-4 py-3 font-mono text-xs text-[var(--brand)]">{item.ref}</td>
                     <td className="hidden md:table-cell px-4 py-3 text-xs text-center text-[var(--text-secondary)]">{item.item_count}</td>
                     <td className="px-4 py-3 font-mono text-sm text-right font-medium">₹{fmt(item.total)}</td>

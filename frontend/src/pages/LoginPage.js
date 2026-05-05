@@ -101,8 +101,8 @@ export default function LoginPage() {
                 placeholder="Enter username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                autoFocus
                 autoComplete="username"
+                inputMode="text"
                 className="w-full px-3 py-2.5 text-sm border border-[var(--border-subtle)] rounded-sm bg-[var(--surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition-colors"
               />
             </div>

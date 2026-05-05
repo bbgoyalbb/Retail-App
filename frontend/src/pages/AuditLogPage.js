@@ -111,7 +111,7 @@ export default function AuditLogPage() {
       {/* Filter Panel */}
       {showFilters && (
         <div className="bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm p-4 space-y-3">
-          <div className="flex flex-wrap gap-3 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)]">User</label>
               <select 
@@ -142,6 +142,8 @@ export default function AuditLogPage() {
               <label className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)]">To Date</label>
               <DatePickerInput value={filterDateTo} onChange={setFilterDateTo} placeholder="To date" />
             </div>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
             <button
               onClick={clearFilters}
               className="flex items-center gap-1 px-3 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--error)] transition-colors"
@@ -150,7 +152,7 @@ export default function AuditLogPage() {
             </button>
             <button
               onClick={() => { setPage(0); fetchLogs(0); }}
-              className="flex items-center gap-1 px-3 py-2 text-xs bg-[var(--brand)] text-white rounded-sm hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1 px-4 py-2 text-xs bg-[var(--brand)] text-white rounded-sm hover:opacity-90 transition-opacity"
             >
               Apply Filters
             </button>

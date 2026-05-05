@@ -864,9 +864,9 @@ export default function ItemsManager() {
             <p className="text-sm text-[var(--text-secondary)] mb-5">
               <span className="font-mono font-medium">{cancelConfirm.ref}</span> — {cancelConfirm.items?.length||0} items will be marked cancelled and all amounts zeroed.
             </p>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setCancelConfirm(null)} className="px-4 py-2 text-sm border border-[var(--border-subtle)] rounded-sm hover:bg-[var(--bg)]">Back</button>
-              <button onClick={() => handleCancelOrder(cancelConfirm)} className="px-4 py-2 text-sm bg-[var(--warning)] text-white rounded-sm hover:opacity-90">Cancel Order</button>
+            <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end mt-2">
+              <button onClick={() => setCancelConfirm(null)} className="px-5 py-2.5 text-sm border border-[var(--border-subtle)] rounded-sm hover:bg-[var(--bg)] w-full sm:w-auto">Back</button>
+              <button onClick={() => handleCancelOrder(cancelConfirm)} className="px-5 py-2.5 text-sm bg-[var(--warning)] text-white rounded-sm hover:opacity-90 w-full sm:w-auto font-medium">Cancel Order</button>
             </div>
           </div>
         </div>
