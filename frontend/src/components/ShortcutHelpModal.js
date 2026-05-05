@@ -69,9 +69,9 @@ export default function ShortcutHelpModal() {
               <p className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[var(--text-secondary)] mb-2">{section}</p>
               <div className="space-y-2">
                 {items.map(({ keys, desc }) => (
-                  <div key={desc} className="flex items-center justify-between">
-                    <span className="text-sm text-[var(--text-primary)]">{desc}</span>
-                    <div className="flex items-center gap-1">
+                  <div key={desc} className="flex items-center justify-between gap-4">
+                    <span className="text-sm text-[var(--text-primary)] min-w-0 truncate">{desc}</span>
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       {keys.map((k, i) => (
                         <span key={i} className="flex items-center gap-1">
                           <kbd className="px-2 py-0.5 text-xs border border-[var(--border-subtle)] rounded bg-[var(--bg)] font-mono text-[var(--text-primary)] shadow-sm">

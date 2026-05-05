@@ -472,23 +472,27 @@ export default function NewBill() {
 
       {/* Mobile step indicator */}
       {!showPostSave && (
-        <div className="lg:hidden flex items-center gap-0 bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm overflow-hidden">
+        <div className="lg:hidden flex items-stretch bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm overflow-hidden">
           {[
             { label: "Customer", icon: User },
             { label: "Items",    icon: ShoppingCart },
             { label: "Payment", icon: CreditCard },
           ].map(({ label, icon: Icon }, idx) => (
-            <div key={label} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
-              idx === billStep
-                ? "bg-[var(--brand)] text-white"
-                : idx < billStep
-                ? "bg-[var(--brand)]/10 text-[var(--brand)]"
-                : "text-[var(--text-secondary)]"
-            }`}>
-              <Icon size={13} weight={idx <= billStep ? "fill" : "regular"} />
-              {label}
-              {idx < 2 && <span className={`ml-auto pr-1 text-[10px] ${idx < billStep ? "text-[var(--brand)]" : "text-[var(--border-strong)]"}` }>›</span>}
-            </div>
+            <React.Fragment key={label}>
+              <div className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
+                idx === billStep
+                  ? "bg-[var(--brand)] text-white"
+                  : idx < billStep
+                  ? "bg-[var(--brand)]/10 text-[var(--brand)]"
+                  : "text-[var(--text-secondary)]"
+              }`}>
+                <Icon size={13} weight={idx <= billStep ? "fill" : "regular"} />
+                {label}
+              </div>
+              {idx < 2 && (
+                <span className="flex items-center justify-center w-4 flex-shrink-0 text-[10px] text-[var(--border-strong)] bg-[var(--bg)] border-x border-[var(--border-subtle)]">›</span>
+              )}
+            </React.Fragment>
           ))}
         </div>
       )}

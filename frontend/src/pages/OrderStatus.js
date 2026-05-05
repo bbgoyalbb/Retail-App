@@ -325,11 +325,13 @@ export default function OrderStatus() {
                   <td className="px-3 py-2">
                     {editingDelivery?.order_no === row.order_no ? (
                       <div className="flex items-center gap-1">
-                        <DatePickerInput
-                          value={editingDelivery.value}
-                          onChange={v => setEditingDelivery(p => ({ ...p, value: v }))}
-                          onKeyDown={e => { if (e.key === "Enter") handleSaveDeliveryDate(); if (e.key === "Escape") setEditingDelivery(null); }}
-                        />
+                        <div className="w-32 flex-shrink-0">
+                          <DatePickerInput
+                            value={editingDelivery.value}
+                            onChange={v => setEditingDelivery(p => ({ ...p, value: v }))}
+                            onKeyDown={e => { if (e.key === "Enter") handleSaveDeliveryDate(); if (e.key === "Escape") setEditingDelivery(null); }}
+                          />
+                        </div>
                         <button onClick={handleSaveDeliveryDate} disabled={savingDelivery} className="px-1.5 py-1 text-[10px] bg-[var(--brand)] text-white rounded-sm hover:opacity-90 disabled:opacity-50 whitespace-nowrap">{savingDelivery ? "…" : "Save"}</button>
                         <button onClick={() => setEditingDelivery(null)} className="px-1.5 py-1 text-[10px] border border-[var(--border-subtle)] rounded-sm hover:bg-[var(--bg)]">✕</button>
                       </div>

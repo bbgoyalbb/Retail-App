@@ -273,10 +273,13 @@ button, a, [role="button"] {
 /* ─── Print styles ─────────────────────────────────────────── */
 @media print {
   /* Hide chrome */
-  aside, nav,
+  aside,
   [data-testid="mobile-top-bar"],
   [data-testid="mobile-bottom-tab-bar"],
   .no-print { display: none !important; }
+
+  /* Suppress page transition during print */
+  .page-in, .page-out { animation: none !important; opacity: 1 !important; }
 
   /* Full-width content */
   main { width: 100% !important; overflow: visible !important; }

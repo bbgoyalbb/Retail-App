@@ -208,7 +208,7 @@ export default function Reports() {
       </div>
 
       {/* Tabs with scroll-snap for crisp stops on mobile */}
-      <div className="flex gap-1 border-b border-[var(--border-subtle)] overflow-x-auto [&::-webkit-scrollbar]:hidden scroll-snap-type-x mandatory">
+      <div className="flex gap-1 border-b border-[var(--border-subtle)] overflow-x-auto [&::-webkit-scrollbar]:hidden scroll-snap-type-x mandatory no-print">
         {[
           { key: "revenue", label: "Revenue", icon: TrendUp },
           { key: "customers", label: "Customers", icon: Users },
