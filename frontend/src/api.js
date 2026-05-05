@@ -219,6 +219,7 @@ export const uploadLogo = (formData) => api.post("/upload/logo", formData, {
 
 // Auth
 export const login = (username, password) => api.post("/auth/login", { username, password }).then(r => r.data);
+export const logoutApi = () => api.post("/auth/logout");
 export const getMe = () => api.get("/auth/me").then(r => r.data);
 export const registerUser = (data) => api.post("/auth/register", data);
 export const listUsers = () => api.get("/auth/users").then(r => r.data);

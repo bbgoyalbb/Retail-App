@@ -7,6 +7,7 @@ All route logic lives in routers/. This file handles:
   - Static file serving
   - Startup / shutdown lifecycle
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -45,6 +46,11 @@ db = client[db_name]
 # We use importlib to load routers/deps.py in isolation — this avoids
 # triggering routers/__init__.py (which imports all routers, each of which
 # does `from .deps import db` at module level and would copy the None value).
+#
+# TODO (non-urgent): Replace this pattern with app.state.db + Depends(get_db).
+# Each router endpoint would receive `db: Database = Depends(get_db)` as a
+# parameter, removing the global mutable and the importlib bootstrap entirely.
+# This is a pure refactor with no behaviour change but touches every endpoint.
 import importlib, importlib.util, sys  # noqa: E402
 _spec = importlib.util.spec_from_file_location(
     "routers.deps", ROOT_DIR / "routers" / "deps.py"
@@ -55,12 +61,71 @@ _spec.loader.exec_module(_deps)
 _deps.set_db(db)
 
 # ==========================================
+# LIFECYCLE
+# ==========================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from pymongo import ASCENDING, DESCENDING
+
+    await db.items.create_index("id",      unique=True, background=True)
+    await db.items.create_index("ref",     background=True)
+    await db.items.create_index("barcode", background=True)
+    await db.items.create_index("name",    background=True)
+    await db.items.create_index("date",    background=True)
+    await db.items.create_index("order_no", background=True)
+    await db.items.create_index("karigar", background=True)
+
+    await db.items.create_index([(  "tailoring_status", ASCENDING), ("date",            DESCENDING)], background=True)
+    await db.items.create_index([(  "ref",              ASCENDING), ("fabric_pay_mode",  ASCENDING)], background=True)
+    await db.items.create_index([(  "name",             ASCENDING), ("fabric_pay_mode",  ASCENDING)], background=True)
+    await db.items.create_index([(  "tailoring_status", ASCENDING), ("labour_paid",      ASCENDING)], background=True)
+    await db.items.create_index([(  "embroidery_status", ASCENDING), ("emb_labour_paid",  ASCENDING)], background=True)
+    await db.items.create_index([(  "embroidery_status", ASCENDING), ("date",             DESCENDING)], background=True)
+    await db.items.create_index("fabric_pay_mode",      background=True)
+    await db.items.create_index("tailoring_pay_mode",   background=True)
+    await db.items.create_index("embroidery_pay_mode",  background=True)
+    await db.items.create_index("addon_pay_mode",       background=True)
+
+    await db.items.create_index("fabric_pay_date",      background=True)
+    await db.items.create_index("tailoring_pay_date",   background=True)
+    await db.items.create_index("embroidery_pay_date",  background=True)
+    await db.items.create_index("addon_pay_date",       background=True)
+    await db.items.create_index("delivery_date",        background=True)
+    await db.items.create_index([("delivery_date", ASCENDING), ("tailoring_status", ASCENDING)], background=True)
+    await db.items.create_index(
+        [("name", "text"), ("barcode", "text"), ("ref", "text"), ("order_no", "text"), ("karigar", "text"), ("addon_desc", "text")],
+        name="items_text_search", background=True
+    )
+
+    await db.advances.create_index("id",   unique=True, background=True)
+    await db.advances.create_index("ref",  background=True)
+    await db.advances.create_index("date", background=True)
+    await db.advances.create_index([("ref",  ASCENDING), ("date",  ASCENDING)], background=True)
+    await db.advances.create_index([("date", ASCENDING), ("tally", ASCENDING)], background=True)
+    await db.items.create_index("created_at", background=True)
+    await db.settings.create_index("key", unique=True, background=True)
+    await db.token_blocklist.create_index("jti", unique=True, background=True)
+    await db.token_blocklist.create_index("created_at", expireAfterSeconds=86400, background=True)
+    await db.audit_logs.create_index("timestamp", background=True)
+    await db.audit_logs.create_index("username",  background=True)
+    await db.audit_logs.create_index("action",    background=True)
+    await db.audit_logs.create_index([("timestamp", DESCENDING)], background=True)
+    await db.counters.create_index("created_at", expireAfterSeconds=86400 * 90, background=True)
+    logger.info("MongoDB indexes ensured.")
+
+    yield
+
+    client.close()
+
+
+# ==========================================
 # APP
 # ==========================================
 _debug = os.environ.get("DEBUG", "false").lower() == "true"
 app = FastAPI(
     title="Retail Management API",
     version="2.0.0",
+    lifespan=lifespan,
     docs_url="/docs" if _debug else None,
     redoc_url=None,
     openapi_url="/openapi.json" if _debug else None,
@@ -172,61 +237,3 @@ async def health_check():
         return JSONResponse({"status": "error", "database": str(exc)}, status_code=503)
 
 
-# ==========================================
-# LIFECYCLE
-# ==========================================
-@app.on_event("startup")
-async def startup_db_client():
-    from pymongo import ASCENDING, DESCENDING
-
-    await db.items.create_index("id",      unique=True, background=True)
-    await db.items.create_index("ref",     background=True)
-    await db.items.create_index("barcode", background=True)
-    await db.items.create_index("name",    background=True)
-    await db.items.create_index("date",    background=True)
-    await db.items.create_index("order_no", background=True)
-    await db.items.create_index("karigar", background=True)
-
-    await db.items.create_index([(  "tailoring_status", ASCENDING), ("date",            DESCENDING)], background=True)
-    await db.items.create_index([(  "ref",              ASCENDING), ("fabric_pay_mode",  ASCENDING)], background=True)
-    await db.items.create_index([(  "name",             ASCENDING), ("fabric_pay_mode",  ASCENDING)], background=True)
-    await db.items.create_index([(  "tailoring_status", ASCENDING), ("labour_paid",      ASCENDING)], background=True)
-    await db.items.create_index([(  "embroidery_status", ASCENDING), ("emb_labour_paid",  ASCENDING)], background=True)
-    await db.items.create_index([(  "embroidery_status", ASCENDING), ("date",             DESCENDING)], background=True)
-    await db.items.create_index("fabric_pay_mode",      background=True)
-    await db.items.create_index("tailoring_pay_mode",   background=True)
-    await db.items.create_index("embroidery_pay_mode",  background=True)
-    await db.items.create_index("addon_pay_mode",       background=True)
-
-    await db.items.create_index("fabric_pay_date",      background=True)
-    await db.items.create_index("tailoring_pay_date",   background=True)
-    await db.items.create_index("embroidery_pay_date",  background=True)
-    await db.items.create_index("addon_pay_date",       background=True)
-    await db.items.create_index("delivery_date",        background=True)
-    await db.items.create_index([("delivery_date", ASCENDING), ("tailoring_status", ASCENDING)], background=True)
-    await db.items.create_index(
-        [("name", "text"), ("barcode", "text"), ("ref", "text"), ("order_no", "text"), ("karigar", "text"), ("addon_desc", "text")],
-        name="items_text_search", background=True
-    )
-
-    # _id index is automatic — no explicit creation needed for counters
-    await db.advances.create_index("id",   unique=True, background=True)
-    await db.advances.create_index("ref",  background=True)
-    await db.advances.create_index("date", background=True)
-    await db.advances.create_index([("ref",  ASCENDING), ("date",  ASCENDING)], background=True)
-    await db.advances.create_index([("date", ASCENDING), ("tally", ASCENDING)], background=True)
-    await db.items.create_index("created_at", background=True)
-    await db.settings.create_index("key", unique=True, background=True)
-    await db.token_blocklist.create_index("jti", unique=True, background=True)
-    await db.token_blocklist.create_index("created_at", expireAfterSeconds=86400, background=True)
-    await db.audit_logs.create_index("timestamp", background=True)
-    await db.audit_logs.create_index("username",  background=True)
-    await db.audit_logs.create_index("action",    background=True)
-    await db.audit_logs.create_index([("timestamp", DESCENDING)], background=True)
-    await db.counters.create_index("created_at", expireAfterSeconds=86400 * 90, background=True)
-    logger.info("MongoDB indexes ensured.")
-
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()

@@ -44,7 +44,7 @@ cert = (
     .public_key(key.public_key())
     .serial_number(x509.random_serial_number())
     .not_valid_before(datetime.now(timezone.utc))
-    .not_valid_after(datetime.now(timezone.utc) + timedelta(days=3650))
+    .not_valid_after(datetime.now(timezone.utc) + timedelta(days=730))
     .add_extension(x509.SubjectAlternativeName(san_entries), critical=False)
     .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
     .sign(key, hashes.SHA256())

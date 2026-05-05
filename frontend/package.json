@@ -48,7 +48,9 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build",
-    "test": "craco test"
+    "test": "craco test",
+    "test:visual": "node ../visual_audit_v2.mjs",
+    "test:audit": "node ../visual_audit.mjs"
   },
   "browserslist": {
     "production": [
