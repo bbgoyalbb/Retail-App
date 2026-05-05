@@ -168,7 +168,13 @@ let _advancesCache = null;
 let _advancesCacheTime = 0;
 const ADVANCES_CACHE_TTL = 60000;
 export const getAdvances = (params) => {
-  if (!params || Object.keys(params).length === 0) {
+  // Normalise refs array → comma string for the backend
+  let normalized = params ? { ...params } : {};
+  if (Array.isArray(normalized.refs)) {
+    normalized.refs = normalized.refs.join(",");
+  }
+  const isUnscoped = !normalized || Object.keys(normalized).length === 0;
+  if (isUnscoped) {
     const now = Date.now();
     if (_advancesCache && now - _advancesCacheTime < ADVANCES_CACHE_TTL) {
       return Promise.resolve(_advancesCache);
@@ -179,7 +185,7 @@ export const getAdvances = (params) => {
       return res;
     });
   }
-  return api.get("/advances", { params });
+  return api.get("/advances", { params: normalized });
 };
 export const invalidateAdvancesCache = () => { _advancesCache = null; };
 export const createAdvance = (data) => api.post("/advances", data);

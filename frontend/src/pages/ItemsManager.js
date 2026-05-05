@@ -292,8 +292,14 @@ export default function ItemsManager() {
     setLoading(true);
     try {
       const params = { limit: 500, summary: true };
-      const [itemsRes, advRes] = await Promise.all([getItems(params), getAdvances()]);
-      setAllItems(itemsRes.data.items || []);
+      const itemsRes = await getItems(params);
+      const items = itemsRes.data.items || [];
+      setAllItems(items);
+      // Scope advances to the refs actually loaded — avoids full-table scan
+      const uniqueRefs = [...new Set(items.map(i => i.ref).filter(Boolean))];
+      const advRes = uniqueRefs.length > 0
+        ? await getAdvances({ refs: uniqueRefs })
+        : { data: [] };
       setAdvances(advRes.data || []);
     } catch {
       setMessage({ type: "error", text: "Failed to load data" });

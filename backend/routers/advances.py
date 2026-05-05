@@ -16,13 +16,22 @@ from .models import AdvanceCreateRequest, AdvanceUpdateRequest
 router = APIRouter()
 
 @router.get("/advances")
-async def get_advances(name: Optional[str] = None, ref: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
+async def get_advances(
+    name: Optional[str] = None,
+    ref: Optional[str] = None,
+    refs: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_dep),
+):
     query = {}
     if name:
         query["name"] = name
     if ref:
         query["ref"] = ref
-    advances = await db.advances.find(query, {"_id": 0}).sort("date", -1).to_list(500)
+    elif refs:
+        ref_list = [r.strip() for r in refs.split(",") if r.strip()]
+        if ref_list:
+            query["ref"] = {"$in": ref_list}
+    advances = await db.advances.find(query, {"_id": 0}).sort("date", -1).to_list(2000)
     return advances
 
 @router.post("/advances")

@@ -152,6 +152,7 @@ async def get_items(
     limit: int = Query(500, le=2000),
     skip: int = 0,
     summary: bool = False,
+    include_cancelled: bool = False,
     current_user: dict = Depends(get_current_user_dep),
 ):
     query = {}
@@ -167,6 +168,8 @@ async def get_items(
         query["embroidery_status"] = embroidery_status
     if order_no:
         query["order_no"] = order_no
+    if not include_cancelled:
+        query["cancelled"] = {"$ne": True}
 
     # summary=true returns only the fields needed for the ItemsManager grid rows
     projection = {"_id": 0}
@@ -181,10 +184,12 @@ async def get_items(
                   "addon_desc", "karigar"]:
             projection[f] = 1
 
-    items, total = await asyncio.gather(
-        db.items.find(query, projection).sort("date", -1).skip(skip).limit(limit).to_list(limit),
-        db.items.count_documents(query),
-    )
+    items = await db.items.find(query, projection).sort("date", -1).skip(skip).limit(limit).to_list(limit)
+    # Skip expensive count_documents when result fits in one page — common case
+    if skip == 0 and len(items) < limit:
+        total = len(items)
+    else:
+        total = await db.items.count_documents(query)
     return {"items": items, "total": total}
 
 @router.get("/items/{item_id}")
