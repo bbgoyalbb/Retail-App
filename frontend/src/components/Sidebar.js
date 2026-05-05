@@ -204,7 +204,9 @@ export default function Sidebar({ open, setOpen }) {
                   }`}>{daybookPending > 99 ? '99+' : daybookPending}</span>
                 )}
                 {collapsed && item.key === 'daybook' && daybookPending > 0 && (
-                  <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[var(--brand)] block" />
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[var(--brand)] text-white text-[9px] font-bold leading-4 text-center flex-shrink-0">
+                    {daybookPending > 99 ? '99+' : daybookPending}
+                  </span>
                 )}
               </button>
             );

@@ -7,6 +7,12 @@ function MoveDialog({ title, onConfirm, onCancel, fields }) {
   const [values, setValues] = useState({});
   const [skips, setSkips] = useState({});
 
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onCancel(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onCancel]);
+
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" data-testid="move-dialog">
       <div className="bg-[var(--surface)] border border-[var(--border-subtle)] p-6 rounded-sm max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>

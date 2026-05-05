@@ -160,9 +160,9 @@ export default function Dashboard() {
           <span className="text-sm text-[var(--error)] font-medium">
             {data.overdue_orders_count} article{data.overdue_orders_count !== 1 ? 's' : ''} overdue for delivery — delivery date has passed but tailoring is not complete.
           </span>
-          <button onClick={() => navigate('/order-status')}
+          <button onClick={() => navigate('/order-status?overdue=1')}
             className="ml-auto text-xs font-medium text-[var(--error)] underline underline-offset-2 hover:opacity-80 whitespace-nowrap">
-            View →
+            View overdue →
           </button>
         </div>
       )}

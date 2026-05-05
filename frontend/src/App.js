@@ -7,6 +7,7 @@ import MobileBottomTabBar from "@/components/MobileBottomTabBar";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
+import ShortcutHelpModal from "@/components/ShortcutHelpModal";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useLocation } from "react-router-dom";
@@ -121,9 +122,14 @@ function AppShell() {
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
-    el.classList.remove("page-in");
-    void el.offsetWidth;
-    el.classList.add("page-in");
+    el.classList.remove("page-in", "page-out");
+    el.classList.add("page-out");
+    const t = setTimeout(() => {
+      el.classList.remove("page-out");
+      void el.offsetWidth;
+      el.classList.add("page-in");
+    }, 100);
+    return () => clearTimeout(t);
   }, [location.pathname]);
 
   const handleSetOpen = (v) => {
@@ -164,6 +170,7 @@ function AppShell() {
           <ErrorBoundary>
             <Suspense fallback={<PageLoader />}>
               <KeyboardShortcuts />
+              <ShortcutHelpModal />
               <Routes>
                 {/* All roles */}
                 <Route path="/" element={<Dashboard />} />

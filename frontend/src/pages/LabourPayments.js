@@ -4,8 +4,10 @@ import { dataEvents } from "@/lib/dataEvents";
 import { fmt } from "@/lib/fmt";
 import { UsersThree, CurrencyDollar, CheckCircle, Circle, CaretDown, CaretRight, Trash, PencilSimple, X } from "@phosphor-icons/react";
 import { DatePickerInput } from "@/components/DatePickerInput";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LabourPayments() {
+  const { toast } = useToast();
   const [viewMode, setViewMode] = useState("unpaid"); // "unpaid" | "paid"
   const [filterType, setFilterType] = useState("All");
   const [filterKarigar, setFilterKarigar] = useState("All");
@@ -15,7 +17,6 @@ export default function LabourPayments() {
   const [payDate, setPayDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedModes, setSelectedModes] = useState(["Cash"]);
   const [paymentModes, setPaymentModes] = useState(["Cash", "PhonePe", "Google Pay [E]", "Google Pay [S]", "Bank Transfer"]);
-  const [message, setMessage] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const loadData = useCallback(() => {
@@ -26,7 +27,7 @@ export default function LabourPayments() {
     };
     getLabourItems(params)
       .then(res => setItems(res.data))
-      .catch(err => setMessage({ type: "error", text: err.message || "Failed to load labour items" }));
+      .catch(err => toast({ title: "Error", description: err.message || "Failed to load labour items", variant: "destructive" }));
   }, [filterType, filterKarigar, viewMode]);
 
   useEffect(() => {
@@ -76,11 +77,11 @@ export default function LabourPayments() {
         tailoringIds.length > 0 && payLabour({ item_ids: tailoringIds, labour_type: "tailoring", payment_date: payDate, payment_modes: selectedModes, payment_id: paymentId }),
         embroideryIds.length > 0 && payLabour({ item_ids: embroideryIds, labour_type: "embroidery", payment_date: payDate, payment_modes: selectedModes, payment_id: paymentId }),
       ].filter(Boolean));
-      setMessage({ type: "success", text: `${selected.length} labour payments processed` });
+      toast({ title: "Payment recorded", description: `${selected.length} items marked as paid` });
       setSelected([]);
       loadData();
     } catch (err) {
-      setMessage({ type: "error", text: err.response?.data?.detail || err.message || "Failed to process payment" });
+      toast({ title: "Error", description: err.response?.data?.detail || err.message || "Failed to process payment", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -191,13 +192,13 @@ export default function LabourPayments() {
           item_ids: editingPayment.items.map(i => i.id),
           labour_type: editingPayment.labour_type
         });
-        setMessage({ type: "success", text: `Payment deleted - ${editingPayment.items.length} items marked as unpaid` });
+        toast({ title: "Payment deleted", description: `${editingPayment.items.length} items marked as unpaid` });
         loadData();
       } catch (err) {
-        setMessage({ type: "error", text: "Failed to delete payment" });
+        toast({ title: "Error", description: "Failed to delete payment", variant: "destructive" });
       } finally {
         setSaving(false);
-        setTimeout(() => setMessage(null), 3000);
+        setTimeout(() => {}, 3000);
       }
       setEditingPayment(null);
       setEditSelectedItems([]);
@@ -214,15 +215,15 @@ export default function LabourPayments() {
           labour_type: editingPayment.labour_type
         });
       }
-      setMessage({ type: "success", text: `Payment updated - ${itemsToRemove.length} items removed, ${itemsToKeep.length} items kept` });
+      toast({ title: "Payment updated", description: `${itemsToRemove.length} items removed, ${itemsToKeep.length} items kept` });
       setEditingPayment(null);
       setEditSelectedItems([]);
       loadData();
     } catch (e) {
-      setMessage({ type: "error", text: "Failed to update payment" });
+      toast({ title: "Error", description: "Failed to update payment", variant: "destructive" });
     } finally {
       setSaving(false);
-      setTimeout(() => setMessage(null), 3000);
+      setTimeout(() => {}, 3000);
     }
   };
 
@@ -239,10 +240,10 @@ export default function LabourPayments() {
         item_ids: payment.items.map(i => i.id),
         labour_type: payment.labour_type
       });
-      setMessage({ type: "success", text: `Payment deleted - ${payment.items.length} items marked as unpaid` });
+      toast({ title: "Payment deleted", description: `${payment.items.length} items marked as unpaid` });
       loadData();
     } catch (err) {
-      setMessage({ type: "error", text: "Failed to delete payment" });
+      toast({ title: "Error", description: "Failed to delete payment", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -255,11 +256,9 @@ export default function LabourPayments() {
         <p className="text-sm text-[var(--text-secondary)] mt-1">Pay tailoring and embroidery labour</p>
       </div>
 
-      {message && (
-        <div className={`p-4 border rounded-sm text-sm ${message.type === 'success' ? 'bg-[#455D4A10] border-[var(--success)] text-[var(--success)]' : 'bg-[#9E473D10] border-[var(--error)] text-[var(--error)]'}`}>
-          {message.text}
-        </div>
-      )}
+      {/* <div className={`p-4 border rounded-sm text-sm ${message.type === 'success' ? 'bg-[#455D4A10] border-[var(--success)] text-[var(--success)]' : 'bg-[#9E473D10] border-[var(--error)] text-[var(--error)]'}`}>
+        {message.text}
+      </div> */}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Filters & Table */}
@@ -288,16 +287,22 @@ export default function LabourPayments() {
               </button>
             </div>
             
-            <select data-testid="labour-type-filter" value={filterType} onChange={e => setFilterType(e.target.value)} className="px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]">
-              <option value="All">All Types</option>
-              <option value="Tailoring Labour">Tailoring</option>
-              <option value="Embroidery Labour">Embroidery</option>
-            </select>
-            {filterType !== "Tailoring Labour" && (
-              <select data-testid="labour-karigar-filter" value={filterKarigar} onChange={e => setFilterKarigar(e.target.value)} className="px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]">
-                <option value="All">All Karigars</option>
-                {karigars.map(k => <option key={k} value={k}>{k}</option>)}
+            <div className="relative">
+              <select data-testid="labour-type-filter" value={filterType} onChange={e => setFilterType(e.target.value)} className="px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]">
+                <option value="All">All Types</option>
+                <option value="Tailoring Labour">Tailoring</option>
+                <option value="Embroidery Labour">Embroidery</option>
               </select>
+              {filterType !== "All" && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[var(--brand)] pointer-events-none" />}
+            </div>
+            {filterType !== "Tailoring Labour" && (
+              <div className="relative">
+                <select data-testid="labour-karigar-filter" value={filterKarigar} onChange={e => setFilterKarigar(e.target.value)} className="px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]">
+                  <option value="All">All Karigars</option>
+                  {karigars.map(k => <option key={k} value={k}>{k}</option>)}
+                </select>
+                {filterKarigar !== "All" && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[var(--brand)] pointer-events-none" />}
+              </div>
             )}
             
             <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap gap-3 sm:gap-4 text-sm">
@@ -505,7 +510,7 @@ No paid entries`}
                 
                 {/* Edit Payment Modal */}
                 {editingPayment && (
-                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onKeyDown={e => e.key === "Escape" && cancelEditPayment()}>
                     <div className="bg-[var(--surface)] rounded-sm shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
                       <div className="p-4 border-b border-[var(--border-subtle)] flex justify-between items-center">
                         <h3 className="font-heading text-lg">Edit Payment - {editingPayment.ref}</h3>

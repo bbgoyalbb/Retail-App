@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createBill, getCustomers, getInvoiceUrl, getSettings, invalidateCustomersCache, getNextBillRef } from "@/api";
 import { invalidate } from "@/lib/dataEvents";
-import { Plus, FloppyDisk, Spinner, WifiSlash, ArrowsSplit } from "@phosphor-icons/react";
+import { Plus, FloppyDisk, Spinner, WifiSlash, ArrowsSplit, User, ShoppingCart, CreditCard } from "@phosphor-icons/react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import BarcodeScanner from "@/components/BarcodeScanner";
@@ -460,12 +460,38 @@ export default function NewBill() {
     setTimeout(() => nameRef.current?.focus(), 50);
   };
 
+  // Step indicator: 0=customer, 1=items, 2=payment
+  const billStep = customerName.trim() === "" ? 0 : items.length === 0 ? 1 : 2;
+
   return (
     <div data-testid="new-bill-page" className="space-y-6 pb-24 lg:pb-6">
       <div>
         <h1 className="font-heading text-2xl sm:text-3xl font-light tracking-tight">New Bill</h1>
         <p className="text-sm text-[var(--text-secondary)] mt-1">Create a new fabric sale entry</p>
       </div>
+
+      {/* Mobile step indicator */}
+      {!showPostSave && (
+        <div className="lg:hidden flex items-center gap-0 bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm overflow-hidden">
+          {[
+            { label: "Customer", icon: User },
+            { label: "Items",    icon: ShoppingCart },
+            { label: "Payment", icon: CreditCard },
+          ].map(({ label, icon: Icon }, idx) => (
+            <div key={label} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
+              idx === billStep
+                ? "bg-[var(--brand)] text-white"
+                : idx < billStep
+                ? "bg-[var(--brand)]/10 text-[var(--brand)]"
+                : "text-[var(--text-secondary)]"
+            }`}>
+              <Icon size={13} weight={idx <= billStep ? "fill" : "regular"} />
+              {label}
+              {idx < 2 && <span className={`ml-auto pr-1 text-[10px] ${idx < billStep ? "text-[var(--brand)]" : "text-[var(--border-strong)]"}` }>›</span>}
+            </div>
+          ))}
+        </div>
+      )}
 
       {message && !showPostSave && (
         <div data-testid="bill-message" className={`p-4 border rounded-sm text-sm ${message.type === 'success' ? 'bg-[#455D4A10] border-[var(--success)] text-[var(--success)]' : 'bg-[#9E473D10] border-[var(--error)] text-[var(--error)]'}`}>
@@ -717,6 +743,8 @@ export default function NewBill() {
                             </select>
                             <input
                               type="number"
+                              inputMode="decimal"
+                              pattern="[0-9]*"
                               value={addon.amount}
                               onChange={e => updateAddonItem(idx, addonIdx, { amount: e.target.value })}
                               className="w-20 px-2 py-1.5 text-sm border border-[var(--border-subtle)] rounded-sm"
@@ -776,6 +804,8 @@ export default function NewBill() {
                                 </select>
                                 <input
                                   type="number"
+                                  inputMode="decimal"
+                                  pattern="[0-9]*"
                                   value={addon.amount}
                                   onChange={e => updateAddonItem(idx, addonIdx, { amount: e.target.value })}
                                   className="w-24 px-2 py-1 text-sm border border-[var(--border-subtle)] rounded-sm"

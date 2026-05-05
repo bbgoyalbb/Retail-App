@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { getCustomers, getOrderStatus, markOrderDelivered } from "@/api";
+import { useSearchParams } from "react-router-dom";
+import { getCustomers, getOrderStatus, markOrderDelivered, updateItem, getItems } from "@/api";
 import { fmt } from "@/lib/fmt";
 import { DatePickerInput } from "@/components/DatePickerInput";
-import { ClipboardText, MagnifyingGlass, CheckCircle } from "@phosphor-icons/react";
+import { ClipboardText, MagnifyingGlass, CheckCircle, Warning, PencilSimple } from "@phosphor-icons/react";
+import { useToast } from "@/hooks/use-toast";
 
 
 const STATUS_LABELS = {
@@ -38,20 +40,24 @@ function StatusPill({ label, value, tone }) {
 }
 
 export default function OrderStatus() {
+  const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [customer, setCustomer] = useState("");
   const [orderNo, setOrderNo] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [overdueOnly, setOverdueOnly] = useState(searchParams.get("overdue") === "1");
   const [loading, setLoading] = useState(false);
   const [delivering, setDelivering] = useState(null);
-  const [message, setMessage] = useState(null);
+  const [editingDelivery, setEditingDelivery] = useState(null); // { order_no, value }
+  const [savingDelivery, setSavingDelivery] = useState(false);
   const today = new Date().toISOString().split("T")[0];
 
   // Keep a ref to the latest filter values so loadData is stable
-  const filtersRef = useRef({ customer, orderNo, fromDate, toDate });
-  useEffect(() => { filtersRef.current = { customer, orderNo, fromDate, toDate }; }, [customer, orderNo, fromDate, toDate]);
+  const filtersRef = useRef({ customer, orderNo, fromDate, toDate, overdueOnly });
+  useEffect(() => { filtersRef.current = { customer, orderNo, fromDate, toDate, overdueOnly }; }, [customer, orderNo, fromDate, toDate, overdueOnly]);
 
   const loadData = useCallback(async () => {
     const { customer, orderNo, fromDate, toDate } = filtersRef.current;
@@ -62,13 +68,13 @@ export default function OrderStatus() {
       if (orderNo) params.order_no = orderNo;
       if (fromDate) params.date_from = fromDate;
       if (toDate) params.date_to = toDate;
+      if (filtersRef.current.overdueOnly) params.overdue_only = true;
 
       const res = await getOrderStatus(params);
       setRows(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       setRows([]);
-      setMessage({ type: "error", text: err.response?.data?.detail || err.message || "Failed to load orders" });
-      setTimeout(() => setMessage(null), 4000);
+      toast({ title: "Error", description: err.response?.data?.detail || err.message || "Failed to load orders", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -81,16 +87,31 @@ export default function OrderStatus() {
   // Only load on mount; user clicks Apply to filter
   useEffect(() => { loadData(); }, [loadData]);
 
+  const handleSaveDeliveryDate = async () => {
+    if (!editingDelivery || savingDelivery) return;
+    setSavingDelivery(true);
+    try {
+      const itemsRes = await getItems({ order_no: editingDelivery.order_no, limit: 200 });
+      const ids = (itemsRes.data?.items || itemsRes.data || []).map(i => i.id || i._id).filter(Boolean);
+      await Promise.all(ids.map(id => updateItem(id, { delivery_date: editingDelivery.value })));
+      toast({ title: "Delivery date updated", description: `Order #${editingDelivery.order_no}` });
+      setEditingDelivery(null);
+      loadData();
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to update delivery date", variant: "destructive" });
+    } finally {
+      setSavingDelivery(false);
+    }
+  };
+
   const handleDeliver = async (order_no) => {
     setDelivering(order_no);
     try {
       await markOrderDelivered(order_no);
-      setMessage({ type: "success", text: `Order ${order_no} marked as Delivered` });
-      setTimeout(() => setMessage(null), 3000);
+      toast({ title: "Delivered", description: `Order ${order_no} marked as Delivered` });
       loadData();
     } catch (err) {
-      setMessage({ type: "error", text: err.message || "Failed" });
-      setTimeout(() => setMessage(null), 3000);
+      toast({ title: "Error", description: err.message || "Failed", variant: "destructive" });
     } finally { setDelivering(null); }
   };
 
@@ -116,10 +137,12 @@ export default function OrderStatus() {
         <p className="text-sm text-[var(--text-secondary)] mt-1">Master status board grouped by order number</p>
       </div>
 
-      {message && (
-        <div className={`p-3 border rounded-sm text-sm ${
-          message.type === 'success' ? 'bg-[#455D4A10] border-[var(--success)] text-[var(--success)]' : 'bg-[#9E473D10] border-[var(--error)] text-[var(--error)]'
-        }`}>{message.text}</div>
+      {overdueOnly && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-[#9E473D10] border border-[var(--error)] rounded-sm text-sm text-[var(--error)]">
+          <Warning size={15} weight="fill" />
+          Showing overdue orders only
+          <button onClick={() => { setOverdueOnly(false); setTimeout(loadData, 0); }} className="ml-auto text-xs underline hover:opacity-80">Clear</button>
+        </div>
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
@@ -152,7 +175,9 @@ export default function OrderStatus() {
       <div className="bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
-            <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">Customer</label>
+            <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1">
+              Customer {customer && <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] inline-block" />}
+            </label>
             <select value={customer} onChange={(e) => setCustomer(e.target.value)} className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]">
               <option value="">All Customers</option>
               {[...customers].sort().map((c) => (
@@ -161,7 +186,9 @@ export default function OrderStatus() {
             </select>
           </div>
           <div>
-            <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">Order No.</label>
+            <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1">
+              Order No. {orderNo && <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] inline-block" />}
+            </label>
             <input value={orderNo} onChange={(e) => setOrderNo(e.target.value)} placeholder="Type order no" className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
           </div>
           <div>
@@ -295,7 +322,28 @@ export default function OrderStatus() {
                   </td>
                   <td className="px-3 py-2 font-mono text-xs">₹{fmt(row.order_total || 0)}</td>
                   <td className="px-3 py-2 font-mono text-xs">{row.latest_bill_date || "-"}</td>
-                  <td className={`px-3 py-2 font-mono text-xs ${isOverdue ? "text-[var(--error)] font-semibold" : ""}`}>{row.latest_delivery_date && row.latest_delivery_date !== "N/A" ? row.latest_delivery_date : "-"}{isOverdue ? " ⚠" : ""}</td>
+                  <td className="px-3 py-2">
+                    {editingDelivery?.order_no === row.order_no ? (
+                      <div className="flex items-center gap-1">
+                        <DatePickerInput
+                          value={editingDelivery.value}
+                          onChange={v => setEditingDelivery(p => ({ ...p, value: v }))}
+                          onKeyDown={e => { if (e.key === "Enter") handleSaveDeliveryDate(); if (e.key === "Escape") setEditingDelivery(null); }}
+                        />
+                        <button onClick={handleSaveDeliveryDate} disabled={savingDelivery} className="px-1.5 py-1 text-[10px] bg-[var(--brand)] text-white rounded-sm hover:opacity-90 disabled:opacity-50 whitespace-nowrap">{savingDelivery ? "…" : "Save"}</button>
+                        <button onClick={() => setEditingDelivery(null)} className="px-1.5 py-1 text-[10px] border border-[var(--border-subtle)] rounded-sm hover:bg-[var(--bg)]">✕</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setEditingDelivery({ order_no: row.order_no, value: row.latest_delivery_date && row.latest_delivery_date !== "N/A" ? row.latest_delivery_date : "" })}
+                        className={`group flex items-center gap-1 font-mono text-xs hover:text-[var(--brand)] transition-colors ${isOverdue ? "text-[var(--error)] font-semibold" : ""}`}
+                        title="Click to edit delivery date"
+                      >
+                        {row.latest_delivery_date && row.latest_delivery_date !== "N/A" ? row.latest_delivery_date : "-"}{isOverdue ? " ⚠" : ""}
+                        <PencilSimple size={10} className="opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0" />
+                      </button>
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     {hasUndelivered && (
                       <button

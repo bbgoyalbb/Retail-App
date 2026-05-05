@@ -102,6 +102,8 @@ export default function PaymentSummaryPanel({
             ref={refs.amountRef}
             data-testid="amount-paid-input"
             type="number"
+            inputMode="decimal"
+            pattern="[0-9]*"
             value={amountPaid}
             onChange={(e) => onAmountPaidChange(e.target.value)}
             placeholder="0"

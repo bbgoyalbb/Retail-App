@@ -82,6 +82,8 @@ export default function ItemInputForm({
         type="number"
         step="0.1"
         min="0"
+        inputMode="decimal"
+        pattern="[0-9]*"
         className="px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
         onKeyDown={(e) => handleKeyDown(e, 'qty')}
       />
@@ -95,6 +97,8 @@ export default function ItemInputForm({
         placeholder="Price/m"
         type="number"
         min="0"
+        inputMode="decimal"
+        pattern="[0-9]*"
         className="px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
         onKeyDown={(e) => handleKeyDown(e, 'price')}
       />
@@ -109,6 +113,8 @@ export default function ItemInputForm({
         type="number"
         min="0"
         max="100"
+        inputMode="decimal"
+        pattern="[0-9]*"
         className="px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
         onKeyDown={(e) => handleKeyDown(e, 'discount')}
       />

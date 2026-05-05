@@ -259,3 +259,38 @@ button, a, [role="button"] {
 .modal-overlay {
   height: 100dvh;
 }
+
+/* Page exit fade */
+@keyframes page-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.page-out {
+  animation: page-out 0.12s ease-in both;
+  pointer-events: none;
+}
+
+/* ─── Print styles ─────────────────────────────────────────── */
+@media print {
+  /* Hide chrome */
+  aside, nav,
+  [data-testid="mobile-top-bar"],
+  [data-testid="mobile-bottom-tab-bar"],
+  .no-print { display: none !important; }
+
+  /* Full-width content */
+  main { width: 100% !important; overflow: visible !important; }
+  body { background: white !important; color: black !important; }
+
+  /* Single-column charts and grids */
+  .grid { display: block !important; }
+  .grid > * { margin-bottom: 1rem; break-inside: avoid; }
+
+  /* Remove card borders for cleaner print */
+  .border { border-color: #ddd !important; }
+  .bg-\[var\(--surface\)\] { background: white !important; }
+  .bg-\[var\(--bg\)\] { background: #f9f9f9 !important; }
+
+  /* Recharts — force visible */
+  .recharts-wrapper { page-break-inside: avoid; }
+}

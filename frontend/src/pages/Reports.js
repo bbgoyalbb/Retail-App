@@ -5,7 +5,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { getRevenueReport, getCustomerReport, getSummaryReport, exportExcelUrl } from "@/api";
 import { fmt } from "@/lib/fmt";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from "recharts";
-import { ChartBar, Users, TrendUp, Warning, DownloadSimple } from "@phosphor-icons/react";
+import { ChartBar, Users, TrendUp, Warning, DownloadSimple, Printer } from "@phosphor-icons/react";
 
 // CSS-variable-aware chart colours — respond to dark/light mode
 const getChartColors = () => {
@@ -138,10 +138,16 @@ export default function Reports() {
           <h1 className="font-heading text-2xl sm:text-3xl font-light tracking-tight">Reports & Analytics</h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1">Revenue, customer, and business insights</p>
         </div>
-        <a href={exportExcelUrl()} target="_blank" rel="noreferrer"
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors">
-          <DownloadSimple size={16} /> Export Excel
-        </a>
+        <div className="flex items-center gap-2 no-print">
+          <button onClick={() => window.print()}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors">
+            <Printer size={16} /> Print
+          </button>
+          <a href={exportExcelUrl()} target="_blank" rel="noreferrer"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors">
+            <DownloadSimple size={16} /> Export Excel
+          </a>
+        </div>
       </div>
 
       {/* Error State */}

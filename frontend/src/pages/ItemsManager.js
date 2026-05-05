@@ -9,8 +9,9 @@ import { fmt } from "@/lib/fmt";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import {
   PencilSimple, Trash, X, Printer, CaretDown, CaretRight, Check, Plus, CheckCircle,
-  CurrencyDollar, Scissors, Tag,
+  CurrencyDollar, Scissors, Tag, Copy,
 } from "@phosphor-icons/react";
+import { useToast } from "@/hooks/use-toast";
 import InvoiceModal from "@/components/InvoiceModal";
 import SettlementPanel from "@/components/SettlementPanel";
 import OrderDetailPane from "@/components/OrderDetailPane";
@@ -214,6 +215,7 @@ export default function ItemsManager() {
   const [mismatchPrompt, setMismatchPrompt] = useState(null);
   const [reSettlePrompt, setReSettlePrompt] = useState(null);
 
+  const { toast } = useToast();
   const [articleTypeOptions, setArticleTypeOptions] = useState(SECTIONS.tailoring.fields.find(f => f.key === "article_type")?.options || []);
 
   // Settings
@@ -596,6 +598,22 @@ export default function ItemsManager() {
             {selectedRefs.size > 0 && (
               <button onClick={() => setSelectedRefs(new Set())} className="text-[10px] text-[var(--brand)] hover:underline flex-shrink-0">{selectedRefs.size} selected · clear</button>
             )}
+            {refs.length > 0 && (
+              <button
+                onClick={() => {
+                  const lines = refs.map(g => {
+                    const orderNos = [...new Set(g.items.map(i=>i.order_no).filter(o=>o&&o!=="N/A"))];
+                    return `${g.ref} — ${g.name}${orderNos.length ? ` (#${orderNos.join(", #")})` : ""} — ₹${fmt(g.totals.pending)} pending`;
+                  });
+                  const text = `Orders Summary (${new Date().toLocaleDateString("en-IN")})\n${"─".repeat(40)}\n${lines.join("\n")}`;
+                  navigator.clipboard.writeText(text).then(() => toast({ title: "Copied", description: `${refs.length} orders copied to clipboard` }));
+                }}
+                className="p-1 text-[var(--text-secondary)] hover:text-[var(--brand)] hover:bg-[var(--brand)]/5 rounded-sm transition-colors flex-shrink-0"
+                title="Copy summary to clipboard"
+              >
+                <Copy size={13} />
+              </button>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto">
@@ -604,10 +622,21 @@ export default function ItemsManager() {
             ))}
 
             {!loading && refs.length === 0 && (
-              <div className="py-14 px-4 text-center text-sm text-[var(--text-secondary)]">
-                {isSearchMode
-                  ? searchLoading ? "Searching…" : "No orders match your search"
-                  : `No ${settleTab==="unsettled"?"pending":settleTab==="settled"?"settled":settleTab==="awaiting"?"awaiting tailoring":""} orders`}
+              <div className="py-12 px-6 flex flex-col items-center gap-3 text-center">
+                <div className="w-10 h-10 rounded-full bg-[var(--bg)] flex items-center justify-center">
+                  <X size={18} className="text-[var(--text-secondary)]" />
+                </div>
+                <p className="text-sm font-medium text-[var(--text-primary)]">
+                  {isSearchMode ? (searchLoading ? "Searching…" : "No orders match your search") : `No ${settleTab==="unsettled"?"pending":settleTab==="settled"?"settled":settleTab==="awaiting"?"awaiting tailoring":""} orders`}
+                </p>
+                {(isSearchMode || nameFilter) && (
+                  <button
+                    onClick={clearSearch}
+                    className="text-xs px-3 py-1.5 border border-[var(--border-subtle)] rounded-sm text-[var(--brand)] hover:bg-[var(--brand)]/5 transition-colors"
+                  >
+                    Clear filters
+                  </button>
+                )}
               </div>
             )}
 

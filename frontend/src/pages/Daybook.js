@@ -227,8 +227,20 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
             const cats = activeCats(entry);
             const allTallied = allCatsTallied(entry);
             const anyUpdating = cats.some(c => updatingTally[`${rowKey(entry)}:${c}`]);
+            let swipeStartX = null;
             return (
-              <div key={entry.id || entry.ref} className="p-3 space-y-2">
+              <div
+                key={entry.id || entry.ref}
+                className="p-3 space-y-2"
+                onTouchStart={e => { swipeStartX = e.touches[0].clientX; }}
+                onTouchEnd={e => {
+                  if (swipeStartX === null || anyUpdating) return;
+                  const dx = e.changedTouches[0].clientX - swipeStartX;
+                  if (dx > 60) handleTallyAll(entry, true);
+                  else if (dx < -60) handleTallyAll(entry, false);
+                  swipeStartX = null;
+                }}
+              >
                 {/* Header row */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">

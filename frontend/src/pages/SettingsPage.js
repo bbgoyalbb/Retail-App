@@ -187,8 +187,8 @@ export default function SettingsPage() {
             {settings.article_types?.map(type => (
               <div key={type} className="grid grid-cols-12 gap-2 items-center mt-2">
                 <span className="col-span-4 text-sm font-medium">{type}</span>
-                <input type="number" value={settings.tailoring_rates?.[type]?.tailoring || 0} onChange={e => updateRate(type, "tailoring", e.target.value)} className="col-span-3 px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm focus:ring-1 focus:ring-[var(--brand)]" />
-                <input type="number" value={settings.tailoring_rates?.[type]?.labour || 0} onChange={e => updateRate(type, "labour", e.target.value)} className="col-span-3 px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm focus:ring-1 focus:ring-[var(--brand)]" />
+                <input type="number" inputMode="decimal" pattern="[0-9]*" value={settings.tailoring_rates?.[type]?.tailoring || 0} onChange={e => updateRate(type, "tailoring", e.target.value)} className="col-span-3 px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm focus:ring-1 focus:ring-[var(--brand)]" />
+                <input type="number" inputMode="decimal" pattern="[0-9]*" value={settings.tailoring_rates?.[type]?.labour || 0} onChange={e => updateRate(type, "labour", e.target.value)} className="col-span-3 px-2 py-1.5 text-xs border border-[var(--border-subtle)] rounded-sm focus:ring-1 focus:ring-[var(--brand)]" />
                 <button onClick={() => removeArticle(type)} className="col-span-2 p-1 text-[var(--error)] hover:bg-[#9E473D10] rounded-sm"><Trash size={14} /></button>
               </div>
             ))}
@@ -408,7 +408,7 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)]">GST Rate %</label>
-                <input type="number" value={settings.gst_rate || 5} onChange={e => setSettings(p => ({...p, gst_rate: parseFloat(e.target.value) || 0}))} className="w-20 px-2 py-1.5 text-sm border border-[var(--border-subtle)] rounded-sm focus:ring-1 focus:ring-[var(--brand)]" />
+                <input type="number" inputMode="decimal" pattern="[0-9]*" value={settings.gst_rate || 5} onChange={e => setSettings(p => ({...p, gst_rate: parseFloat(e.target.value) || 0}))} className="w-20 px-2 py-1.5 text-sm border border-[var(--border-subtle)] rounded-sm focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
             </div>
           </div>
