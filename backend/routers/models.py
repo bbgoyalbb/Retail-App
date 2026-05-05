@@ -162,6 +162,8 @@ class ItemUpdateRequest(BaseModel):
     emb_labour_paid: Optional[str] = None
     emb_labour_date: Optional[str] = None
     emb_labour_payment_mode: Optional[str] = None
+    emb_labour_payment_id: Optional[str] = None
+    labour_payment_id: Optional[str] = None
     tally_fabric: Optional[bool] = None
     tally_tailoring: Optional[bool] = None
     tally_embroidery: Optional[bool] = None

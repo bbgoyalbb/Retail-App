@@ -120,6 +120,10 @@ async def import_excel(
                     "tally_tailoring": bool(row[42]) if len(row) > 42 and row[42] not in (None, "", "N/A") else False,
                     "tally_embroidery": bool(row[43]) if len(row) > 43 and row[43] not in (None, "", "N/A") else False,
                     "tally_addon": bool(row[44]) if len(row) > 44 and row[44] not in (None, "", "N/A") else False,
+                    # Read cancellation columns if present, otherwise default to not cancelled
+                    "cancelled": bool(row[45]) if len(row) > 45 and row[45] not in (None, "", "N/A") else False,
+                    "cancelled_at": safe_str(row[46]) if len(row) > 46 and row[46] not in (None, "", "N/A") else "",
+                    "cancelled_ref": safe_str(row[47]) if len(row) > 47 and row[47] not in (None, "", "N/A") else "",
                     "created_at": datetime.now(timezone.utc).isoformat(),
                 }
                 items.append(item)
@@ -216,6 +220,8 @@ async def export_excel(current_user: dict = Depends(get_current_user_dep)):
         "Embroidery Payment Mode", "Embroidery Payment Date", "Embroidery Payment Received", "Embroidery Pending Balance",
         "Add-On Payment Mode", "Add-On Payment Date", "Add-On Payment Received", "Add-On Pending Balance",
         "Karigar?", "Emb Labour Amount", "Emb Labour Paid?", "Emb Labour Date", "Emb Labour Payment Mode",
+        "Tally Fabric", "Tally Tailoring", "Tally Embroidery", "Tally Addon",
+        "Cancelled", "Cancelled At", "Cancelled Ref",
     ]
 
     header_fill = PatternFill(start_color="C86B4D", end_color="C86B4D", fill_type="solid")
@@ -238,6 +244,8 @@ async def export_excel(current_user: dict = Depends(get_current_user_dep)):
         "embroidery_pay_mode", "embroidery_pay_date", "embroidery_received", "embroidery_pending",
         "addon_pay_mode", "addon_pay_date", "addon_received", "addon_pending",
         "karigar", "emb_labour_amount", "emb_labour_paid", "emb_labour_date", "emb_labour_payment_mode",
+        "tally_fabric", "tally_tailoring", "tally_embroidery", "tally_addon",
+        "cancelled", "cancelled_at", "cancelled_ref",
     ]
 
     for row_idx, item in enumerate(items, 2):
