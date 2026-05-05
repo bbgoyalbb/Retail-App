@@ -16,10 +16,12 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
  * Single-ref compat shim: billRef + customer props still accepted.
  */
 export default function SettlementPanel({ orders: ordersProp, billRef, customer, onClose, onSuccess }) {
-  // Normalise to array
-  const orders = ordersProp
-    ? ordersProp
-    : billRef ? [{ ref: billRef, name: customer }] : [];
+  // Normalise to array — stable reference so useCallback deps don't change every render
+  const orders = useMemo(
+    () => ordersProp ? ordersProp : billRef ? [{ ref: billRef, name: customer }] : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ordersProp, billRef, customer]
+  );
 
   // Per-ref balance data: { [ref]: { fabric, tailoring, embroidery, addon, advance } }
   const [refBalances, setRefBalances] = useState({});

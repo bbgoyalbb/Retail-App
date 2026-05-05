@@ -294,6 +294,7 @@ export const invalidateAllCaches = () => {
   invalidateReportsCache();
   invalidatePublicSettingsCache();
   invalidateSettingsCache();
+  invalidateKarigarsCache();
 };
 
 // Auth

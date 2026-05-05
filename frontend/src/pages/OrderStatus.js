@@ -78,7 +78,7 @@ export default function OrderStatus() {
     } finally {
       setLoading(false);
     }
-  }, []); // stable — reads from ref
+  }, [toast]); // stable — reads filters from ref; toast ref is also stable
 
   useEffect(() => {
     getCustomers().then((res) => setCustomers(res.data || [])).catch(() => setCustomers([]));

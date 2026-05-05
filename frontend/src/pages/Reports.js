@@ -77,7 +77,8 @@ export default function Reports() {
   const { theme } = useTheme();
   const chartRef = useRef(null);
   const [chartWidth, setChartWidth] = useState(800);
-  const COLORS = useMemo(() => getChartColors(), [theme]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const COLORS = useMemo(() => getChartColors(), [theme]); // theme change invalidates CSS vars
   const [tab, setTab] = useState("revenue");
   const [period, setPeriod] = useState("daily");
   const [dateFrom, setDateFrom] = useState("");

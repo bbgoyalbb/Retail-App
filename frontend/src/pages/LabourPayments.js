@@ -28,7 +28,7 @@ export default function LabourPayments() {
     getLabourItems(params)
       .then(res => setItems(res.data))
       .catch(err => toast({ title: "Error", description: err.message || "Failed to load labour items", variant: "destructive" }));
-  }, [filterType, filterKarigar, viewMode]);
+  }, [filterType, filterKarigar, viewMode, toast]);
 
   useEffect(() => {
     getKarigars().then(res => setKarigars(res.data)).catch(() => {});

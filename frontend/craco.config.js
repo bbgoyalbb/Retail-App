@@ -73,6 +73,13 @@ let webpackConfig = {
         }
       });
 
+      // Suppress html5-qrcode source map warnings at the webpack warning level too
+      webpackConfig.ignoreWarnings = [
+        ...(webpackConfig.ignoreWarnings || []),
+        /Failed to parse source map.*html5-qrcode/,
+        /Failed to parse source map.*node_modules[/\\]src[/\\]/,
+      ];
+
       return webpackConfig;
     },
   },
