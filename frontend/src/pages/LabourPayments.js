@@ -256,10 +256,6 @@ export default function LabourPayments() {
         <p className="text-sm text-[var(--text-secondary)] mt-1">Pay tailoring and embroidery labour</p>
       </div>
 
-      {/* <div className={`p-4 border rounded-sm text-sm ${message.type === 'success' ? 'bg-[#455D4A10] border-[var(--success)] text-[var(--success)]' : 'bg-[#9E473D10] border-[var(--error)] text-[var(--error)]'}`}>
-        {message.text}
-      </div> */}
-
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Filters & Table */}
         <div className="lg:col-span-3 space-y-4">

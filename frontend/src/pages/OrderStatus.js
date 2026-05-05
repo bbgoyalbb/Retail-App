@@ -175,7 +175,7 @@ export default function OrderStatus() {
       <div className="bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
-            <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1">
+            <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] flex items-center gap-1.5 mb-1.5">
               Customer {customer && <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] inline-block" />}
             </label>
             <select value={customer} onChange={(e) => setCustomer(e.target.value)} className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]">
@@ -186,7 +186,7 @@ export default function OrderStatus() {
             </select>
           </div>
           <div>
-            <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1">
+            <label className="text-xs uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] flex items-center gap-1.5 mb-1.5">
               Order No. {orderNo && <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] inline-block" />}
             </label>
             <input value={orderNo} onChange={(e) => setOrderNo(e.target.value)} placeholder="Type order no" className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
