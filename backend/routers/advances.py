@@ -46,6 +46,20 @@ async def update_advance(advance_id: str, req: AdvanceUpdateRequest, current_use
 
 @router.delete("/advances/{advance_id}")
 async def delete_advance(advance_id: str, current_user: dict = Depends(get_current_user_dep)):
+    adv = await db.advances.find_one({"id": advance_id}, {"_id": 0, "amount": 1, "ref": 1, "mode": 1})
+    if not adv:
+        raise HTTPException(status_code=404, detail="Advance not found")
+    if (adv.get("amount") or 0) > 0 and adv.get("mode") != "Adjusted":
+        consumed = await db.advances.find_one(
+            {"ref": adv["ref"], "mode": "Adjusted", "amount": {"$lt": 0}},
+            {"_id": 0, "amount": 1}
+        )
+        if consumed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot delete: this advance has already been consumed in a settlement "
+                       f"(₹{abs(consumed['amount']):.2f} adjusted). Delete the settlement adjustment first."
+            )
     result = await db.advances.delete_one({"id": advance_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Advance not found")
