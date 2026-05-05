@@ -64,6 +64,7 @@ backend/ssl.key
 backend/ssl.crt
 backend/frontend/
 backend/static/uploads/
+backend/.jwt_secret.lock
 
 # Git config — should not be tracked in version control
 .gitconfig
