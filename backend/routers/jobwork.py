@@ -50,6 +50,7 @@ async def add_addons(req: AddOnRequest, db = Depends(get_db), current_user: dict
         "addon_pay_mode": new_mode,
         "addon_pending": new_pending,
     }})
+    await audit_log(db, "add_addons", current_user, "item", req.item_id, {"addon_amount": new_total})
     return {"message": "Add-ons saved", "addon_desc": new_desc, "addon_amount": new_total}
 
 # ==========================================
@@ -215,4 +216,3 @@ async def get_jobwork_filters(db = Depends(get_db), current_user: dict = Depends
 # ==========================================
 # SETTLEMENTS
 # ==========================================
-
