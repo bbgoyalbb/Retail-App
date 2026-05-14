@@ -117,16 +117,19 @@ async def split_and_assign(req: SplitTailoringRequest, db = Depends(get_db), cur
 
         discounted_price = round(original_price - (original_price * original_discount / 100), 0)
         split_fabric_amt = round(discounted_price * split.qty, 0)
+        
+        orig_fabric_mode = str(item.get("fabric_pay_mode", "Pending"))
+        is_fabric_settled = orig_fabric_mode.startswith("Settled")
 
         if idx == 0:
             existing_tail_received = float(item.get("tailoring_received", 0))
             existing_tail_mode = item.get("tailoring_pay_mode", "Pending")
             tail_pending = round(tail_amt - existing_tail_received, 2)
             tail_mode = existing_tail_mode if str(existing_tail_mode).startswith("Settled") else ("Pending" if existing_tail_received <= 0 else existing_tail_mode)
+            
             first_update = {
                 "qty": split.qty,
                 "fabric_amount": split_fabric_amt,
-                "fabric_pending": split_fabric_amt if item.get("fabric_pay_mode") == "Pending" else item.get("fabric_pending", 0),
                 "article_type": split.article_type,
                 "tailoring_status": "Awaiting Order",
                 "tailoring_amount": tail_amt,
@@ -135,6 +138,15 @@ async def split_and_assign(req: SplitTailoringRequest, db = Depends(get_db), cur
                 "labour_amount": labour_amt,
                 "embroidery_status": split.embroidery_status,
             }
+            
+            if is_fabric_settled:
+                first_update["fabric_received"] = split_fabric_amt
+                first_update["fabric_pending"] = 0
+                # Keep existing pay mode if it was settled
+            else:
+                first_update["fabric_pending"] = split_fabric_amt
+                first_update["fabric_received"] = 0
+
             if split.embroidery_status == "Required":
                 first_update["embroidery_pay_mode"] = "Pending"
         else:
@@ -143,14 +155,16 @@ async def split_and_assign(req: SplitTailoringRequest, db = Depends(get_db), cur
             new_item["id"] = str(uuid.uuid4())
             new_item["qty"] = split.qty
             new_item["fabric_amount"] = split_fabric_amt
-            orig_fabric_mode = item.get("fabric_pay_mode", "Pending")
-            if str(orig_fabric_mode).startswith("Settled"):
+            
+            if is_fabric_settled:
+                new_item["fabric_received"] = split_fabric_amt
                 new_item["fabric_pending"] = 0
-                new_item["fabric_received"] = 0
-                new_item["fabric_pay_mode"] = "N/A"
+                new_item["fabric_pay_mode"] = orig_fabric_mode
             else:
-                new_item["fabric_pending"] = split_fabric_amt
                 new_item["fabric_received"] = 0
+                new_item["fabric_pending"] = split_fabric_amt
+                new_item["fabric_pay_mode"] = "Pending"
+
             new_item["article_type"] = split.article_type
             new_item["tailoring_status"] = "Awaiting Order"
             new_item["order_no"] = "N/A"

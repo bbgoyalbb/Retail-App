@@ -87,6 +87,20 @@ export function TailoringOverlay({ group, onClose, onSuccess }) {
       await splitTailoring({ item_id: splitItem.item_id, splits });
       setSplitItem(null);
       setMsg({ type: "success", text: "Split done — update order details below if needed" });
+      
+      // Refresh the items for this reference to show new splits in the table
+      invalidateItemsCache();
+      const res = await getItems({ ref: group.ref });
+      const items = res.data.items || [];
+      const awaiting = items.filter(i =>
+        !i.order_no || i.order_no === "N/A" || i.tailoring_status === "Awaiting Order"
+      );
+      setAssignments(awaiting.map(item => ({
+        item_id: item.id, barcode: item.barcode, qty: item.qty,
+        article_type: item.article_type !== "N/A" ? item.article_type : "Shirt",
+        embroidery_status: item.embroidery_status !== "N/A" ? item.embroidery_status : "Not Required",
+        order_no: "", delivery_date: "", selected: true,
+      })));
     } catch {
       setMsg({ type: "error", text: "Split failed" });
     }
