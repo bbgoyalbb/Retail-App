@@ -330,8 +330,8 @@ class SplitItem(BaseModel):
 # --- SplitTailoringRequest ---
 class SplitTailoringRequest(BaseModel):
     item_id: str
-    order_no: str
-    delivery_date: str
+    order_no: Optional[str] = None
+    delivery_date: Optional[str] = None
     splits: List[SplitItem]
 
 
