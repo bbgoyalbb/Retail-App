@@ -8,7 +8,7 @@ from datetime import datetime, timezone, date
 import uuid
 import re
 from bson import ObjectId
-from .deps import db, get_current_user_dep
+from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
@@ -16,7 +16,7 @@ from .models import ItemCreateRequest, ItemUpdateRequest
 
 router = APIRouter()
 
-async def _reset_counter_for_date(bill_date: str):
+async def _reset_counter_for_date(db, bill_date: str):
     """After a deletion, reset the counter to the current max seq in DB for that date.
     This allows the next bill on that date to reuse the freed slot if it was the last one."""
     if not bill_date:
@@ -40,7 +40,7 @@ async def _reset_counter_for_date(bill_date: str):
         await db.counters.delete_one({"_id": counter_key})
 
 @router.put("/items/{item_id}")
-async def update_item(item_id: str, req: ItemUpdateRequest, current_user: dict = Depends(get_current_user_dep)):
+async def update_item(item_id: str, req: ItemUpdateRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     item = await db.items.find_one({"id": item_id})
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -72,19 +72,19 @@ async def update_item(item_id: str, req: ItemUpdateRequest, current_user: dict =
     return updated
 
 @router.delete("/items/{item_id}")
-async def delete_item(item_id: str, current_user: dict = Depends(get_current_user_dep)):
+async def delete_item(item_id: str, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     item = await db.items.find_one({"id": item_id}, {"_id": 0})
     result = await db.items.delete_one({"id": item_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Item not found")
     await audit_log(db, "delete", current_user, "item", item_id, {"barcode": item.get("barcode") if item else None})
     if item:
-        await _reset_counter_for_date(item.get("date"))
+        await _reset_counter_for_date(db, item.get("date"))
     return {"message": "Item deleted"}
 
 
 @router.post("/items")
-async def create_item(req: ItemCreateRequest, current_user: dict = Depends(get_current_user_dep)):
+async def create_item(req: ItemCreateRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     """Create a new item for an existing order."""
     item_id = str(uuid.uuid4())
     
@@ -148,6 +148,7 @@ async def create_item(req: ItemCreateRequest, current_user: dict = Depends(get_c
 @router.delete("/items/bulk/delete")
 async def bulk_delete_items(
     item_ids: List[str],
+    db = Depends(get_db),
     current_user: dict = Depends(get_current_user_dep)
 ):
     # Restrict to admin/manager only
@@ -165,7 +166,7 @@ async def bulk_delete_items(
 
     # Reset counters for all affected dates
     for d in affected_dates:
-        await _reset_counter_for_date(d)
+        await _reset_counter_for_date(db, d)
 
     return {"message": f"{result.deleted_count} items deleted"}
 
@@ -175,6 +176,7 @@ async def bulk_delete_items(
 
 @router.get("/search")
 async def search_items(
+    db = Depends(get_db),
     q: str = "",
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,

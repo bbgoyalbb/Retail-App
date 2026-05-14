@@ -11,6 +11,7 @@ import ShortcutHelpModal from "@/components/ShortcutHelpModal";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useLocation } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { getPublicSettings, BACKEND_URL } from "@/api";
 
 const PAGE_TITLES = {
@@ -107,6 +108,19 @@ function AppShell() {
   });
   const { user, loading } = useAuth();
   const location = useLocation();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const handleError = (e) => {
+      toast({
+        title: "Error",
+        description: e.detail || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    };
+    window.addEventListener("api:error", handleError);
+    return () => window.removeEventListener("api:error", handleError);
+  }, [toast]);
 
   useEffect(() => {
     getPublicSettings().then(res => {

@@ -20,7 +20,14 @@ def _load_or_create_secret() -> str:
     env_val = os.environ.get("JWT_SECRET_KEY")
     if env_val:
         return env_val
-    env_file = Path(__file__).parent / ".env"
+    
+    # Check for a persistent secret file instead of writing to .env
+    secret_file = Path(__file__).parent / ".jwt_secret"
+    if secret_file.exists():
+        val = secret_file.read_text().strip()
+        if val:
+            return val
+
     # Use an exclusive lock so concurrent workers don't both write different secrets.
     lock_file = Path(__file__).parent / ".jwt_secret.lock"
     with open(lock_file, "w") as lf:
@@ -31,16 +38,15 @@ def _load_or_create_secret() -> str:
             else:
                 import fcntl
                 fcntl.flock(lf, fcntl.LOCK_EX)
-            # Re-read inside the lock — another worker may have written it.
-            if env_file.exists():
-                for line in env_file.read_text().splitlines():
-                    if line.startswith("JWT_SECRET_KEY="):
-                        val = line.split("=", 1)[1].strip()
-                        if val:
-                            return val
+            
+            # Re-read inside the lock
+            if secret_file.exists():
+                val = secret_file.read_text().strip()
+                if val:
+                    return val
+            
             new_secret = secrets.token_hex(32)
-            with open(env_file, "a") as f:
-                f.write(f"\nJWT_SECRET_KEY={new_secret}\n")
+            secret_file.write_text(new_secret)
             return new_secret
         finally:
             try:

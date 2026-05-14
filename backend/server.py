@@ -43,14 +43,8 @@ client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=5000)
 db = client[db_name]
 
 # Inject db into the shared deps module BEFORE any router is imported.
-# We use importlib to load routers/deps.py in isolation — this avoids
-# triggering routers/__init__.py (which imports all routers, each of which
-# does `from .deps import db` at module level and would copy the None value).
-#
-# TODO (non-urgent): Replace this pattern with app.state.db + Depends(get_db).
-# Each router endpoint would receive `db: Database = Depends(get_db)` as a
-# parameter, removing the global mutable and the importlib bootstrap entirely.
-# This is a pure refactor with no behaviour change but touches every endpoint.
+# This maintains compatibility with the existing global `db` imports
+# in routers while we transition to `Depends(get_db)`.
 import importlib, importlib.util, sys  # noqa: E402
 _spec = importlib.util.spec_from_file_location(
     "routers.deps", ROOT_DIR / "routers" / "deps.py"
@@ -130,6 +124,9 @@ app = FastAPI(
     redoc_url=None,
     openapi_url="/openapi.json" if _debug else None,
 )
+
+# Attach db to app state for use in Depends(get_db)
+app.state.db = db
 
 # Max upload size: 50 MB
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024

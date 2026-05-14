@@ -13,10 +13,14 @@ def set_db(database):
     global db
     db = database
 
+async def get_db(request: Request):
+    """Dependency to get the database from the app state."""
+    return request.app.state.db
 
 async def get_current_user_dep(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(auth_module.security),
+    db_dep = Depends(get_db),
 ):
     # Prefer Authorization header; fall back to ?token= query param (for direct download links).
     # SECURITY NOTE: Tokens in URLs are logged by servers/proxies and visible in browser history.
@@ -27,4 +31,4 @@ async def get_current_user_dep(
         if token_qp:
             from fastapi.security import HTTPAuthorizationCredentials
             credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token_qp)
-    return await auth_module.get_current_user(credentials, db)
+    return await auth_module.get_current_user(credentials, db_dep)

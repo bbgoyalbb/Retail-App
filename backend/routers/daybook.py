@@ -9,7 +9,7 @@ from datetime import datetime, timezone, date, timedelta
 import uuid
 import re
 from bson import ObjectId
-from .deps import db, get_current_user_dep
+from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
@@ -22,7 +22,7 @@ _daybook_dates_cache_time: float = 0.0
 _DAYBOOK_DATES_TTL: float = 60.0
 
 @router.get("/daybook")
-async def get_daybook(date_filter: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
+async def get_daybook(db = Depends(get_db), date_filter: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
     # Default to last 12 months when no date filter specified (prevents unbounded scans)
     if not date_filter or date_filter == "All":
         twelve_months_ago = (datetime.now(timezone.utc) - timedelta(days=365)).strftime("%Y-%m-%d")
@@ -124,7 +124,7 @@ async def get_daybook(date_filter: Optional[str] = None, current_user: dict = De
     return {"entries": list(entries.values())}
 
 @router.get("/daybook/dates")
-async def get_daybook_dates(current_user: dict = Depends(get_current_user_dep)):
+async def get_daybook_dates(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     global _daybook_dates_cache, _daybook_dates_cache_time
     if _daybook_dates_cache and (time.monotonic() - _daybook_dates_cache_time) < _DAYBOOK_DATES_TTL:
         return _daybook_dates_cache
@@ -148,7 +148,7 @@ async def get_daybook_dates(current_user: dict = Depends(get_current_user_dep)):
     return result
 
 @router.get("/daybook/pending-count")
-async def get_daybook_pending_count(current_user: dict = Depends(get_current_user_dep)):
+async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     """Return the number of untallied payment entries for today."""
     today = date.today().isoformat()
     _nc = {"$ne": True}
@@ -173,7 +173,7 @@ async def get_daybook_pending_count(current_user: dict = Depends(get_current_use
     return {"count": count}
 
 @router.post("/daybook/tally")
-async def tally_entries(req: TallyRequest, current_user: dict = Depends(get_current_user_dep)):
+async def tally_entries(req: TallyRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     tally_value = req.action == "tally"
 
     date_field_map = {

@@ -12,7 +12,7 @@ import logging
 from pathlib import Path
 ROOT_DIR = Path(__file__).parent.parent
 logger = logging.getLogger(__name__)
-from .deps import db, get_current_user_dep
+from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
@@ -66,7 +66,7 @@ def _clear_rate_limit(ip: str) -> None:
 router = APIRouter()
 
 @router.get("/settings/public")
-async def get_public_settings():
+async def get_public_settings(db = Depends(get_db)):
     settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
     merged = merge_settings(settings)
     return {
@@ -77,12 +77,12 @@ async def get_public_settings():
     }
 
 @router.get("/settings")
-async def get_settings(current_user: dict = Depends(get_current_user_dep)):
+async def get_settings(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
     return merge_settings(settings)
 
 @router.put("/settings")
-async def update_settings(data: dict, current_user: dict = Depends(get_current_user_dep)):
+async def update_settings(data: dict, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can update settings")
     # Validate hex color format if provided
@@ -144,7 +144,7 @@ async def upload_logo(file: UploadFile = File(...), current_user: dict = Depends
 # ==========================================
 
 @router.post("/auth/login")
-async def login(req: LoginRequest, request: Request):
+async def login(req: LoginRequest, request: Request, db = Depends(get_db)):
     client_ip = request.client.host if request.client else "unknown"
     _check_rate_limit(client_ip)
     user = await db.users.find_one({"username": req.username.lower().strip()})
@@ -170,7 +170,7 @@ async def login(req: LoginRequest, request: Request):
     }
 
 @router.post("/auth/logout")
-async def logout(request: Request, current_user: dict = Depends(get_current_user_dep)):
+async def logout(request: Request, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     try:
         auth_header = request.headers.get("Authorization", "")
         token = auth_header.removeprefix("Bearer ").strip()
@@ -196,7 +196,7 @@ async def get_me(current_user: dict = Depends(get_current_user_dep)):
     }
 
 @router.post("/auth/register")
-async def register_user(req: UserCreateRequest, current_user: dict = Depends(get_current_user_dep)):
+async def register_user(req: UserCreateRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can create users")
     if len(req.username.strip()) < 3:
@@ -224,7 +224,7 @@ async def register_user(req: UserCreateRequest, current_user: dict = Depends(get
     return {"message": "User created successfully", "username": new_user["username"]}
 
 @router.get("/auth/users")
-async def list_users(current_user: dict = Depends(get_current_user_dep)):
+async def list_users(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can list users")
     users = await db.users.find({}, {"password_hash": 0}).to_list(None)
@@ -233,7 +233,7 @@ async def list_users(current_user: dict = Depends(get_current_user_dep)):
     return users
 
 @router.put("/auth/users/{username}")
-async def update_user(username: str, data: dict, current_user: dict = Depends(get_current_user_dep)):
+async def update_user(username: str, data: dict, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can update users")
     if username == "admin" and current_user["username"] != "admin":
@@ -260,7 +260,7 @@ async def update_user(username: str, data: dict, current_user: dict = Depends(ge
     return {"message": "User updated successfully"}
 
 @router.delete("/auth/users/{username}")
-async def delete_user(username: str, current_user: dict = Depends(get_current_user_dep)):
+async def delete_user(username: str, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can delete users")
     if username == current_user["username"]:
@@ -280,6 +280,7 @@ async def delete_user(username: str, current_user: dict = Depends(get_current_us
 
 @router.get("/audit-logs")
 async def list_audit_logs(
+    db = Depends(get_db),
     limit: int = Query(50, ge=1, le=500),
     skip: int = Query(0, ge=0),
     user: str = Query(None, description="Filter by username"),

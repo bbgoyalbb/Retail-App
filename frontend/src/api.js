@@ -30,9 +30,21 @@ api.interceptors.response.use(
         window.dispatchEvent(new CustomEvent("auth:expired"));
       }
     }
+    
+    let message = err.message;
     if (err.response?.data?.detail) {
-      err.message = err.response.data.detail;
+      message = err.response.data.detail;
+      err.message = message;
+    } else if (err.code === "ERR_NETWORK") {
+      message = "Network error: Could not connect to the server. Please check your connection.";
+      err.message = message;
     }
+
+    // Dispatch global error event for automatic toast notifications
+    if (err.response?.status !== 401) {
+      window.dispatchEvent(new CustomEvent("api:error", { detail: message }));
+    }
+
     return Promise.reject(err);
   }
 );

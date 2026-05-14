@@ -10,7 +10,7 @@ import html as html_mod
 import uuid
 import re
 from bson import ObjectId
-from .deps import db, get_current_user_dep
+from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
@@ -20,7 +20,7 @@ import io
 router = APIRouter()
 
 @router.get("/invoice")
-async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref"), format: str = Query(default="standard", alias="format"), current_user: dict = Depends(get_current_user_dep)):
+async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str = Query(..., alias="ref"), format: str = Query(default="standard", alias="format"), current_user: dict = Depends(get_current_user_dep)):
     items, advances, stored_settings = await asyncio.gather(
         db.items.find({"ref": ref_id, "cancelled": {"$ne": True}}, {"_id": 0}).to_list(1000),
         db.advances.find({"ref": ref_id}, {"_id": 0}).to_list(50),
@@ -811,7 +811,7 @@ async def generate_invoice(request: Request, ref_id: str = Query(..., alias="ref
 # ==========================================
 
 @router.get("/reports/revenue")
-async def get_revenue_report(period: str = "daily", date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
+async def get_revenue_report(db = Depends(get_db), period: str = "daily", date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
     match_query = {"cancelled": {"$ne": True}}
     if date_from:
         match_query.setdefault("date", {})["$gte"] = date_from
@@ -861,7 +861,7 @@ async def get_revenue_report(period: str = "daily", date_from: Optional[str] = N
     return await db.items.aggregate(pipeline).to_list(500)
 
 @router.get("/reports/customers")
-async def get_customer_report(date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
+async def get_customer_report(db = Depends(get_db), date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
     match_query = {"cancelled": {"$ne": True}}
     if date_from:
         match_query.setdefault("date", {})["$gte"] = date_from
@@ -901,7 +901,7 @@ async def get_customer_report(date_from: Optional[str] = None, date_to: Optional
     ]
 
 @router.get("/reports/summary")
-async def get_summary_report(date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
+async def get_summary_report(db = Depends(get_db), date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
     match_query = {"cancelled": {"$ne": True}}
     if date_from:
         match_query.setdefault("date", {})["$gte"] = date_from

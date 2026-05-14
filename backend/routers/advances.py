@@ -7,7 +7,7 @@ from datetime import datetime, timezone, date
 import uuid
 import re
 from bson import ObjectId
-from .deps import db, get_current_user_dep
+from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
@@ -17,6 +17,7 @@ router = APIRouter()
 
 @router.get("/advances")
 async def get_advances(
+    db = Depends(get_db),
     name: Optional[str] = None,
     ref: Optional[str] = None,
     refs: Optional[str] = None,
@@ -35,7 +36,7 @@ async def get_advances(
     return advances
 
 @router.post("/advances")
-async def create_advance(req: AdvanceCreateRequest, current_user: dict = Depends(get_current_user_dep)):
+async def create_advance(req: AdvanceCreateRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     adv = {"id": str(uuid.uuid4()), "ref": req.ref, "name": req.name, "amount": req.amount, "date": req.date, "mode": req.mode or "Cash", "tally": False, "created_at": datetime.now(timezone.utc).isoformat()}
     await db.advances.insert_one(adv)
     await audit_log(db, "create", current_user, "advance", adv["id"], {"ref": req.ref, "amount": req.amount})
@@ -43,7 +44,7 @@ async def create_advance(req: AdvanceCreateRequest, current_user: dict = Depends
     return adv
 
 @router.put("/advances/{advance_id}")
-async def update_advance(advance_id: str, req: AdvanceUpdateRequest, current_user: dict = Depends(get_current_user_dep)):
+async def update_advance(advance_id: str, req: AdvanceUpdateRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     update = {k: v for k, v in req.model_dump().items() if v is not None}  # None = not provided; False/0 are valid values
     if not update:
         return {"message": "Nothing to update"}
@@ -54,7 +55,7 @@ async def update_advance(advance_id: str, req: AdvanceUpdateRequest, current_use
     return {"message": "Advance updated"}
 
 @router.delete("/advances/{advance_id}")
-async def delete_advance(advance_id: str, current_user: dict = Depends(get_current_user_dep)):
+async def delete_advance(advance_id: str, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     adv = await db.advances.find_one({"id": advance_id}, {"_id": 0, "amount": 1, "ref": 1, "mode": 1})
     if not adv:
         raise HTTPException(status_code=404, detail="Advance not found")

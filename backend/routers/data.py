@@ -11,7 +11,7 @@ import os
 import logging
 logger = logging.getLogger(__name__)
 from bson import ObjectId
-from .deps import db, get_current_user_dep
+from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
@@ -43,6 +43,7 @@ router = APIRouter()
 
 @router.post("/import/excel")
 async def import_excel(
+    db = Depends(get_db),
     file: UploadFile = File(...),
     mode: str = "replace",
     current_user: dict = Depends(get_current_user_dep)
@@ -197,7 +198,7 @@ async def import_excel(
 # ==========================================
 
 @router.get("/export/excel")
-async def export_excel(current_user: dict = Depends(get_current_user_dep)):
+async def export_excel(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     # Restrict to admin only
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -284,7 +285,7 @@ async def export_excel(current_user: dict = Depends(get_current_user_dep)):
 # ==========================================
 
 @router.get("/backup")
-async def backup_database(current_user: dict = Depends(get_current_user_dep)):
+async def backup_database(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     # Restrict to admin only
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -313,6 +314,7 @@ async def backup_database(current_user: dict = Depends(get_current_user_dep)):
 
 @router.post("/restore")
 async def restore_database(
+    db = Depends(get_db),
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user_dep)
 ):
@@ -403,7 +405,7 @@ async def restore_database(
         raise HTTPException(status_code=500, detail="Restore failed. Check server logs for details.")
 
 @router.get("/db/stats")
-async def get_db_stats(current_user: dict = Depends(get_current_user_dep)):
+async def get_db_stats(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     items_count = await db.items.count_documents({})
     advances_count = await db.advances.count_documents({})
     return {
@@ -413,21 +415,21 @@ async def get_db_stats(current_user: dict = Depends(get_current_user_dep)):
     }
 
 @router.get("/db/audit")
-async def get_db_audit(limit: int = 100, current_user: dict = Depends(get_current_user_dep)):
+async def get_db_audit(db = Depends(get_db), limit: int = 100, current_user: dict = Depends(get_current_user_dep)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can access the data audit")
     safe_limit = max(1, min(limit, 500))
     return await dq_generate_data_audit(db, safe_limit)
 
 @router.post("/db/normalize")
-async def normalize_db_data(limit: int = 100, current_user: dict = Depends(get_current_user_dep)):
+async def normalize_db_data(db = Depends(get_db), limit: int = 100, current_user: dict = Depends(get_current_user_dep)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can normalize data")
     safe_limit = max(1, min(limit, 500))
     return await dq_normalize_low_risk_data(db, safe_limit)
 
 @router.post("/db/repair")
-async def repair_db_data(limit: int = 100, current_user: dict = Depends(get_current_user_dep)):
+async def repair_db_data(db = Depends(get_db), limit: int = 100, current_user: dict = Depends(get_current_user_dep)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can repair data")
     safe_limit = max(1, min(limit, 500))
