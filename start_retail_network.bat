@@ -67,6 +67,9 @@ echo Backend ready!
 :start_frontend
 echo Checking for existing process on port %FRONTEND_PORT%...
 powershell -Command "$p = (Get-NetTCPConnection -LocalPort %FRONTEND_PORT% -ErrorAction SilentlyContinue).OwningProcess; if ($p) { Stop-Process -Id $p -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1 }"
+echo Ensuring frontend dependencies are up to date...
+cd /d "%ROOT%frontend"
+call yarn install --frozen-lockfile
 echo Starting frontend on 0.0.0.0:%FRONTEND_PORT%...
 "%PYTHON%" "%ROOT%backend\write_launcher.py" "%TEMP%\retail_frontend.bat" "%ROOT%frontend"
 start "React Frontend" cmd /k "%TEMP%\retail_frontend.bat"

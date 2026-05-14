@@ -67,6 +67,9 @@ echo.
 echo [2/4] Building React frontend for production...
 cd /d "%ROOT%frontend"
 set GENERATE_SOURCEMAP=false
+:: Clear old builds to ensure a fresh state
+if exist "build" rmdir /s /q "build"
+call yarn install --frozen-lockfile
 call yarn build
 if errorlevel 1 (
     echo [ERROR] React build failed! Check npm errors above.
