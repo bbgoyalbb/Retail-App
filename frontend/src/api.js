@@ -23,6 +23,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (res) => res,
   (err) => {
+    const silent = !!err.config?.silent || err.config?.headers?.["X-Silent-Errors"] === "1";
     if (err.response?.status === 401) {
       const hadToken = !!sessionStorage.getItem("token");
       sessionStorage.removeItem("token");
@@ -41,7 +42,7 @@ api.interceptors.response.use(
     }
 
     // Dispatch global error event for automatic toast notifications
-    if (err.response?.status !== 401) {
+    if (!silent && err.response?.status !== 401) {
       window.dispatchEvent(new CustomEvent("api:error", { detail: message }));
     }
 
@@ -267,7 +268,7 @@ export const getPublicSettings = () => {
   if (_publicSettingsCache && now - _publicSettingsCacheTime < PUBLIC_SETTINGS_TTL) {
     return Promise.resolve(_publicSettingsCache);
   }
-  return api.get("/settings/public").then(r => {
+  return api.get("/settings/public", { silent: true }).then(r => {
     _publicSettingsCache = r.data;
     _publicSettingsCacheTime = Date.now();
     return r.data;
