@@ -45,21 +45,42 @@ const UsersPage     = lazy(() => import("@/pages/UsersPage"));
 const AuditLogPage  = lazy(() => import("@/pages/AuditLogPage"));
 const LoginPage     = lazy(() => import("@/pages/LoginPage"));
 
+import { Lock, Warning, Shield, ArrowLeft } from "@phosphor-icons/react";
+
 function RequireRole({ roles, path, children }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const roleBlocked = !roles.includes(user?.role);
   const allowedPages = user?.allowed_pages ?? [];
   const pageBlocked = allowedPages.length > 0 && path && !allowedPages.includes(path);
+  
   if (roleBlocked || pageBlocked) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-        <p className="text-4xl">🔒</p>
-        <p className="font-heading text-lg font-semibold text-[var(--text-primary)]">Access Restricted</p>
-        <p className="text-sm text-[var(--text-secondary)]">
-          {roleBlocked
-            ? <>Your role <strong>{user?.role}</strong> does not have permission to view this page.</>
-            : "This page has been disabled for your account by the administrator."}
-        </p>
+      <div className="flex flex-col items-center justify-center py-32 px-6 text-center animate-in zoom-in-95 duration-300">
+        <div className="w-24 h-24 rounded-full bg-destructive/10 flex items-center justify-center mb-8 relative">
+          <Shield size={48} weight="duotone" className="text-destructive" />
+          <div className="absolute -bottom-1 -right-1 bg-background p-1.5 rounded-full border border-destructive/20 shadow-lg">
+            <Lock size={16} weight="bold" className="text-destructive" />
+          </div>
+        </div>
+        
+        <div className="max-w-md space-y-4">
+          <h2 className="font-heading text-2xl font-black uppercase tracking-[0.2em] text-destructive">Security Protocol</h2>
+          <p className="text-sm font-medium text-muted-foreground leading-relaxed">
+            {roleBlocked
+              ? <>Your current clearance level (<span className="text-destructive font-black uppercase">{user?.role}</span>) is insufficient to access this operational sector.</>
+              : "This specific endpoint has been administratively restricted for your agent profile."}
+          </p>
+          
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button variant="outline" onClick={() => navigate(-1)} className="h-11 px-8 font-black uppercase tracking-widest text-[10px] rounded-xl gap-2 transition-all active:scale-95">
+              <ArrowLeft size={16} weight="bold" /> Return to Previous Sector
+            </Button>
+            <Button onClick={() => navigate("/")} className="h-11 px-8 font-black uppercase tracking-widest text-[10px] rounded-xl gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95">
+              Dashboard Base
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
