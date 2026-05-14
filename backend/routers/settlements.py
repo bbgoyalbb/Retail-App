@@ -143,6 +143,16 @@ async def process_settlement(req: SettlementRequest, db = Depends(get_db), curre
         }
         await db.advances.insert_one(adjustment)
 
+    await audit_log(db, "settlement", current_user, "bill", req.ref, {
+        "allot_fabric": req.allot_fabric,
+        "allot_tailoring": req.allot_tailoring,
+        "allot_embroidery": req.allot_embroidery,
+        "allot_addon": req.allot_addon,
+        "allot_advance": req.allot_advance,
+        "fresh_payment": req.fresh_payment,
+        "use_advance": req.use_advance,
+    })
+
     return {"message": "Settlement processed successfully"}
 
 # ==========================================

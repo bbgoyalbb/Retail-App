@@ -107,6 +107,7 @@ async def pay_labour(req: LabourPaymentRequest, db = Depends(get_db), current_us
         }
     bulk_ops = [UpdateOne({"id": item_id}, {"$set": update}) for item_id in req.item_ids]
     result = await db.items.bulk_write(bulk_ops, ordered=False)
+    await audit_log(db, "pay_labour", current_user, "labour", f"count:{len(req.item_ids)}", {"labour_type": req.labour_type, "count": len(req.item_ids)})
     return {"message": f"{result.modified_count} labour payments processed"}
 
 @router.post("/labour/delete-payment")
@@ -117,6 +118,7 @@ async def delete_labour_payment(req: LabourDeleteRequest, db = Depends(get_db), 
         update = {"emb_labour_paid": "N/A", "emb_labour_date": "N/A", "emb_labour_payment_mode": "N/A", "emb_labour_payment_id": ""}
     bulk_ops = [UpdateOne({"id": item_id}, {"$set": update}) for item_id in req.item_ids]
     result = await db.items.bulk_write(bulk_ops, ordered=False)
+    await audit_log(db, "delete_labour_payment", current_user, "labour", f"count:{len(req.item_ids)}", {"labour_type": req.labour_type, "count": len(req.item_ids)})
     return {"message": f"{result.modified_count} items marked as unpaid"}
 
 # ==========================================

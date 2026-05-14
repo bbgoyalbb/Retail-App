@@ -184,6 +184,8 @@ async def import_excel(
             if advances:
                 await db.advances.insert_many(advances)
 
+        await audit_log(db, "import", current_user, "excel", file.filename, {"items": items_count, "advances": advances_count, "mode": mode})
+
         return {
             "message": f"Import successful! {items_count} items and {advances_count} advances imported.",
             "items_count": items_count,
@@ -306,6 +308,7 @@ async def backup_database(db = Depends(get_db), current_user: dict = Depends(get
     buffer.seek(0)
 
     filename = f"retail_backup_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
+    await audit_log(db, "backup", current_user, "database", filename, {"items": len(items), "advances": len(advances)})
     return StreamingResponse(
         buffer,
         media_type="application/json",

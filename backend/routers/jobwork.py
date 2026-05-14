@@ -130,6 +130,7 @@ async def move_jobwork(req: StatusUpdateRequest, db = Depends(get_db), current_u
         return {"message": "0 items moved"}
     bulk_ops = [UpdateOne({"id": item_id}, {"$set": update_fields}) for item_id in req.item_ids]
     result = await db.items.bulk_write(bulk_ops, ordered=False)
+    await audit_log(db, "move", current_user, "jobwork", f"count:{len(req.item_ids)}", {"status": req.new_status, "count": len(req.item_ids)})
     return {"message": f"{result.modified_count} items moved to {req.new_status}"}
 
 @router.post("/jobwork/move-back")
@@ -144,6 +145,7 @@ async def move_jobwork_back(req: MoveBackRequest, db = Depends(get_db), current_
         return {"message": "0 items moved back"}
     bulk_ops = [UpdateOne({"id": item_id}, {"$set": update_fields}) for item_id in req.item_ids]
     result = await db.items.bulk_write(bulk_ops, ordered=False)
+    await audit_log(db, "move_back", current_user, "jobwork", f"count:{len(req.item_ids)}", {"from_status": req.current_status, "count": len(req.item_ids)})
     return {"message": f"{result.modified_count} items moved back"}
 
 @router.post("/jobwork/move-emb")
@@ -171,6 +173,7 @@ async def move_embroidery(req: EmbMoveRequest, db = Depends(get_db), current_use
             update_fields["embroidery_pay_mode"] = emb_mode
         bulk_ops.append(UpdateOne({"id": item_id}, {"$set": update_fields}))
     result = await db.items.bulk_write(bulk_ops, ordered=False)
+    await audit_log(db, "update_embroidery", current_user, "jobwork", f"count:{len(req.item_ids)}", {"new_status": req.new_status, "count": len(req.item_ids)})
     return {"message": f"{result.modified_count} embroidery items updated"}
 
 @router.post("/jobwork/edit-emb")
@@ -192,6 +195,7 @@ async def edit_embroidery(req: EmbEditRequest, db = Depends(get_db), current_use
     if not update_fields:
         return {"message": "Nothing to update"}
     result = await db.items.update_one({"id": req.item_id}, {"$set": update_fields})
+    await audit_log(db, "edit_embroidery", current_user, "item", req.item_id, {"fields": list(update_fields.keys())})
     return {"message": "Updated" if result.modified_count > 0 else "No change"}
 
 @router.get("/jobwork/filters")
