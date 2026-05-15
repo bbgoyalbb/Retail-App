@@ -3,7 +3,7 @@ import { listAuditLogs, listUsers } from "@/api";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowClockwise, Funnel, X, ShieldCheck, 
-  User, Activity, Clock, Info, CaretDown,
+  User, Clock, Info, CaretDown,
   ArrowLeft, ArrowRight
 } from "@phosphor-icons/react";
 import { DatePickerInput } from "@/components/DatePickerInput";
@@ -220,7 +220,7 @@ export default function AuditLogPage() {
           ) : logs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 px-6 text-center animate-in zoom-in-95 duration-500">
               <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mb-6">
-                <Activity size={40} className="text-muted-foreground opacity-40" weight="duotone" />
+                <Clock size={40} className="text-muted-foreground opacity-40" weight="duotone" />
               </div>
               <h3 className="text-lg font-black uppercase tracking-[0.2em] text-foreground mb-2">No Sequence Detected</h3>
               <p className="text-sm text-muted-foreground font-medium max-w-[280px] leading-relaxed">
@@ -234,7 +234,7 @@ export default function AuditLogPage() {
                   <tr className="bg-muted/30 border-b border-border/50">
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left"><div className="flex items-center gap-2"><Clock size={12} weight="bold" /> Temporal Stamp</div></th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left"><div className="flex items-center gap-2"><User size={12} weight="bold" /> Operational Agent</div></th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left"><div className="flex items-center gap-2"><Activity size={12} weight="bold" /> Execution Action</div></th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left"><div className="flex items-center gap-2"><Clock size={12} weight="bold" /> Execution Action</div></th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left">Protocol Details</th>
                   </tr>
                 </thead>

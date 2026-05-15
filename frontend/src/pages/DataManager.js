@@ -3,7 +3,7 @@ import { importExcel, exportExcelUrl, backupUrl, restoreBackup, getDbStats, getD
 import { 
   Upload, DownloadSimple, Database, ArrowsClockwise, 
   Warning, CheckCircle, FileXls, FileCsv, Info, 
-  Trash, ShieldCheck, Activity, ChartBar, FileJson, X
+  Trash, ShieldCheck, ChartBar, FileJson, X
 } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -178,7 +178,7 @@ export default function DataManager() {
         <Card className="bg-card border-none shadow-lg shadow-black/5 overflow-hidden group hover:shadow-xl transition-all duration-300">
           <CardContent className="p-5 flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-success/10 text-success group-hover:scale-110 transition-transform duration-300">
-              <Activity size={24} weight="duotone" />
+              <ChartBar size={24} weight="duotone" />
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground opacity-60 leading-none mb-2">Advances Tracked</p>
@@ -513,7 +513,7 @@ export default function DataManager() {
                     disabled={auditing}
                     className="h-12 px-8 font-black uppercase tracking-[0.15em] text-xs shadow-lg shadow-warning/20 gap-3"
                   >
-                    {auditing ? <ArrowsClockwise size={18} className="animate-spin" /> : <Activity size={18} weight="bold" />}
+                    {auditing ? <ArrowsClockwise size={18} className="animate-spin" /> : <ChartBar size={18} weight="bold" />}
                     {auditing ? "Scanning Engine..." : "Initialize Audit"}
                   </Button>
                 </div>
