@@ -3,7 +3,7 @@ import { importExcel, exportExcelUrl, backupUrl, restoreBackup, getDbStats, getD
 import { 
   Upload, DownloadSimple, Database, ArrowsClockwise, 
   Warning, CheckCircle, FileXls, FileCsv, Info, 
-  Trash, ShieldCheck, ChartBar, FileJson, X
+  Trash, ShieldCheck, ChartBar, X
 } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -403,7 +403,7 @@ export default function DataManager() {
                   Generate a complete JSON-formatted architectural snapshot of your operational database for local archiving.
                 </p>
                 <div className="p-6 rounded-2xl bg-muted/30 border border-border/50 flex flex-col items-center gap-4">
-                  <FileJson size={40} className="text-success opacity-40" weight="duotone" />
+                  <FileCsv size={40} className="text-success opacity-40" weight="duotone" />
                   <Button asChild className="w-full h-12 text-[10px] font-black uppercase tracking-widest bg-success hover:bg-success/90 shadow-lg shadow-success/10">
                     <a href={backupUrl()} target="_blank" rel="noopener noreferrer">
                       <DownloadSimple size={16} weight="bold" className="mr-2" /> Download JSON Backup
