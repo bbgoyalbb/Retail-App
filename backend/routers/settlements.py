@@ -101,7 +101,7 @@ async def process_settlement(req: SettlementRequest, db = Depends(get_db), curre
                 pay_date_field: req.payment_date,
                 received_field: new_received,
                 pending_field: new_balance,
-                pay_mode_field: build_payment_mode_label(req.payment_modes, new_balance, new_received),
+                pay_mode_field: f"Settled - {modes_str}",
             }
             shared_bulk_ops.append(UpdateOne({"id": item["id"]}, {"$set": update}))
 

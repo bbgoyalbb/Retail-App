@@ -88,9 +88,9 @@ export default function NewBill() {
   });
 
   // Convenience updaters to avoid spreading manually every time
-  const updateBillForm  = (key, val) => setBillForm(p  => ({ ...p, [key]: val }));
-  const updateItemForm  = (key, val) => setItemForm(p  => ({ ...p, [key]: val }));
-  const updateUi        = (key, val) => setUi(p        => ({ ...p, [key]: val }));
+  const updateBillForm  = useCallback((key, val) => setBillForm(p  => ({ ...p, [key]: val })), []);
+  const updateItemForm  = useCallback((key, val) => setItemForm(p  => ({ ...p, [key]: val })), []);
+  const updateUi        = useCallback((key, val) => setUi(p        => ({ ...p, [key]: val })), []);
 
   // Destructure for backwards-compatible local names used throughout the component
   const { customers, articleTypes, addonItems, paymentModes } = config;
@@ -99,29 +99,29 @@ export default function NewBill() {
   const { saving, message, showScanner, showPostSave, showInvoice, showTailoringModal, showAddonModal, dupWarning, showSuggestions, lastBillRef, lastBillTotal } = ui;
 
   // Setters that match the old individual-useState API so the rest of the file needs no changes
-  const setCustomerName    = (v) => updateBillForm("customerName", v);
-  const setOrderDate       = (v) => updateBillForm("orderDate", v);
-  const setPayDate         = (v) => updateBillForm("payDate", v);
-  const setAmountPaid      = (v) => updateBillForm("amountPaid", v);
-  const setSelectedModes   = (v) => updateBillForm("selectedModes", typeof v === "function" ? v(selectedModes) : v);
-  const setIsSettled       = (v) => updateBillForm("isSettled", v);
-  const setNeedsTailoring  = (v) => updateBillForm("needsTailoring", v);
-  const setBarcode         = (v) => updateItemForm("barcode", v);
-  const setQty             = (v) => updateItemForm("qty", v);
-  const setPrice           = (v) => updateItemForm("price", v);
-  const setDiscount        = (v) => updateItemForm("discount", v);
-  const setEditingIndex    = (v) => updateItemForm("editingIndex", v);
-  const setSaving          = (v) => updateUi("saving", v);
-  const setMessage         = (v) => updateUi("message", v);
-  const setShowScanner     = (v) => updateUi("showScanner", v);
-  const setShowPostSave    = (v) => updateUi("showPostSave", v);
-  const setShowInvoice     = (v) => updateUi("showInvoice", v);
-  const setShowTailoringModal = (v) => updateUi("showTailoringModal", v);
-  const setShowAddonModal  = (v) => updateUi("showAddonModal", v);
-  const setDupWarning      = (v) => updateUi("dupWarning", v);
-  const setShowSuggestions = (v) => updateUi("showSuggestions", v);
-  const setLastBillRef     = (v) => updateUi("lastBillRef", v);
-  const setLastBillTotal   = (v) => updateUi("lastBillTotal", v);
+  const setCustomerName    = useCallback((v) => updateBillForm("customerName", v), [updateBillForm]);
+  const setOrderDate       = useCallback((v) => updateBillForm("orderDate", v), [updateBillForm]);
+  const setPayDate         = useCallback((v) => updateBillForm("payDate", v), [updateBillForm]);
+  const setAmountPaid      = useCallback((v) => updateBillForm("amountPaid", v), [updateBillForm]);
+  const setSelectedModes   = useCallback((v) => updateBillForm("selectedModes", typeof v === "function" ? v(selectedModes) : v), [updateBillForm, selectedModes]);
+  const setIsSettled       = useCallback((v) => updateBillForm("isSettled", v), [updateBillForm]);
+  const setNeedsTailoring  = useCallback((v) => updateBillForm("needsTailoring", v), [updateBillForm]);
+  const setBarcode         = useCallback((v) => updateItemForm("barcode", v), [updateItemForm]);
+  const setQty             = useCallback((v) => updateItemForm("qty", v), [updateItemForm]);
+  const setPrice           = useCallback((v) => updateItemForm("price", v), [updateItemForm]);
+  const setDiscount        = useCallback((v) => updateItemForm("discount", v), [updateItemForm]);
+  const setEditingIndex    = useCallback((v) => updateItemForm("editingIndex", v), [updateItemForm]);
+  const setSaving          = useCallback((v) => updateUi("saving", v), [updateUi]);
+  const setMessage         = useCallback((v) => updateUi("message", v), [updateUi]);
+  const setShowScanner     = useCallback((v) => updateUi("showScanner", v), [updateUi]);
+  const setShowPostSave    = useCallback((v) => updateUi("showPostSave", v), [updateUi]);
+  const setShowInvoice     = useCallback((v) => updateUi("showInvoice", v), [updateUi]);
+  const setShowTailoringModal = useCallback((v) => updateUi("showTailoringModal", v), [updateUi]);
+  const setShowAddonModal  = useCallback((v) => updateUi("showAddonModal", v), [updateUi]);
+  const setDupWarning      = useCallback((v) => updateUi("dupWarning", v), [updateUi]);
+  const setShowSuggestions = useCallback((v) => updateUi("showSuggestions", v), [updateUi]);
+  const setLastBillRef     = useCallback((v) => updateUi("lastBillRef", v), [updateUi]);
+  const setLastBillTotal   = useCallback((v) => updateUi("lastBillTotal", v), [updateUi]);
   const nameWrapRef = useRef(null);
 
   const nameSuggestions = useMemo(() => {
@@ -218,7 +218,7 @@ export default function NewBill() {
     setPrice("");
     setDiscount("");
     setEditingIndex(null);
-  }, []);
+  }, [setBarcode, setQty, setPrice, setDiscount, setEditingIndex]);
 
   const addItem = useCallback(() => {
     if (!barcode || !qty || !price) return;
