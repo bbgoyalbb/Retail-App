@@ -105,9 +105,9 @@ export default function ItemsDataTable({
               return (
                 <tr
                   key={item._id}
-                  className={`group hover:bg-[#C86B4D04] transition-colors ${selected ? "bg-[#C86B4D08]" : ""}`}
+                  className={`group hover:bg-[#C86B4D04] transition-colors min-h-[50px] sm:min-h-0 ${selected ? "bg-[#C86B4D08]" : ""}`}
                 >
-                  <td className="px-2 py-2 border-r border-[var(--border-subtle)]">
+                  <td className="px-2 py-3 sm:py-2 border-r border-[var(--border-subtle)]">
                     <input
                       type="checkbox"
                       checked={selected}

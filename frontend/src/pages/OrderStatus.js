@@ -74,7 +74,7 @@ export default function OrderStatus() {
   useEffect(() => { filtersRef.current = { customer, orderNo, fromDate, toDate, overdueOnly }; }, [customer, orderNo, fromDate, toDate, overdueOnly]);
 
   const loadData = useCallback(async () => {
-    const { customer, orderNo, fromDate, toDate } = filtersRef.current;
+    const { customer, orderNo, fromDate, toDate, overdueOnly } = filtersRef.current;
     setLoading(true);
     try {
       const params = { limit: 400 };
@@ -82,7 +82,7 @@ export default function OrderStatus() {
       if (orderNo) params.order_no = orderNo;
       if (fromDate) params.date_from = fromDate;
       if (toDate) params.date_to = toDate;
-      if (filtersRef.current.overdueOnly) params.overdue_only = true;
+      if (overdueOnly) params.overdue_only = true;
 
       const res = await getOrderStatus(params);
       setRows(Array.isArray(res.data) ? res.data : []);
@@ -92,7 +92,7 @@ export default function OrderStatus() {
     } finally {
       setLoading(false);
     }
-  }, [toast]); // stable — reads filters from ref; toast ref is also stable
+  }, [toast]);
 
   useEffect(() => {
     getCustomers()
@@ -103,8 +103,13 @@ export default function OrderStatus() {
       });
   }, [toast]);
 
-  // Only load on mount; user clicks Apply to filter
-  useEffect(() => { loadData(); }, [loadData]);
+  // Handle filter changes and trigger load
+  useEffect(() => {
+    loadData();
+    const handler = () => loadData();
+    window.addEventListener("order:updated", handler);
+    return () => window.removeEventListener("order:updated", handler);
+  }, [customer, orderNo, fromDate, toDate, overdueOnly, loadData]);
 
   const handleSaveDeliveryDate = async () => {
     if (!editingDelivery || savingDelivery) return;
@@ -125,6 +130,7 @@ export default function OrderStatus() {
   };
 
   const handleDeliver = async (order_no) => {
+    if (!window.confirm(`Mark Order #${order_no} as Delivered? This cannot be easily undone.`)) return;
     setDelivering(order_no);
     try {
       await markOrderDelivered(order_no);

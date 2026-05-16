@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export const DEFAULT_NUM_SHORTCUTS = [
   { key: "1", path: "/",            desc: "Dashboard" },
@@ -41,20 +41,17 @@ export function loadLetterShortcuts() {
 
 export function KeyboardShortcuts() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [numShortcuts, setNumShortcuts] = useState(loadNumShortcuts);
   const [letterShortcuts, setLetterShortcuts] = useState(loadLetterShortcuts);
 
-  useEffect(() => {
-    const onStorage = () => {
-      setNumShortcuts(loadNumShortcuts());
-      setLetterShortcuts(loadLetterShortcuts());
-    };
-    window.addEventListener("shortcuts:updated", onStorage);
-    return () => window.removeEventListener("shortcuts:updated", onStorage);
-  }, []);
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/auth";
+  const isAuditPage = location.pathname === "/audit" || location.pathname === "/data";
 
   useEffect(() => {
+    if (isAuthPage) return; // Disable on login pages
+    
     const onKey = (e) => {
       const target = e.target;
       const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.contentEditable === "true";
@@ -63,6 +60,8 @@ export function KeyboardShortcuts() {
       if (!isInput && e.key === "?") { setOpen(o => !o); return; }
       if (isInput) return;
 
+      // Gate certain shortcuts to non-audit pages if needed, 
+      // but the main issue is login page and event noise.
       if ((e.ctrlKey || e.metaKey) && e.key >= "1" && e.key <= "9") {
         e.preventDefault();
         const sc = numShortcuts.find(s => s.key === e.key);
@@ -80,9 +79,9 @@ export function KeyboardShortcuts() {
     window.addEventListener("keydown", onKey);
     window.addEventListener("shortcuts:open", onOpen);
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("shortcuts:open", onOpen); };
-  }, [navigate, numShortcuts, letterShortcuts]);
+  }, [navigate, numShortcuts, letterShortcuts, isAuthPage]);
 
-  if (!open) return null;
+  if (!open || isAuthPage) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>

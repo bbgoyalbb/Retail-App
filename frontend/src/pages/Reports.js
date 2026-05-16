@@ -179,7 +179,7 @@ export default function Reports() {
       <Card className="bg-card border-none shadow-lg shadow-black/5 overflow-hidden">
         <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
         <CardContent className="p-4 space-y-4">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap sm:flex-nowrap gap-1.5 overflow-x-auto no-scrollbar pb-1">
             {DATE_PRESETS.map(p => (
               <Button 
                 key={p.label} 

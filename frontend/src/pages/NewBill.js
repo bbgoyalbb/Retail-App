@@ -717,8 +717,7 @@ export default function NewBill() {
 
       {/* Mobile sticky summary bar - visible only on small screens */}
       <div 
-        className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-muted-foreground/10 p-4 shadow-2xl z-50 animate-in slide-in-from-bottom-full duration-500"
-        style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))' }}
+        className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-muted-foreground/10 p-4 pb-[env(safe-area-inset-bottom,16px)] shadow-2xl z-50 animate-in slide-in-from-bottom-full duration-500"
       >
         <div className="flex items-center justify-between gap-6">
           <div className="flex-1 min-w-0">

@@ -169,36 +169,51 @@ export default function BarcodeScanner({ onScan, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" data-testid="barcode-scanner-modal">
-      <div className="bg-[var(--surface)] rounded-sm max-w-md w-full overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-[var(--border-subtle)]">
-          <div className="flex items-center gap-2">
-            <Barcode size={20} weight="duotone" className="text-[var(--brand)]" />
-            <h3 className="font-heading text-base font-medium">Scan Barcode</h3>
-          </div>
-          <button data-testid="close-scanner-btn" onClick={stopAndClose} className="p-1.5 hover:bg-[var(--bg)] rounded-sm">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="p-4">
-          {error ? (
-            <div className="text-center py-8">
-              <Camera size={40} weight="thin" className="mx-auto text-[var(--text-secondary)] mb-3" />
-              <p className="text-sm text-[var(--error)]">{error}</p>
-              <p className="text-xs text-[var(--text-secondary)] mt-2">Use HTTPS and grant camera permission</p>
+      <div className="bg-[var(--surface)] rounded-sm max-w-md w-full overflow-hidden flex flex-col landscape:max-w-xl landscape:flex-row">
+        <div className="flex flex-col flex-1">
+          <div className="flex items-center justify-between p-4 border-b border-[var(--border-subtle)]">
+            <div className="flex items-center gap-2">
+              <Barcode size={20} weight="duotone" className="text-[var(--brand)]" />
+              <h3 className="font-heading text-base font-medium">Scan Barcode</h3>
             </div>
-          ) : (
-            <>
-              <div id="barcode-reader-container" className="w-full rounded-sm overflow-hidden" style={{ minHeight: 250 }} />
-              <p className="text-xs text-[var(--text-secondary)] text-center mt-3">Point camera at barcode · Tap to focus</p>
-              {focusRipple && (
-                <div
-                  key={focusRipple.id}
-                  className="pointer-events-none fixed z-[60] w-12 h-12 rounded-full border-2 border-white/80 animate-ping"
-                  style={{ left: focusRipple.x - 24, top: focusRipple.y - 24 }}
-                />
-              )}
-            </>
-          )}
+            <button data-testid="close-scanner-btn" onClick={stopAndClose} className="p-1.5 hover:bg-[var(--bg)] rounded-sm landscape:hidden">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="p-4">
+            {error ? (
+              <div className="text-center py-8">
+                <Camera size={40} weight="thin" className="mx-auto text-[var(--text-secondary)] mb-3" />
+                <p className="text-sm text-[var(--error)]">{error}</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-2">Use HTTPS and grant camera permission</p>
+              </div>
+            ) : (
+              <>
+                <div id="barcode-reader-container" className="w-full rounded-sm overflow-hidden bg-black flex items-center justify-center" style={{ minHeight: 250 }} />
+                <p className="text-xs text-[var(--text-secondary)] text-center mt-3 landscape:hidden">Point camera at barcode · Tap to focus</p>
+                {focusRipple && (
+                  <div
+                    key={focusRipple.id}
+                    className="pointer-events-none fixed z-[60] w-12 h-12 rounded-full border-2 border-white/80 animate-ping"
+                    style={{ left: focusRipple.x - 24, top: focusRipple.y - 24 }}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Landscape controls */}
+        <div className="hidden landscape:flex flex-col items-center justify-center p-6 border-l border-[var(--border-subtle)] gap-6">
+          <button onClick={stopAndClose} className="p-3 hover:bg-[var(--bg)] rounded-full transition-colors">
+            <X size={24} />
+          </button>
+          <div className="flex flex-col items-center text-center gap-1">
+            <div className="p-3 rounded-full bg-[var(--brand)]/10 text-[var(--brand)]">
+              <Barcode size={24} weight="duotone" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Align Barcode</span>
+          </div>
         </div>
       </div>
     </div>

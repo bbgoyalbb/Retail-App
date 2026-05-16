@@ -111,6 +111,7 @@ export default function LoginPage() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     autoComplete="username"
+                    autoFocus
                     className="w-full h-12 px-4 text-sm font-bold bg-muted/30 border border-border/50 rounded-2xl focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/30 text-foreground"
                   />
                 </div>

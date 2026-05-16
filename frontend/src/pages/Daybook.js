@@ -259,10 +259,13 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
               {viewMode === "pending" ? <Check size={40} className="text-success opacity-40" weight="duotone" /> : <Warning size={40} className="text-muted-foreground opacity-40" weight="duotone" />}
             </div>
             <h3 className="text-lg font-black uppercase tracking-[0.2em] text-foreground mb-2">
-              {viewMode === "pending" ? "Perfect Alignment" : "Archive Empty"}
+              {dateFilter !== "All" ? "No Activity Logged" : (viewMode === "pending" ? "Perfect Alignment" : "Archive Empty")}
             </h3>
             <p className="text-sm text-muted-foreground font-medium max-w-[280px] leading-relaxed">
-              {viewMode === "pending" ? "All transaction entries have been successfully tallied and reconciled." : "No tallied entries found for the selected filters."}
+              {dateFilter !== "All" 
+                ? `There are no financial transactions recorded for ${dateFilter}.`
+                : (viewMode === "pending" ? "All transaction entries have been successfully tallied and reconciled." : "No tallied entries found for the selected filters.")
+              }
             </p>
           </div>
         ) : (
@@ -681,7 +684,8 @@ export default function Daybook() {
                 className="h-10 pl-4 pr-10 text-[11px] font-black uppercase tracking-widest bg-background border border-border/50 rounded-xl appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
               >
                 <option value="All">Complete Archive</option>
-                {[...dates].sort().reverse().map(d => <option key={d} value={d}>{d}</option>)}
+                <option value={todayStr}>Today ({todayStr})</option>
+                {[...dates].sort().reverse().filter(d => d !== todayStr).map(d => <option key={d} value={d}>{d}</option>)}
               </select>
               <CaretDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             </div>

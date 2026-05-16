@@ -514,15 +514,17 @@ export default function JobWork() {
                 }`}>{col}</Button>
             ))}
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className={activeCol === "Pending" ? "block lg:block" : "hidden lg:block"}>
-              <StatusColumn title="Pending" items={sortedPending} color="#D49842" moveLabel="Stitched" onMove={(ids) => handleTailoringMove(ids, "Stitched")} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
-            </div>
-            <div className={activeCol === "Stitched" ? "block lg:block" : "hidden lg:block"}>
-              <StatusColumn title="Stitched" items={sortedStitched} color="#5C8A9E" moveLabel="Delivered" onMove={(ids) => handleTailoringMove(ids, "Delivered")} onMoveBack={(ids) => handleTailoringMoveBack(ids, "Stitched")} moveBackLabel="to Pending" sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
-            </div>
-            <div className={activeCol === "Delivered" ? "block lg:block" : "hidden lg:block"}>
-              <StatusColumn title="Delivered" items={sortedDelivered} color="#455D4A" onMoveBack={(ids) => handleTailoringMoveBack(ids, "Delivered")} moveBackLabel="to Stitched" sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+          <div className="flex-1 overflow-x-auto custom-scrollbar pb-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-[1000px] h-full">
+              <div className={activeCol === "Pending" ? "block lg:block" : "hidden lg:block"}>
+                <StatusColumn title="Pending" items={sortedPending} color="#D49842" moveLabel="Stitched" onMove={(ids) => handleTailoringMove(ids, "Stitched")} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              </div>
+              <div className={activeCol === "Stitched" ? "block lg:block" : "hidden lg:block"}>
+                <StatusColumn title="Stitched" items={sortedStitched} color="#5C8A9E" moveLabel="Delivered" onMove={(ids) => handleTailoringMove(ids, "Delivered")} onMoveBack={(ids) => handleTailoringMoveBack(ids, "Stitched")} moveBackLabel="to Pending" sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              </div>
+              <div className={activeCol === "Delivered" ? "block lg:block" : "hidden lg:block"}>
+                <StatusColumn title="Delivered" items={sortedDelivered} color="#455D4A" onMoveBack={(ids) => handleTailoringMoveBack(ids, "Delivered")} moveBackLabel="to Stitched" sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              </div>
             </div>
           </div>
         </div>
@@ -536,15 +538,17 @@ export default function JobWork() {
                 }`}>{col}</Button>
             ))}
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className={activeCol === "Required" ? "block lg:block" : "hidden lg:block"}>
-              <StatusColumn title="Required" items={sortedRequired} color="#D49842" moveLabel="In Progress" onMove={handleEmbRequiredMove} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
-            </div>
-            <div className={activeCol === "In Progress" ? "block lg:block" : "hidden lg:block"}>
-              <StatusColumn title="In Progress" items={sortedInProgress} color="#5C8A9E" moveLabel="Finished" onMove={handleEmbProgressMove} onMoveBack={(ids) => handleEmbMoveBack(ids, "In Progress")} moveBackLabel="to Required" onItemDoubleClick={handleEditInProgress} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
-            </div>
-            <div className={activeCol === "Finished" ? "block lg:block" : "hidden lg:block"}>
-              <StatusColumn title="Finished" items={sortedFinished} color="#455D4A" onMoveBack={(ids) => handleEmbMoveBack(ids, "Finished")} moveBackLabel="to In Progress" onItemDoubleClick={handleEditFinished} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+          <div className="flex-1 overflow-x-auto custom-scrollbar pb-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-[1000px] h-full">
+              <div className={activeCol === "Required" ? "block lg:block" : "hidden lg:block"}>
+                <StatusColumn title="Required" items={sortedRequired} color="#D49842" moveLabel="In Progress" onMove={handleEmbRequiredMove} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              </div>
+              <div className={activeCol === "In Progress" ? "block lg:block" : "hidden lg:block"}>
+                <StatusColumn title="In Progress" items={sortedInProgress} color="#5C8A9E" moveLabel="Finished" onMove={handleEmbProgressMove} onMoveBack={(ids) => handleEmbMoveBack(ids, "In Progress")} moveBackLabel="to Required" onItemDoubleClick={handleEditInProgress} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              </div>
+              <div className={activeCol === "Finished" ? "block lg:block" : "hidden lg:block"}>
+                <StatusColumn title="Finished" items={sortedFinished} color="#455D4A" onMoveBack={(ids) => handleEmbMoveBack(ids, "Finished")} moveBackLabel="to In Progress" onItemDoubleClick={handleEditFinished} sortKey={sortKey} onSort={handleSort} sortDir={sortDir} />
+              </div>
             </div>
           </div>
         </div>

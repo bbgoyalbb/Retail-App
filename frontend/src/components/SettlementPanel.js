@@ -299,7 +299,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
                   </button>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                   {orders.map(o => {
                     const bal = refBalances[o.ref] || {};
                     const a   = allotments[o.ref]  || {};

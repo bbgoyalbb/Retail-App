@@ -146,7 +146,11 @@ export default function Sidebar({ open, setOpen }) {
             {!collapsed && (
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-[var(--text-primary)] leading-tight line-clamp-2" title={firmName}>{firmName}</p>
-                <p className="text-[10px] text-[var(--text-secondary)] leading-tight mt-0.5">Retail Book</p>
+                <div className="mt-0.5">
+                  <Badge variant="outline" className="h-3.5 px-1 text-[8px] font-black uppercase tracking-widest border-primary/20 bg-primary/5 text-primary">
+                    {user?.role || "Staff"}
+                  </Badge>
+                </div>
               </div>
             )}
           </div>

@@ -262,17 +262,25 @@ export const repairDbData = (params) => api.post("/db/repair", null, { params })
 // Settings
 let _publicSettingsCache = null;
 let _publicSettingsCacheTime = 0;
+let _publicSettingsPromise = null;
 const PUBLIC_SETTINGS_TTL = 120000; // 2 minutes
 export const getPublicSettings = () => {
   const now = Date.now();
   if (_publicSettingsCache && now - _publicSettingsCacheTime < PUBLIC_SETTINGS_TTL) {
     return Promise.resolve(_publicSettingsCache);
   }
-  return api.get("/settings/public", { silent: true }).then(r => {
+  if (_publicSettingsPromise) return _publicSettingsPromise;
+
+  _publicSettingsPromise = api.get("/settings/public", { silent: true }).then(r => {
     _publicSettingsCache = r.data;
     _publicSettingsCacheTime = Date.now();
+    _publicSettingsPromise = null;
     return r.data;
+  }).catch(err => {
+    _publicSettingsPromise = null;
+    throw err;
   });
+  return _publicSettingsPromise;
 };
 export const invalidatePublicSettingsCache = () => { _publicSettingsCache = null; };
 

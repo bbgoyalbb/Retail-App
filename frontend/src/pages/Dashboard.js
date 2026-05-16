@@ -55,7 +55,7 @@ function StatCard({ icon: Icon, label, value, sub, color = "var(--brand)", trend
               <Icon size={20} weight="duotone" style={{ color }} />
             </div>
             {trend && (
-              <div className="hidden xs:block opacity-60 group-hover:opacity-100 transition-opacity">
+              <div className="hidden xxs:block opacity-60 group-hover:opacity-100 transition-opacity">
                 <Sparkline data={trend} color={color} />
               </div>
             )}

@@ -24,7 +24,7 @@ export default function MobileBottomTabBar({ onOpenSidebar }) {
 
     if (isManager) {
       tabs.push({ key: "daybook", label: "Ledger", icon: BookOpen, path: "/daybook" });
-      tabs.push({ key: "orders", label: "Orders", icon: Table, path: "/items" });
+      tabs.push({ key: "labour", label: "Labour", icon: UsersThree, path: "/labour" });
     } else {
       tabs.push({ key: "jobwork", label: "Jobs", icon: Kanban, path: "/jobwork" });
       tabs.push({ key: "status", label: "Status", icon: ClipboardText, path: "/order-status" });
