@@ -138,7 +138,7 @@ export default function Sidebar({ open, setOpen }) {
         <div className={`border-b border-[var(--border-subtle)] flex items-center justify-between ${collapsed ? 'p-3' : 'px-3 py-3'}`}>
           <div className={`flex items-center gap-2.5 min-w-0 flex-1 ${collapsed ? 'justify-center w-full' : ''}`}>
             <div className={`flex-shrink-0 flex items-center justify-center ${collapsed ? 'w-9 h-9' : 'w-10 h-10 sm:w-[52px] sm:h-[52px]'}`} style={{ background: (theme === 'dark' ? firmLogoDark || firmLogo : firmLogo) ? "transparent" : "var(--brand)", borderRadius: "8px" }}>
-              {(() => { const src = theme === 'dark' ? (firmLogoDark || firmLogo) : firmLogo; return src
+              {(() => { const src = theme === 'dark' ? (firmLogoDark || firmLogo) : firmLogo; return (typeof src === "string" && src)
                 ? <img src={src.startsWith("http") ? src : `${BACKEND_URL}${src}`} alt="logo" className="w-full h-full object-contain" style={{ borderRadius: "8px" }} />
                 : <span className="w-full h-full flex items-center justify-center text-white font-serif font-bold text-xl leading-none">{firmName.charAt(0).toUpperCase()}</span>;
               })()}

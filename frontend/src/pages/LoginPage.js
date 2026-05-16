@@ -27,8 +27,8 @@ export default function LoginPage() {
   useEffect(() => {
     getPublicSettings().then(s => {
       if (s?.firm_name) setFirmName(s.firm_name);
-      if (s?.firm_logo) setFirmLogo(s.firm_logo.startsWith("http") ? s.firm_logo : `${BACKEND_URL}${s.firm_logo}`);
-      if (s?.firm_logo_dark) setFirmLogoDark(s.firm_logo_dark.startsWith("http") ? s.firm_logo_dark : `${BACKEND_URL}${s.firm_logo_dark}`);
+      if (typeof s?.firm_logo === "string" && s.firm_logo) setFirmLogo(s.firm_logo.startsWith("http") ? s.firm_logo : `${BACKEND_URL}${s.firm_logo}`);
+      if (typeof s?.firm_logo_dark === "string" && s.firm_logo_dark) setFirmLogoDark(s.firm_logo_dark.startsWith("http") ? s.firm_logo_dark : `${BACKEND_URL}${s.firm_logo_dark}`);
     }).catch(() => {});
   }, []);
 

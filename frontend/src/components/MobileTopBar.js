@@ -25,7 +25,7 @@ export default function MobileTopBar({ title, onMenuClick }) {
       
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="w-8 h-8 rounded-lg bg-primary flex-shrink-0 flex items-center justify-center overflow-hidden">
-          {logo ? (
+          {typeof logo === "string" && logo ? (
             <img src={logo.startsWith("http") ? logo : `${BACKEND_URL}${logo}`} alt="logo" className="w-full h-full object-contain" />
           ) : (
             <span className="text-white font-black text-sm uppercase">{firmName.charAt(0)}</span>

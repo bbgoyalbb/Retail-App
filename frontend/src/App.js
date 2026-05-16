@@ -145,7 +145,7 @@ function AppShell() {
   useEffect(() => {
     getPublicSettings().then(res => {
       const s = res;
-      if (!s?.firm_logo) return;
+      if (typeof s?.firm_logo !== "string" || !s.firm_logo) return;
       const logoUrl = s.firm_logo.startsWith("http") ? s.firm_logo : `${BACKEND_URL}${s.firm_logo}`;
       let link = document.querySelector("link[rel~='icon']");
       if (!link) { link = document.createElement("link"); link.rel = "icon"; document.head.appendChild(link); }
@@ -203,49 +203,51 @@ function AppShell() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--bg)]" data-testid="app-shell">
-      <OfflineBanner />
-      <Sidebar open={sidebarOpen} setOpen={handleSetOpen} />
-      <BackToTop />
-      <main className="flex-1 overflow-hidden min-w-0 flex flex-col relative">
-        <MobileTopBar title={PAGE_TITLES[location.pathname] ?? "Retail Book"} onMenuClick={() => handleSetOpen(!sidebarOpen)} />
-        <MobileBottomTabBar onOpenSidebar={() => handleSetOpen(true)} />
-        <div ref={contentRef} className="flex-1 overflow-y-auto p-4 pt-[calc(4rem+var(--offline-banner-h,0px))] pb-20 md:p-6 md:pt-[calc(1.5rem+var(--offline-banner-h,0px))] md:pb-6 lg:p-8 lg:pt-[calc(2rem+var(--offline-banner-h,0px))] page-in custom-scrollbar">
-          <div className="max-w-[1400px] mx-auto w-full">
-          <ErrorBoundary>
-            <Suspense fallback={<PageLoader />}>
-              <KeyboardShortcuts />
-              <ShortcutHelpModal />
-              <Routes>
-                {/* All roles */}
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/new-bill" element={<NewBill />} />
-                <Route path="/jobwork" element={<JobWork />} />
-                <Route path="/order-status" element={<OrderStatus />} />
-                {/* Manager + Admin */}
-                <Route path="/daybook" element={<RequireRole roles={["admin","manager"]} path="/daybook"><Daybook /></RequireRole>} />
-                <Route path="/labour" element={<RequireRole roles={["admin","manager"]} path="/labour"><LabourPayments /></RequireRole>} />
-                <Route path="/items" element={<RequireRole roles={["admin","manager"]} path="/items"><ItemsManager /></RequireRole>} />
-                <Route path="/reports" element={<RequireRole roles={["admin","manager"]} path="/reports"><Reports /></RequireRole>} />
+    <ErrorBoundary>
+      <div className="flex h-screen overflow-hidden bg-[var(--bg)]" data-testid="app-shell">
+        <OfflineBanner />
+        <Sidebar open={sidebarOpen} setOpen={handleSetOpen} />
+        <BackToTop />
+        <main className="flex-1 overflow-hidden min-w-0 flex flex-col relative">
+          <MobileTopBar title={PAGE_TITLES[location.pathname] ?? "Retail Book"} onMenuClick={() => handleSetOpen(!sidebarOpen)} />
+          <MobileBottomTabBar onOpenSidebar={() => handleSetOpen(true)} />
+          <div ref={contentRef} className="flex-1 overflow-y-auto p-4 pt-[calc(4rem+var(--offline-banner-h,0px))] pb-20 md:p-6 md:pt-[calc(1.5rem+var(--offline-banner-h,0px))] md:pb-6 lg:p-8 lg:pt-[calc(2rem+var(--offline-banner-h,0px))] page-in custom-scrollbar">
+            <div className="max-w-[1400px] mx-auto w-full">
+              <ErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  <KeyboardShortcuts />
+                  <ShortcutHelpModal />
+                  <Routes>
+                    {/* All roles */}
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/new-bill" element={<NewBill />} />
+                    <Route path="/jobwork" element={<JobWork />} />
+                    <Route path="/order-status" element={<OrderStatus />} />
+                    {/* Manager + Admin */}
+                    <Route path="/daybook" element={<RequireRole roles={["admin","manager"]} path="/daybook"><Daybook /></RequireRole>} />
+                    <Route path="/labour" element={<RequireRole roles={["admin","manager"]} path="/labour"><LabourPayments /></RequireRole>} />
+                    <Route path="/items" element={<RequireRole roles={["admin","manager"]} path="/items"><ItemsManager /></RequireRole>} />
+                    <Route path="/reports" element={<RequireRole roles={["admin","manager"]} path="/reports"><Reports /></RequireRole>} />
 
-                {/* Admin only */}
-                <Route path="/data" element={<RequireRole roles={["admin"]} path="/data"><DataManager /></RequireRole>} />
-                <Route path="/settings" element={<RequireRole roles={["admin"]} path="/settings"><SettingsPage /></RequireRole>} />
-                <Route path="/users" element={<RequireRole roles={["admin"]} path="/users"><UsersPage /></RequireRole>} />
-                <Route path="/audit" element={<RequireRole roles={["admin"]} path="/audit"><AuditLogPage /></RequireRole>} />
+                    {/* Admin only */}
+                    <Route path="/data" element={<RequireRole roles={["admin"]} path="/data"><DataManager /></RequireRole>} />
+                    <Route path="/settings" element={<RequireRole roles={["admin"]} path="/settings"><SettingsPage /></RequireRole>} />
+                    <Route path="/users" element={<RequireRole roles={["admin"]} path="/users"><UsersPage /></RequireRole>} />
+                    <Route path="/audit" element={<RequireRole roles={["admin"]} path="/audit"><AuditLogPage /></RequireRole>} />
 
-                <Route path="/settlements" element={<Navigate to="/items" replace />} />
-                <Route path="/tailoring" element={<Navigate to="/jobwork" replace />} />
-                <Route path="/search" element={<Navigate to="/items" replace />} />
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </Suspense>
-          </ErrorBoundary>
+                    <Route path="/settlements" element={<Navigate to="/items" replace />} />
+                    <Route path="/tailoring" element={<Navigate to="/jobwork" replace />} />
+                    <Route path="/search" element={<Navigate to="/items" replace />} />
+                    <Route path="*" element={<Navigate to="/" />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
+            </div>
           </div>
-        </div>
-      </main>
-      <Toaster />
-    </div>
+        </main>
+        <Toaster />
+      </div>
+    </ErrorBoundary>
   );
 }
 
