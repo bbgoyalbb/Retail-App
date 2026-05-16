@@ -400,11 +400,12 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
                     // Date divider
                     if (showDateDividers && entry.date !== lastDate) {
                       rows.push(
-                        <tr key={`date-label-${entry.date}`} className="bg-muted/5 backdrop-blur-sm sticky top-0 z-10">
-                          <td colSpan={9} className="px-4 py-2 border-y border-border/20">
+                        <tr key={`date-label-${entry.date}`} className="bg-muted/50 backdrop-blur-md sticky top-0 z-10 shadow-sm">
+                          <td colSpan={9} className="px-4 py-3 border-y border-border/50">
                             <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-primary/80" />
                               <CalendarCheck size={14} className="text-primary" weight="duotone" />
-                              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary opacity-70">{entry.date}</span>
+                              <span className="text-[10px] font-black uppercase tracking-[0.35em] text-primary/80">{entry.date}</span>
                             </div>
                           </td>
                         </tr>

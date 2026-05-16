@@ -711,8 +711,15 @@ export default function ItemsManager() {
                 return (
                   <React.Fragment key={group.ref}>
                     {showDiv && (
-                      <div className="px-5 py-2.5 bg-muted/30 border-b border-border/40 sticky top-0 z-10 backdrop-blur-md">
-                        <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground/70">{group.date || "—"}</p>
+                      <div className="sticky top-0 z-10">
+                        <div className="px-5 py-3 bg-muted/50 border-y border-border/50 backdrop-blur-md shadow-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-primary/80" />
+                            <p className="text-[10px] uppercase tracking-[0.35em] font-black text-primary/80">
+                              {group.date || "—"}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     )}
                     <div
