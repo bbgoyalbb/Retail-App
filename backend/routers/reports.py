@@ -70,7 +70,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
     def fmt(n):
         try:
             return f"{float(n):,.0f}"
-        except:
+        except Exception:
             return "0"
 
     # ---- Items with badges ----

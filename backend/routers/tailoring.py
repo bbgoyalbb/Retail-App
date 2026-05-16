@@ -161,10 +161,12 @@ async def split_and_assign(req: SplitTailoringRequest, db = Depends(get_db), cur
                 new_item["fabric_received"] = split_fabric_amt
                 new_item["fabric_pending"] = 0
                 new_item["fabric_pay_mode"] = orig_fabric_mode
+                new_item["fabric_pay_date"] = item.get("fabric_pay_date", "N/A")
             else:
                 new_item["fabric_received"] = 0
                 new_item["fabric_pending"] = split_fabric_amt
                 new_item["fabric_pay_mode"] = "Pending"
+                new_item["fabric_pay_date"] = "N/A"
 
             new_item["article_type"] = split.article_type
             new_item["tailoring_status"] = "Awaiting Order"

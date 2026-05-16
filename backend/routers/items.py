@@ -1,7 +1,7 @@
 """
 Items router.
 """
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
@@ -38,6 +38,31 @@ async def _reset_counter_for_date(db, bill_date: str):
     else:
         # All bills for this date were deleted — remove the counter entirely
         await db.counters.delete_one({"_id": counter_key})
+
+@router.delete("/items/bulk/delete")
+async def bulk_delete_items(
+    item_ids: List[str] = Body(...),
+    db = Depends(get_db),
+    current_user: dict = Depends(get_current_user_dep)
+):
+    # Restrict to admin/manager only
+    if current_user.get("role") not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+    # Collect affected dates BEFORE deletion so we can reset counters after
+    affected_items = await db.items.find({"id": {"$in": item_ids}}, {"_id": 0, "date": 1}).to_list(500)
+    affected_dates = {i["date"] for i in affected_items if i.get("date")}
+
+    # Audit log the bulk delete
+    await audit_log(db, "bulk_delete", current_user, "items", f"count:{len(item_ids)}", {"count": len(item_ids)})
+
+    result = await db.items.delete_many({"id": {"$in": item_ids}})
+
+    # Reset counters for all affected dates
+    for d in affected_dates:
+        await _reset_counter_for_date(db, d)
+
+    return {"message": f"{result.deleted_count} items deleted"}
 
 @router.put("/items/{item_id}")
 async def update_item(item_id: str, req: ItemUpdateRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
@@ -144,31 +169,6 @@ async def create_item(req: ItemCreateRequest, db = Depends(get_db), current_user
     await audit_log(db, "create", current_user, "item", item_id, {"ref": req.ref, "barcode": req.barcode})
     doc.pop("_id", None)
     return doc
-
-@router.delete("/items/bulk/delete")
-async def bulk_delete_items(
-    item_ids: List[str],
-    db = Depends(get_db),
-    current_user: dict = Depends(get_current_user_dep)
-):
-    # Restrict to admin/manager only
-    if current_user.get("role") not in ["admin", "manager"]:
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
-
-    # Collect affected dates BEFORE deletion so we can reset counters after
-    affected_items = await db.items.find({"id": {"$in": item_ids}}, {"_id": 0, "date": 1}).to_list(500)
-    affected_dates = {i["date"] for i in affected_items if i.get("date")}
-
-    # Audit log the bulk delete
-    await audit_log(db, "bulk_delete", current_user, "items", f"count:{len(item_ids)}", {"count": len(item_ids)})
-
-    result = await db.items.delete_many({"id": {"$in": item_ids}})
-
-    # Reset counters for all affected dates
-    for d in affected_dates:
-        await _reset_counter_for_date(db, d)
-
-    return {"message": f"{result.deleted_count} items deleted"}
 
 # ==========================================
 # SEARCH
