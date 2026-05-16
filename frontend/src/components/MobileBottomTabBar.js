@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { House, Receipt, BookOpen, Table, DotsThree, Kanban, ClipboardText } from "@phosphor-icons/react";
+import { House, Receipt, BookOpen, Table, DotsThree, Kanban, ClipboardText, UsersThree } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 /**
