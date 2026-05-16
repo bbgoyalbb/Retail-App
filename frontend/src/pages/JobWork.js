@@ -123,7 +123,7 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
         </div>
       </CardHeader>
       
-      <CardContent className="flex-1 overflow-y-auto min-h-[300px] lg:max-h-[calc(100vh-340px)] p-0 divide-y divide-muted/30 no-scrollbar bg-background">
+      <CardContent className="flex-1 overflow-y-auto min-h-[300px] lg:max-h-[calc(100vh-340px)] p-0 divide-y divide-muted/30 custom-scrollbar bg-background">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4 opacity-40">
             <div className="p-4 rounded-full bg-muted">

@@ -3,7 +3,7 @@ import { importExcel, exportExcelUrl, backupUrl, restoreBackup, getDbStats, getD
 import { 
   Upload, DownloadSimple, Database, ArrowsClockwise, 
   Warning, CheckCircle, FileXls, FileCsv, Info, 
-  Trash, ShieldCheck, ChartBar, X
+  Trash, ShieldCheck, ChartBar, X, Plus, Package, Wallet
 } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,7 +57,7 @@ export default function DataManager() {
     try {
       const res = await normalizeDbData({ limit: 100 });
       setNormalizationResult(res.data);
-      setAudit(res.data.audit_after);
+      if (res.data?.audit_after) setAudit(res.data.audit_after);
       toast({ 
         title: "Normalization Applied", 
         description: `Updated ${res.data.items_updated || 0} items and ${res.data.advances_updated || 0} advances.` 
@@ -74,7 +74,7 @@ export default function DataManager() {
     try {
       const res = await repairDbData({ limit: 100 });
       setRepairResult(res.data);
-      setAudit(res.data.audit_after);
+      if (res.data?.audit_after) setAudit(res.data.audit_after);
       toast({ 
         title: "Repair Applied", 
         description: `Updated ${res.data.items_updated || 0} items and created ${res.data.advances_created || 0} carry-forward advances.` 

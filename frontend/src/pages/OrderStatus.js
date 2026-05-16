@@ -7,7 +7,7 @@ import {
   ClipboardText, MagnifyingGlass, CheckCircle, Warning, 
   PencilSimple, ArrowsClockwise, X, Info, Receipt, 
   UsersThree, CalendarCheck, Package, Clock, Truck,
-  Scissors, Wallet, CaretDown
+  Scissors, Wallet, CaretDown, CaretRight
 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,7 +96,7 @@ export default function OrderStatus() {
 
   useEffect(() => {
     getCustomers()
-      .then((res) => setCustomers(res.data || []))
+      .then((res) => setCustomers(Array.isArray(res.data) ? res.data : []))
       .catch((err) => {
         setCustomers([]);
         toast({ title: "Error", description: err.message || "Failed to load customers", variant: "destructive" });

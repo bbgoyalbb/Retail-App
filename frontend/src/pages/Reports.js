@@ -5,7 +5,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { getRevenueReport, getCustomerReport, getSummaryReport, exportExcelUrl } from "@/api";
 import { fmt } from "@/lib/fmt";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
-import { ChartBar, Users, TrendUp, Warning, DownloadSimple, Printer, CaretDown, Calendar, ArrowsClockwise } from "@phosphor-icons/react";
+import { ChartBar, Users, TrendUp, Warning, DownloadSimple, Printer, CaretDown, Calendar, ArrowsClockwise, CurrencyDollar, Package } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

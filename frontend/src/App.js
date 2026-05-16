@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
 import BackToTop from "@/components/BackToTop";
 import MobileTopBar from "@/components/MobileTopBar";
@@ -10,10 +10,10 @@ import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import ShortcutHelpModal from "@/components/ShortcutHelpModal";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { getPublicSettings, BACKEND_URL } from "@/api";
-import { Lock, Warning, Shield, ArrowLeft } from "@phosphor-icons/react";
+import { Lock, Warning, ShieldCheck, ArrowLeft } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
 
 const PAGE_TITLES = {
   "/": "Dashboard",
@@ -57,7 +57,7 @@ function RequireRole({ roles, path, children }) {
     return (
       <div className="flex flex-col items-center justify-center py-32 px-6 text-center animate-in zoom-in-95 duration-300">
         <div className="w-24 h-24 rounded-full bg-destructive/10 flex items-center justify-center mb-8 relative">
-          <Shield size={48} weight="duotone" className="text-destructive" />
+          <ShieldCheck size={48} weight="duotone" className="text-destructive" />
           <div className="absolute -bottom-1 -right-1 bg-background p-1.5 rounded-full border border-destructive/20 shadow-lg">
             <Lock size={16} weight="bold" className="text-destructive" />
           </div>
@@ -144,7 +144,7 @@ function AppShell() {
 
   useEffect(() => {
     getPublicSettings().then(res => {
-      const s = res?.data;
+      const s = res;
       if (!s?.firm_logo) return;
       const logoUrl = s.firm_logo.startsWith("http") ? s.firm_logo : `${BACKEND_URL}${s.firm_logo}`;
       let link = document.querySelector("link[rel~='icon']");
@@ -184,7 +184,7 @@ function AppShell() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[var(--background)]">
+      <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
         <div className="animate-spin h-8 w-8 border-2 border-[var(--border-strong)] border-t-transparent rounded-full" />
       </div>
     );
@@ -203,14 +203,14 @@ function AppShell() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" data-testid="app-shell">
+    <div className="flex h-screen overflow-hidden bg-[var(--bg)]" data-testid="app-shell">
       <OfflineBanner />
       <Sidebar open={sidebarOpen} setOpen={handleSetOpen} />
       <BackToTop />
       <main className="flex-1 overflow-hidden min-w-0 flex flex-col relative">
         <MobileTopBar title={PAGE_TITLES[location.pathname] ?? "Retail Book"} onMenuClick={() => handleSetOpen(!sidebarOpen)} />
         <MobileBottomTabBar onOpenSidebar={() => handleSetOpen(true)} />
-        <div ref={contentRef} className="flex-1 overflow-y-auto p-4 pt-[calc(4rem+var(--offline-banner-h,0px))] pb-20 md:p-6 md:pt-[calc(1.5rem+var(--offline-banner-h,0px))] md:pb-6 lg:p-8 lg:pt-[calc(2rem+var(--offline-banner-h,0px))] page-in">
+        <div ref={contentRef} className="flex-1 overflow-y-auto p-4 pt-[calc(4rem+var(--offline-banner-h,0px))] pb-20 md:p-6 md:pt-[calc(1.5rem+var(--offline-banner-h,0px))] md:pb-6 lg:p-8 lg:pt-[calc(2rem+var(--offline-banner-h,0px))] page-in custom-scrollbar">
           <div className="max-w-[1400px] mx-auto w-full">
           <ErrorBoundary>
             <Suspense fallback={<PageLoader />}>

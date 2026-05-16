@@ -4,9 +4,10 @@ import { useToast } from "@/hooks/use-toast";
 import { createBill, getCustomers, getInvoiceUrl, getSettings, invalidateCustomersCache, getNextBillRef } from "@/api";
 import { invalidate } from "@/lib/dataEvents";
 import { 
-  Plus, FloppyDisk, Spinner, WifiSlash, ArrowsSplit, User, 
+  Plus, FloppyDisk, CircleNotch as Spinner, WifiSlash, ArrowsSplit, User, 
   ShoppingCart, CreditCard, X, Trash, Receipt, Calendar, ArrowRight, CheckCircle 
 } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import BarcodeScanner from "@/components/BarcodeScanner";
@@ -126,8 +127,9 @@ export default function NewBill() {
 
   const nameSuggestions = useMemo(() => {
     const q = customerName.trim().toLowerCase();
+    if (!customers || !Array.isArray(customers)) return [];
     return q
-      ? customers.filter(c => c.toLowerCase().includes(q)).slice(0, 8)
+      ? customers.filter(c => c && typeof c === 'string' && c.toLowerCase().includes(q)).slice(0, 8)
       : customers.slice(0, 6);
   }, [customerName, customers]);
 

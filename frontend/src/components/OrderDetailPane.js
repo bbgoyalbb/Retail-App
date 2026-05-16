@@ -515,8 +515,8 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="p-5">
+      <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain">
+        <div className="p-5 min-h-full">
           {viewTab === "article"
             ? <ArticleWiseView selectedGroups={selectedGroups} advances={advances} onEdit={onEdit} onCancelItem={onCancelItem} onDeleteItem={onDeleteItem} />
             : <OrderWiseView selectedGroups={selectedGroups} advances={advances} onEdit={onEdit} onCancelItem={onCancelItem} onDeleteItem={onDeleteItem} />

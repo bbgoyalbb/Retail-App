@@ -4,7 +4,7 @@ import { getSettings, updateSettings, uploadLogo, invalidatePublicSettingsCache,
 import { 
   FloppyDisk, Plus, Trash, CheckCircle, Warning, Keyboard, 
   Storefront, CreditCard, Tag, FileText, Image, Palette, 
-  ArrowRight, ArrowsClockwise, Info
+  ArrowRight, ArrowsClockwise, Info, X
 } from "@phosphor-icons/react";
 import { DEFAULT_NUM_SHORTCUTS, DEFAULT_LETTER_SHORTCUTS, loadLetterShortcuts } from "@/components/KeyboardShortcuts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

@@ -19,7 +19,7 @@ import { TailoringOverlay, AddOnOverlay } from "@/components/OrderOverlays";
 import { ItemsFilterBar } from "@/components/items";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -214,14 +214,14 @@ export default function ItemsManager() {
   useEffect(() => {
     getSettings().then(res => {
       const s = res?.data || {};
-      setTailoringRates(s.tailoring_rates || {});
+      if (s.tailoring_rates) setTailoringRates(s.tailoring_rates);
       if (Array.isArray(s.article_types) && s.article_types.length > 0) {
         setArticleTypeOptions(["N/A", ...s.article_types]);
       }
     }).catch((err) => {
       toast({ title: "Error", description: err.message || "Failed to load settings", variant: "destructive" });
     });
-    getCustomers().then(res => setCustomers(res.data || [])).catch((err) => {
+    getCustomers().then(res => setCustomers(Array.isArray(res.data) ? res.data : [])).catch((err) => {
       toast({ title: "Error", description: err.message || "Failed to load customers", variant: "destructive" });
     });
   }, [toast]);
@@ -774,18 +774,20 @@ export default function ItemsManager() {
 
       {/* Detail pane */}
       <div className={cn(
-        "flex-shrink-0 bg-background overflow-hidden border-l border-border/50 transition-all duration-300",
-        detailOpen ? "w-full sm:w-[50%] lg:w-[40%] xl:w-[35%]" : "w-0 sm:w-[50%] lg:w-[40%] xl:w-[35%]"
+        "flex-shrink-0 bg-background overflow-hidden border-l border-border/50 transition-all duration-300 relative",
+        detailOpen ? "w-full sm:w-[50%] lg:w-[40%] xl:w-[35%]" : "w-0"
       )}>
-        <OrderDetailPane
-          selectedGroups={selectedGroups}
-          advances={advances}
-          onEdit={(section, items, mode) => startEdit(section, items, mode)}
-          onPay={() => setSettlementOrders(selectedGroups.map(g => ({ ref: g.ref, name: g.name })))}
-          onClose={() => setDetailOpen(false)}
-          onCancelItem={(item) => handleCancelItem(item)}
-          onDeleteItem={(item) => { setDelConfirm(item); setDelMode("item"); }}
-        />
+        <div className="absolute inset-0 flex flex-col">
+          <OrderDetailPane
+            selectedGroups={selectedGroups}
+            advances={advances}
+            onEdit={(section, items, mode) => startEdit(section, items, mode)}
+            onPay={() => setSettlementOrders(selectedGroups.map(g => ({ ref: g.ref, name: g.name })))}
+            onClose={() => setDetailOpen(false)}
+            onCancelItem={(item) => handleCancelItem(item)}
+            onDeleteItem={(item) => { setDelConfirm(item); setDelMode("item"); }}
+          />
+        </div>
       </div>
 
 

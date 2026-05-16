@@ -191,7 +191,7 @@ export default function UsersPage() {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-6 animate-in zoom-in-95 duration-300">
         <div className="p-6 rounded-full bg-destructive/10 text-destructive">
-          <Shield size={48} weight="duotone" />
+          <ShieldCheck size={48} weight="duotone" />
         </div>
         <div className="text-center space-y-2">
           <p className="text-lg font-black uppercase tracking-widest text-destructive">Security Violation</p>

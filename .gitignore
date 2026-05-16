@@ -60,6 +60,7 @@ venv/
 
 # Backend: secrets, SSL certs, compiled frontend build, user uploads
 backend/.env
+backend/.jwt_secret
 backend/ssl.key
 backend/ssl.crt
 backend/frontend/

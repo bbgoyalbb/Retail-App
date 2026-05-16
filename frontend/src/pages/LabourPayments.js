@@ -43,7 +43,7 @@ export default function LabourPayments() {
   }, [filterType, filterKarigar, viewMode, toast]);
 
   useEffect(() => {
-    getKarigars().then(res => setKarigars(res.data)).catch((err) => {
+    getKarigars().then(res => setKarigars(Array.isArray(res.data) ? res.data : [])).catch((err) => {
       toast({ title: "Error", description: err.message || "Failed to load karigars", variant: "destructive" });
       setKarigars([]);
     });

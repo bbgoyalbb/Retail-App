@@ -1,4 +1,4 @@
-import { PencilSimple, Trash, Printer, CaretDown, X, Check, Scissors, Tag } from "@phosphor-icons/react";
+import { PencilSimple, Trash, Printer, CaretDown, X, Check, Scissors, Tag, CircleNotch as Spinner } from "@phosphor-icons/react";
 import { fmt } from "@/lib/fmt";
 
 const StatusBadge = ({ settled, cancelled, pending }) => {
@@ -61,7 +61,7 @@ export default function ItemsDataTable({
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-[var(--surface)]">
+    <div className="flex-1 overflow-auto bg-[var(--surface)] custom-scrollbar">
       <table className="w-full text-xs">
         <thead className="bg-[var(--bg)] sticky top-0 z-10">
           <tr className="border-b border-[var(--border-subtle)]">
@@ -89,7 +89,7 @@ export default function ItemsDataTable({
             <tr>
               <td colSpan="9" className="px-4 py-8 text-center text-[var(--text-secondary)]">
                 <span className="inline-flex items-center gap-2">
-                  <span className="animate-spin">⌛</span> Loading...
+                  <Spinner size={16} className="animate-spin" /> Loading...
                 </span>
               </td>
             </tr>

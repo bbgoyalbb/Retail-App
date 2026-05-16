@@ -34,6 +34,26 @@
   --error: #B5574D;
   --border-subtle: #3A3834;
   --border-strong: #4A4844;
+  
+  --background: 30 10% 10%;
+  --foreground: 40 10% 95%;
+  --card: 30 10% 13%;
+  --card-foreground: 40 10% 95%;
+  --popover: 30 10% 13%;
+  --popover-foreground: 40 10% 95%;
+  --primary: 16 52% 61%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 30 10% 18%;
+  --secondary-foreground: 40 10% 95%;
+  --muted: 30 10% 18%;
+  --muted-foreground: 30 5% 65%;
+  --accent: 30 10% 18%;
+  --accent-foreground: 40 10% 95%;
+  --destructive: 6 50% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 30 10% 20%;
+  --input: 30 10% 20%;
+  --ring: 16 52% 61%;
 }
 
 body {
@@ -67,6 +87,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Smooth scrolling + text-size safety */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
@@ -74,19 +99,24 @@ html {
 }
 
 /* Custom scrollbar */
-::-webkit-scrollbar {
+.custom-scrollbar::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
-::-webkit-scrollbar-track {
-  background: var(--bg);
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
-::-webkit-scrollbar-thumb {
+.custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 3px;
+  border-radius: 10px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--brand);
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
 }
 
 /* Hide scrollbar but keep scroll functionality */
@@ -170,34 +200,32 @@ select, textarea {
   }
 }
 
-@layer base {
-  :root {
-    --background: 40 14% 95%;
-    --foreground: 0 0% 4%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 4%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 4%;
-    --primary: 16 52% 54%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 35 14% 92%;
-    --secondary-foreground: 0 0% 4%;
-    --muted: 35 14% 92%;
-    --muted-foreground: 30 4% 22%;
-    --accent: 35 14% 92%;
-    --accent-foreground: 30 6% 16%;
-    --destructive: 6 44% 43%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 37 16% 90%;
-    --input: 37 16% 90%;
-    --ring: 16 52% 54%;
-    --chart-1: 16 52% 54%;
-    --chart-2: 139 15% 32%;
-    --chart-3: 196 27% 49%;
-    --chart-4: 36 51% 55%;
-    --chart-5: 6 44% 43%;
-    --radius: 0.125rem;
-  }
+:root {
+  --background: 40 14% 95%;
+  --foreground: 0 0% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 4%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 4%;
+  --primary: 16 52% 54%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 35 14% 92%;
+  --secondary-foreground: 0 0% 4%;
+  --muted: 35 14% 92%;
+  --muted-foreground: 30 4% 22%;
+  --accent: 35 14% 92%;
+  --accent-foreground: 30 6% 16%;
+  --destructive: 6 44% 43%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 37 16% 90%;
+  --input: 37 16% 90%;
+  --ring: 16 52% 54%;
+  --chart-1: 16 52% 54%;
+  --chart-2: 139 15% 32%;
+  --chart-3: 196 27% 49%;
+  --chart-4: 36 51% 55%;
+  --chart-5: 6 44% 43%;
+  --radius: 0.125rem;
 }
 
 @layer base {

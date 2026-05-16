@@ -77,7 +77,14 @@ export default function Dashboard() {
     if (!silent) { setLoading(true); setFetchError(false); }
     else setRefreshing(true);
     getDashboard()
-      .then(res => { setData(res.data); setFetchError(false); })
+      .then(res => { 
+        if (res.data) {
+          setData(res.data); 
+          setFetchError(false); 
+        } else {
+          if (!silent) setFetchError(true);
+        }
+      })
       .catch((err) => { 
         if (!silent) setFetchError(true); 
         console.error("Dashboard fetch error:", err);

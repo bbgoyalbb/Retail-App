@@ -3,9 +3,9 @@ import { getDaybook, getDaybookDates, tallyEntries, invalidateDaybookPendingCach
 import { dataEvents } from "@/lib/dataEvents";
 import { fmt } from "@/lib/fmt";
 import { 
-  Check, Circle, Spinner, ArrowsClockwise, CaretDown, 
+  Check, Circle, ArrowsClockwise, CaretDown, 
   CalendarCheck, Receipt, Wallet, Scissors, PaintBrush, 
-  Tag, ChartBar, Info, Warning, CaretRight
+  Tag, ChartBar, Info, Warning, CaretRight, CircleNotch as Spinner
 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -368,7 +368,7 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
           </div>
 
           {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto custom-scrollbar">
+          <div className="hidden md:block overflow-x-auto custom-scrollbar border-t border-border/50">
             <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="bg-muted/30 border-b border-border/50">
