@@ -320,7 +320,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full" data-testid="recent-transactions-table">
+              <table className="w-full min-w-[500px]" data-testid="recent-transactions-table">
                 <thead>
                   <tr className="bg-muted/40 border-b border-muted/50">
                     <th className="text-left px-6 py-4 text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground">Timestamp</th>

@@ -438,7 +438,7 @@ export default function JobWork() {
   const closeDialog = useCallback(() => setDialog(null), []);
 
   return (
-    <div data-testid="jobwork-page" className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div data-testid="jobwork-page" className="space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Production Pipeline</h1>

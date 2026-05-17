@@ -184,7 +184,7 @@ export default function Sidebar({ open, setOpen }) {
                 // Visual divider in collapsed mode instead of text label
                 <hr key={item.key} className="my-1 border-[var(--border-subtle)]" />
               ) : (
-                <p key={item.key} className="px-3 pt-4 pb-1 text-[9px] uppercase tracking-[.18em] font-semibold text-[var(--border-strong)]">{item.label}</p>
+                <p key={item.key} className="px-3 pt-4 pb-1 text-[9px] uppercase tracking-[.18em] font-semibold text-muted-foreground/60">{item.label}</p>
               );
             }
             const isActive = location.pathname === item.path;

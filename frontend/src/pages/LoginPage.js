@@ -163,10 +163,10 @@ export default function LoginPage() {
           </Card>
 
           <div className="flex flex-col items-center gap-4 pt-4">
-            <p className="text-[9px] font-medium text-muted-foreground/50 text-center leading-relaxed">
+            <p className="text-[10px] font-medium text-muted-foreground/70 text-center leading-relaxed">
               Session is stored per tab and expires on close.
             </p>
-            <p className="text-[9px] uppercase tracking-[0.3em] font-black text-muted-foreground/40">
+            <p className="text-[9px] uppercase tracking-[0.3em] font-black text-muted-foreground/60">
               Retail Management Engine v2.0
             </p>
           </div>

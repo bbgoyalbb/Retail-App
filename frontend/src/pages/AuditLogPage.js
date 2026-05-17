@@ -14,11 +14,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const ACTION_COLORS = {
-  create: "text-success bg-success/10 border-success/20",
-  update: "text-info bg-info/10 border-info/20",
-  delete: "text-destructive bg-destructive/10 border-destructive/20",
-  login:  "text-primary bg-primary/10 border-primary/20",
-  logout: "text-muted-foreground bg-muted/30 border-border/50",
+  create: "text-success bg-success/20 border-success/30",
+  update: "text-info bg-info/20 border-info/30",
+  delete: "text-destructive bg-destructive/15 border-destructive/30",
+  login:  "text-primary bg-primary/15 border-primary/30",
+  logout: "text-muted-foreground bg-muted/50 border-border/60",
 };
 
 function ActionBadge({ action = "" }) {
@@ -27,7 +27,7 @@ function ActionBadge({ action = "" }) {
     <Badge 
       variant="outline" 
       className={cn(
-        "px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border-none transition-all",
+        "px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest transition-all",
         ACTION_COLORS[key]
       )}
     >

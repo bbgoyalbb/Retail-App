@@ -157,8 +157,11 @@ async function auditViewport(browser, token, vp) {
     ignoreHTTPSErrors: true,
   });
   const p = await ctx.newPage();
+  // Sidebar is a fixed overlay below the `lg:` breakpoint (1024px).
+  // Both mobile and tablet need open/close management.
+  const isMobileOrTablet = vp.width < 1024;
   const isMobile = vp.width < 768;
-  const isTablet = vp.width >= 768 && vp.width < 1200;
+  const isTablet = vp.width >= 768 && vp.width < 1024;
 
   await injectAuth(p, token);
   console.log(`  ✓ Auth injected`);
@@ -199,7 +202,7 @@ async function auditViewport(browser, token, vp) {
   await scrollMain(p, 2400);
   await shot(p, outDir, '01_dashboard_ledger');
   await scrollMain(p, 0);
-  if (isMobile) {
+  if (isMobileOrTablet) {
     // Sidebar open state on dashboard
     await openSidebar(p);
     await shot(p, outDir, '01_dashboard_sidebar_open');
@@ -211,11 +214,11 @@ async function auditViewport(browser, token, vp) {
   // ─────────────────────────────────────────────────────────────
   console.log('\n── 2. DARK MODE');
   // Enable dark via sidebar (all viewports have sidebar footer)
-  if (isMobile) { await openSidebar(p); }
+  if (isMobileOrTablet) { await openSidebar(p); }
   await tapText(p, 'Dark').catch(() => {});
   await p.waitForFunction(() => document.documentElement.classList.contains('dark'), { timeout: 3000 }).catch(() => {});
   await p.waitForTimeout(400);
-  if (isMobile) { await closeSidebar(p); }
+  if (isMobileOrTablet) { await closeSidebar(p); }
   await shot(p, outDir, '02_dark_dashboard');
   await nav(p, '/daybook', 1500);
   await shot(p, outDir, '02_dark_daybook');
@@ -226,11 +229,11 @@ async function auditViewport(browser, token, vp) {
   await nav(p, '/new-bill', 1200);
   await shot(p, outDir, '02_dark_newbill');
   // Disable dark — go back to light
-  if (isMobile) { await openSidebar(p); }
+  if (isMobileOrTablet) { await openSidebar(p); }
   await tapText(p, 'Light').catch(() => {});
   await p.waitForFunction(() => !document.documentElement.classList.contains('dark'), { timeout: 3000 }).catch(() => {});
   await p.waitForTimeout(400);
-  if (isMobile) { await closeSidebar(p); }
+  if (isMobileOrTablet) { await closeSidebar(p); }
 
   // ─────────────────────────────────────────────────────────────
   // 3. DAYBOOK
@@ -261,7 +264,7 @@ async function auditViewport(browser, token, vp) {
   await tapText(p, 'Pending');
   await p.waitForTimeout(500);
   await shot(p, outDir, '03_daybook_pending_final');
-  if (isMobile) { await shotFull(p, outDir, '03_daybook_mobile_full'); }
+  if (isMobile) { await shotFull(p, outDir, '03_daybook_full'); }
 
   // ─────────────────────────────────────────────────────────────
   // 4. MANAGE ORDERS (ItemsManager)
@@ -506,10 +509,10 @@ async function auditViewport(browser, token, vp) {
   const cb2 = p.locator('input[type="checkbox"]').nth(2);
   const hasCb = await cb1.isVisible({ timeout: 2000 }).catch(() => false);
   if (hasCb) {
-    await cb1.tap();
+    await cb1.click({ force: true });
     await p.waitForTimeout(350);
     await shot(p, outDir, '09_labour_one_selected');
-    await cb2.tap().catch(() => {});
+    await cb2.click({ force: true }).catch(() => {});
     await p.waitForTimeout(300);
     await shot(p, outDir, '09_labour_multi_selected');
     // Scroll to bottom to show sticky pay bar in context
@@ -519,17 +522,17 @@ async function auditViewport(browser, token, vp) {
     await scrollMain(p, 300);
     await shot(p, outDir, '09_labour_sticky_bar_with_list');
     // Deselect all — do NOT submit
-    await cb1.tap().catch(() => {});
-    await cb2.tap().catch(() => {});
+    await cb1.click({ force: true }).catch(() => {});
+    await cb2.click({ force: true }).catch(() => {});
     await p.waitForTimeout(300);
   }
   // Select-all
   const headerCb = p.locator('input[type="checkbox"]').first();
   if (await headerCb.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await headerCb.tap();
+    await headerCb.click({ force: true });
     await p.waitForTimeout(300);
     await shot(p, outDir, '09_labour_select_all');
-    await headerCb.tap(); // deselect
+    await headerCb.click({ force: true }); // deselect
     await p.waitForTimeout(300);
   }
   // Type filter
@@ -567,7 +570,7 @@ async function auditViewport(browser, token, vp) {
     await scrollMain(p, scroll);
     await shot(p, outDir, `10_settings_${name}`);
   }
-  if (!isMobile) { await shotFull(p, outDir, '10_settings_full'); }
+  if (!isMobileOrTablet) { await shotFull(p, outDir, '10_settings_full'); }
   await scrollMain(p, 0);
 
   // ─────────────────────────────────────────────────────────────
@@ -577,7 +580,7 @@ async function auditViewport(browser, token, vp) {
   await nav(p, '/data', 1200);
   await shot(p, outDir, '11_data_import_tab');
   // Tab bar scroll test on mobile
-  if (isMobile || isTablet) {
+  if (isMobileOrTablet) {
     await p.evaluate(() => {
       const tabs = document.querySelector('[role="tablist"], .overflow-x-auto');
       if (tabs) tabs.scrollLeft = 300;
@@ -605,7 +608,7 @@ async function auditViewport(browser, token, vp) {
   await nav(p, '/users', 1200);
   await shot(p, outDir, '12_users_list');
   // Horizontal scroll on mobile (table min-w-[560px])
-  if (isMobile || isTablet) {
+  if (isMobileOrTablet) {
     await p.evaluate(() => { const t = document.querySelector('.overflow-x-auto'); if (t) t.scrollLeft = 300; });
     await p.waitForTimeout(300);
     await shot(p, outDir, '12_users_table_scrolled');
@@ -651,28 +654,27 @@ async function auditViewport(browser, token, vp) {
   // ─────────────────────────────────────────────────────────────
   // 14. SIDEBAR — desktop collapse states
   // ─────────────────────────────────────────────────────────────
-  if (!isMobile) {
+  if (!isMobileOrTablet) {
+    // Desktop: sidebar is always visible, test collapse/expand rail
     console.log('\n── 14. SIDEBAR DESKTOP STATES');
     await nav(p, '/', 1000);
     await shot(p, outDir, '14_sidebar_expanded');
-    // Collapse
     await p.locator('button[title="Collapse sidebar"]').first().click({ timeout: 3000 }).catch(() => {});
     await p.waitForTimeout(400);
     await shot(p, outDir, '14_sidebar_collapsed_rail');
-    // Expand back
     await p.locator('button[title="Expand sidebar"]').first().click({ timeout: 3000 }).catch(() => {});
     await p.waitForTimeout(400);
     await shot(p, outDir, '14_sidebar_expanded_again');
   } else {
-    // Mobile: sidebar open/close/overlay
-    console.log('\n── 14. SIDEBAR MOBILE STATES');
+    // Mobile/Tablet: sidebar is a fixed overlay — open/close/overlay states
+    console.log('\n── 14. SIDEBAR OVERLAY STATES');
     await nav(p, '/', 800);
     await openSidebar(p);
-    await shot(p, outDir, '14_sidebar_mobile_open');
-    await scrollMain(p, 200); // scroll nav
-    await shot(p, outDir, '14_sidebar_mobile_scrolled');
+    await shot(p, outDir, '14_sidebar_overlay_open');
+    await scrollMain(p, 200);
+    await shot(p, outDir, '14_sidebar_overlay_scrolled');
     await closeSidebar(p);
-    await shot(p, outDir, '14_sidebar_mobile_closed');
+    await shot(p, outDir, '14_sidebar_overlay_closed');
   }
 
   // ─────────────────────────────────────────────────────────────
