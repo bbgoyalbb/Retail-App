@@ -274,7 +274,7 @@ export default function LabourPayments() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 pb-32 lg:pb-0">
         {/* Main Workspace */}
         <div className="lg:col-span-3 space-y-6">
           {/* Filters Bar */}

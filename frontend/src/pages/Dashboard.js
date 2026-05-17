@@ -237,7 +237,7 @@ export default function Dashboard() {
         {/* Job Work Status */}
         <Card className="shadow-sm border-muted-foreground/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
-            <CardTitle className="text-lg font-black uppercase tracking-tight">Operational Pipeline</CardTitle>
+            <CardTitle className="text-base sm:text-lg font-black uppercase tracking-tight whitespace-nowrap">Operational Pipeline</CardTitle>
             <Button variant="ghost" size="sm" onClick={() => navigate('/jobwork')} className="text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5">
               Production Map
             </Button>
@@ -265,7 +265,7 @@ export default function Dashboard() {
         {/* Pending Breakdown */}
         <Card className="shadow-sm border-muted-foreground/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
-            <CardTitle className="text-lg font-black uppercase tracking-tight">Financial Exposure</CardTitle>
+            <CardTitle className="text-base sm:text-lg font-black uppercase tracking-tight whitespace-nowrap">Financial Exposure</CardTitle>
             <Button variant="ghost" size="sm" onClick={() => navigate('/items?payment=Pending')} className="text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5">
               Settlements
             </Button>
@@ -303,7 +303,7 @@ export default function Dashboard() {
       <Card className="shadow-lg border-muted-foreground/10 overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between bg-muted/20 pb-4">
           <div>
-            <CardTitle className="text-lg font-black uppercase tracking-tight">Recent Ledger Activity</CardTitle>
+            <CardTitle className="text-base sm:text-lg font-black uppercase tracking-tight whitespace-nowrap">Recent Ledger Activity</CardTitle>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Live transaction feed</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => navigate('/items')} className="font-black uppercase tracking-widest text-[10px] gap-2 rounded-full px-4 shadow-sm hover:bg-primary hover:text-white transition-all">

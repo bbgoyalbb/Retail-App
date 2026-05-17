@@ -223,7 +223,7 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
       <CardHeader className="px-6 py-4 border-b border-border/50 bg-background/50 backdrop-blur-md flex flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
-            <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground leading-none mb-1.5">
+            <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground leading-none mb-1.5 whitespace-nowrap">
               {viewMode === "pending" ? "Awaiting Tally" : "Reconciled Ledger"}
             </CardTitle>
             <div className="flex items-center gap-2">

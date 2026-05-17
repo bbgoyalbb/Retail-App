@@ -240,7 +240,7 @@ export default function SettingsPage() {
                 <table className="w-full min-w-[360px] text-xs">
                   <thead>
                     <tr className="bg-muted/50 border-b border-border/50">
-                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Article Discipline</th>
+                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Article Discipline</th>
                       <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-28">Retail (₹)</th>
                       <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-28">Labour (₹)</th>
                       <th className="px-4 py-4 w-12"></th>
@@ -715,7 +715,7 @@ export default function SettingsPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between gap-4">
               <div className="flex flex-col">
-                <h4 className="text-sm font-black uppercase tracking-widest text-foreground">Numerical Mapping <Badge variant="outline" className="ml-2 font-mono text-[9px] bg-primary/5 border-primary/20 text-primary">CTRL + [1-9]</Badge></h4>
+                <h4 className="text-sm font-black uppercase tracking-widest text-foreground whitespace-nowrap">Numerical Mapping <Badge variant="outline" className="ml-2 font-mono text-[9px] bg-primary/5 border-primary/20 text-primary">CTRL + [1-9]</Badge></h4>
                 <p className="text-xs text-muted-foreground font-medium mt-1">Rapid command center via numerical index.</p>
               </div>
               <Button size="sm" onClick={() => saveShortcuts(numShortcuts)} className="h-9 px-4 font-black uppercase tracking-widest text-[10px] gap-2">
