@@ -211,6 +211,37 @@ async def limit_upload_size(request: Request, call_next):
     return await call_next(request)
 
 
+# Cache-Control TTLs for read-only GET endpoints (seconds).
+# Mutations (POST/PUT/DELETE) always receive no-store.
+_CACHE_TTLS: dict[str, int] = {
+    "/api/settings/public":    120,   # firm name/logo — very stable
+    "/api/settings":           120,
+    "/api/dashboard":           30,   # refreshed every 30 s in UI anyway
+    "/api/customers":           60,
+    "/api/labour/karigars":    300,   # karigar list rarely changes
+    "/api/jobwork/filters":    120,
+    "/api/reports/summary":     30,
+    "/api/reports/revenue":     30,
+    "/api/reports/customers":   30,
+    "/api/daybook/dates":       60,
+    "/api/daybook/pending-count": 30,
+}
+
+@app.middleware("http")
+async def cache_control(request: Request, call_next):
+    response = await call_next(request)
+    if request.method != "GET":
+        response.headers["Cache-Control"] = "no-store"
+        return response
+    path = request.url.path
+    ttl = next((v for k, v in _CACHE_TTLS.items() if path == k or path.startswith(k + "?")), None)
+    if ttl:
+        response.headers["Cache-Control"] = f"private, max-age={ttl}, stale-while-revalidate={ttl * 2}"
+    elif path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 # ==========================================
 # STATIC FILES & HEALTH
 # ==========================================

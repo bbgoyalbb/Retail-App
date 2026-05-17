@@ -1,5 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { login as apiLogin, getMe, logoutApi, invalidateAllCaches } from "@/api";
+import { login as apiLogin, getMe, logoutApi, invalidateAllCaches, getDashboard, getPublicSettings } from "@/api";
+
+const prefetchCritical = () => {
+  getDashboard().catch(() => {});
+  getPublicSettings().catch(() => {});
+};
 
 const AuthContext = createContext(null);
 
@@ -12,7 +17,7 @@ export function AuthProvider({ children }) {
     const token = sessionStorage.getItem("token");
     if (token) {
       getMe()
-        .then((data) => setUser(data))
+        .then((data) => { setUser(data); prefetchCritical(); })
         .catch(() => {
           sessionStorage.removeItem("token");
           setUser(null);
@@ -38,6 +43,7 @@ export function AuthProvider({ children }) {
     sessionStorage.setItem("token", res.access_token);
     setSessionExpired(false);
     setUser(res.user);
+    prefetchCritical();
     return res.user;
   }, []);
 

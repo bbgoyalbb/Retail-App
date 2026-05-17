@@ -101,16 +101,13 @@ export default function Reports() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    let timer;
-    const updateWidth = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        if (chartRef.current) setChartWidth(chartRef.current.offsetWidth);
-      }, 120);
-    };
-    updateWidth();
-    window.addEventListener('resize', updateWidth);
-    return () => { window.removeEventListener('resize', updateWidth); clearTimeout(timer); };
+    if (!chartRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect?.width;
+      if (width) setChartWidth(width);
+    });
+    ro.observe(chartRef.current);
+    return () => ro.disconnect();
   }, []);
 
   const getTickInterval = (dataLength) => {

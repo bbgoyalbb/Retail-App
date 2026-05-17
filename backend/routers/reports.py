@@ -737,10 +737,17 @@ async def get_revenue_report(db = Depends(get_db), period: str = "daily", date_f
         "count":               {"$sum": 1},
     }
 
+    # Project only the fields needed for aggregation — reduces per-document size
+    _proj = {"$project": {"date": 1, "fabric_amount": 1, "fabric_received": 1,
+        "tailoring_amount": 1, "tailoring_received": 1,
+        "embroidery_amount": 1, "embroidery_received": 1,
+        "addon_amount": 1, "addon_received": 1}}
+
     # Push grouping into MongoDB for weekly/monthly — avoids fetching 1000 rows to Python
     if period == "weekly":
         pipeline = [
             {"$match": match_query},
+            _proj,
             {"$addFields": {"_dt": {"$dateFromString": {"dateString": "$date", "onError": None}}}},
             {"$match": {"_dt": {"$ne": None}}},
             {"$group": {"_id": {"$dateToString": {"format": "%Y-W%V", "date": "$_dt"}}, **_agg_fields}},
@@ -751,6 +758,7 @@ async def get_revenue_report(db = Depends(get_db), period: str = "daily", date_f
     if period == "monthly":
         pipeline = [
             {"$match": match_query},
+            _proj,
             {"$addFields": {"_dt": {"$dateFromString": {"dateString": "$date", "onError": None}}}},
             {"$match": {"_dt": {"$ne": None}}},
             {"$group": {"_id": {"$dateToString": {"format": "%Y-%m", "date": "$_dt"}}, **_agg_fields}},
@@ -761,6 +769,7 @@ async def get_revenue_report(db = Depends(get_db), period: str = "daily", date_f
     # daily — group by date string directly (no parse needed)
     pipeline = [
         {"$match": match_query},
+        _proj,
         {"$group": {"_id": "$date", **_agg_fields}},
         {"$sort": {"_id": 1}},
         {"$limit": 500},
@@ -775,7 +784,14 @@ async def get_customer_report(db = Depends(get_db), date_from: Optional[str] = N
     if date_to:
         match_query.setdefault("date", {})["$lte"] = date_to
 
-    pipeline = [{"$match": match_query}]
+    pipeline = [
+        {"$match": match_query},
+        {"$project": {"name": 1, "ref": 1, "fabric_amount": 1, "tailoring_amount": 1,
+            "fabric_received": 1, "tailoring_received": 1,
+            "embroidery_received": 1, "addon_received": 1,
+            "fabric_pending": 1, "tailoring_pending": 1, "embroidery_pending": 1, "addon_pending": 1,
+            "fabric_pay_mode": 1, "tailoring_pay_mode": 1, "embroidery_pay_mode": 1, "addon_pay_mode": 1}},
+    ]
     pipeline += [
         {"$group": {
             "_id": "$name",
@@ -816,8 +832,16 @@ async def get_summary_report(db = Depends(get_db), date_from: Optional[str] = No
         match_query.setdefault("date", {})["$lte"] = date_to
 
     _ns = {"$not": {"$regex": "^Settled"}}
+    _proj_summary = {"$project": {
+        "fabric_amount": 1, "fabric_received": 1, "fabric_pending": 1, "fabric_pay_mode": 1,
+        "tailoring_amount": 1, "tailoring_received": 1, "tailoring_pending": 1, "tailoring_pay_mode": 1,
+        "embroidery_amount": 1, "embroidery_received": 1, "embroidery_pending": 1, "embroidery_pay_mode": 1,
+        "addon_amount": 1, "addon_received": 1, "addon_pending": 1, "addon_pay_mode": 1,
+        "article_type": 1,
+    }}
     pipeline = [
         {"$match": match_query},
+        _proj_summary,
         {"$facet": {
             "totals": [{"$group": {
                 "_id": None,

@@ -80,6 +80,42 @@ let webpackConfig = {
         /Failed to parse source map.*node_modules[/\\]src[/\\]/,
       ];
 
+      // Split heavy vendor libs into separate named chunks for better long-term caching.
+      // App code changes won't bust vendor chunks, and each chunk is fetched only once.
+      webpackConfig.optimization = {
+        ...webpackConfig.optimization,
+        splitChunks: {
+          ...webpackConfig.optimization?.splitChunks,
+          cacheGroups: {
+            ...webpackConfig.optimization?.splitChunks?.cacheGroups,
+            recharts: {
+              test: /[\\/]node_modules[\\/](recharts|d3-[^/]+|victory-vendor)[\\/]/,
+              name: "vendor-recharts",
+              chunks: "all",
+              priority: 30,
+            },
+            radix: {
+              test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
+              name: "vendor-radix",
+              chunks: "all",
+              priority: 25,
+            },
+            phosphor: {
+              test: /[\\/]node_modules[\\/]@phosphor-icons[\\/]/,
+              name: "vendor-phosphor",
+              chunks: "all",
+              priority: 20,
+            },
+            dateFns: {
+              test: /[\\/]node_modules[\\/](date-fns|react-day-picker)[\\/]/,
+              name: "vendor-dates",
+              chunks: "all",
+              priority: 15,
+            },
+          },
+        },
+      };
+
       return webpackConfig;
     },
   },

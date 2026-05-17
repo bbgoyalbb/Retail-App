@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { createBill, getCustomers, getInvoiceUrl, getSettings, invalidateCustomersCache, getNextBillRef } from "@/api";
@@ -10,7 +10,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { DatePickerInput } from "@/components/DatePickerInput";
-import BarcodeScanner from "@/components/BarcodeScanner";
 import InvoiceModal from "@/components/InvoiceModal";
 import { BillLineItemRow, ItemInputForm, PaymentSummaryPanel, BillSuccessPanel } from "@/components/bill";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const BarcodeScanner = lazy(() => import("@/components/BarcodeScanner"));
 
 export default function NewBill() {
   const navigate = useNavigate();
@@ -662,7 +663,11 @@ export default function NewBill() {
                 )}
               </div>
 
-              {showScanner && <BarcodeScanner onScan={(code) => { setBarcode(code); setShowScanner(false); setTimeout(() => qtyRef.current?.focus(), 100); }} onClose={() => setShowScanner(false)} />}
+              {showScanner && (
+                <Suspense fallback={null}>
+                  <BarcodeScanner onScan={(code) => { setBarcode(code); setShowScanner(false); setTimeout(() => qtyRef.current?.focus(), 100); }} onClose={() => setShowScanner(false)} />
+                </Suspense>
+              )}
 
               {items.length > 0 && (
                 <div className="border-t border-muted-foreground/10 bg-background" data-testid="bill-items-list">
