@@ -221,20 +221,20 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
   return (
     <Card className="border-none shadow-xl shadow-black/5 overflow-hidden bg-background min-h-[400px]">
       <CardHeader className="px-6 py-4 border-b border-border/50 bg-background/50 backdrop-blur-md flex flex-row items-center justify-between space-y-0">
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="flex flex-col min-w-0">
             <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground leading-none mb-1.5 whitespace-nowrap">
               {viewMode === "pending" ? "Awaiting Tally" : "Reconciled Ledger"}
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="font-mono text-[10px] h-5 px-1.5 font-bold">
+            <div className="flex items-center gap-2 min-w-0">
+              <Badge variant="secondary" className="font-mono text-[10px] h-5 px-1.5 font-bold flex-shrink-0">
                 {visibleEntries.length} Entries
               </Badge>
-              <span className="font-mono text-xs font-black text-primary">₹{fmt(grandTotal)}</span>
+              <span className="font-mono text-xs font-black text-primary truncate">₹{fmt(grandTotal)}</span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-xl">
+        <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-xl flex-shrink-0">
           {["pending", "tallied"].map(mode => (
             <Button 
               key={mode} 

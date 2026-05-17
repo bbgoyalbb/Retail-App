@@ -658,8 +658,8 @@ export default function LabourPayments() {
           </Card>
         </div>
 
-        {/* Action Panel */}
-        <div className="space-y-6">
+        {/* Action Panel — desktop only; mobile uses sticky bar */}
+        <div className="hidden lg:block space-y-6">
           <Card className="bg-card border-none shadow-xl shadow-black/5 overflow-hidden sticky top-8">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-primary" />
             <CardHeader className="pb-4 pt-6">

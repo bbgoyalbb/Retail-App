@@ -241,8 +241,8 @@ export default function SettingsPage() {
                   <thead>
                     <tr className="bg-muted/50 border-b border-border/50">
                       <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Article Discipline</th>
-                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-28">Retail (₹)</th>
-                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-28">Labour (₹)</th>
+                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-28 whitespace-nowrap">Retail (₹)</th>
+                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-28 whitespace-nowrap">Labour (₹)</th>
                       <th className="px-4 py-4 w-12"></th>
                     </tr>
                   </thead>
@@ -713,7 +713,7 @@ export default function SettingsPage() {
 
           {/* Numerical shortcuts */}
           <div className="space-y-6">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-col">
                 <h4 className="text-sm font-black uppercase tracking-widest text-foreground whitespace-nowrap">Numerical Mapping <Badge variant="outline" className="ml-2 font-mono text-[9px] bg-primary/5 border-primary/20 text-primary">CTRL + [1-9]</Badge></h4>
                 <p className="text-xs text-muted-foreground font-medium mt-1">Rapid command center via numerical index.</p>
