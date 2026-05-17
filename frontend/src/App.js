@@ -184,7 +184,7 @@ function AppShell() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
+      <div className="flex h-screen items-center justify-center bg-background">
         <div className="animate-spin h-8 w-8 border-2 border-[var(--border-strong)] border-t-transparent rounded-full" />
       </div>
     );
@@ -204,7 +204,7 @@ function AppShell() {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen overflow-hidden bg-[var(--bg)]" data-testid="app-shell">
+      <div className="flex h-screen overflow-hidden bg-background" data-testid="app-shell">
         <OfflineBanner />
         <Sidebar open={sidebarOpen} setOpen={handleSetOpen} />
         <BackToTop />

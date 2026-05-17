@@ -545,7 +545,7 @@ export default function NewBill() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Customer & Items */}
         <div className="lg:col-span-2 space-y-8">
-          <Card className="shadow-lg border-muted-foreground/10 overflow-hidden">
+          <Card className="shadow-lg border-muted-foreground/10">
             <CardHeader className="bg-muted/20 pb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">
@@ -556,7 +556,7 @@ export default function NewBill() {
             </CardHeader>
             <CardContent className="p-6 sm:p-8">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="sm:col-span-1 col-span-1 space-y-2">
+                <div className="sm:col-span-1 col-span-1 space-y-2 overflow-visible">
                   <label className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground block ml-1">Customer Entity</label>
                   <div ref={nameWrapRef} className="relative group">
                     <Input 

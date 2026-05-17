@@ -425,7 +425,7 @@ export default function SettingsPage() {
                         <img 
                           src={getLogoUrl(logoPreview) || getLogoUrl(settings.firm_logo)} 
                           alt="Logo" 
-                          className="w-20 h-20 object-contain bg-white rounded-xl border border-border/50 shadow-sm"
+                          className="w-20 h-20 object-contain bg-muted rounded-xl border border-border/50 shadow-sm"
                         />
                         <button 
                           onClick={() => { setLogoPreview(null); setSettings(p => ({...p, firm_logo: ''})); }}

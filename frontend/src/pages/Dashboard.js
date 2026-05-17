@@ -243,7 +243,7 @@ export default function Dashboard() {
             ].map(({ label, value, color, icon: Icon }) => (
               <div key={label} className="flex items-center justify-between py-4 border-b border-muted/50 last:border-0 hover:bg-muted/30 transition-colors px-2 rounded-lg group">
                 <div className="flex items-center gap-3">
-                  <div className="p-1.5 rounded-md bg-muted/50 group-hover:bg-white transition-colors">
+                  <div className="p-1.5 rounded-md bg-muted/50 group-hover:bg-background transition-colors">
                     <Icon size={14} weight="duotone" style={{ color }} />
                   </div>
                   <span className="text-sm text-muted-foreground font-bold">{label}</span>
