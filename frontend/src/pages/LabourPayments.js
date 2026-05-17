@@ -376,7 +376,7 @@ export default function LabourPayments() {
                 </div>
               ) : viewMode === "unpaid" ? (
                 <div className="overflow-x-auto custom-scrollbar">
-                  <table className="w-full" data-testid="labour-items-table">
+                  <table className="w-full min-w-[560px]" data-testid="labour-items-table">
                     <thead>
                       <tr className="bg-muted/30 border-b border-border/50">
                         <th className="px-4 py-4 w-12">
@@ -389,11 +389,11 @@ export default function LabourPayments() {
                             />
                           </div>
                         </th>
-                        <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Order Ref</th>
-                        <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Article Description</th>
-                        {filterType !== "Tailoring Labour" && <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Artisan</th>}
-                        <th className="text-right px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Settlement Amt</th>
-                        <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Discipline</th>
+                        <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Order Ref</th>
+                        <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Article Description</th>
+                        {filterType !== "Tailoring Labour" && <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Artisan</th>}
+                        <th className="text-right px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Settlement Amt</th>
+                        <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Discipline</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
