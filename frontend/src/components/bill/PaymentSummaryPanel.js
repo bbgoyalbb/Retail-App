@@ -33,7 +33,7 @@ export default function PaymentSummaryPanel({
 
   return (
     <Card className="shadow-lg border-muted-foreground/10 overflow-hidden">
-      <CardContent className="p-6 sm:p-8 space-y-8">
+      <CardContent className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="font-heading text-xl font-black uppercase tracking-tight text-primary">Settlement</h3>
           {selectedModes.length > 0 && (
@@ -49,7 +49,7 @@ export default function PaymentSummaryPanel({
           <div className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground">
             Total Payable
           </div>
-          <div className="font-mono text-4xl sm:text-5xl font-black text-primary mt-1 tracking-tighter">
+          <div className="font-mono text-3xl font-black text-primary mt-1 tracking-tighter">
             ₹{grandTotal.toLocaleString('en-IN')}
           </div>
         </div>
@@ -79,7 +79,7 @@ export default function PaymentSummaryPanel({
         </div>
 
         {/* Amount Paid & Pay Date */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <div className="space-y-2">
             <label className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground block ml-1">
               Received Amount
@@ -127,7 +127,7 @@ export default function PaymentSummaryPanel({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {/* Needs Tailoring Checkbox */}
           <label className={`group flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${needsTailoring ? 'border-primary bg-primary/[0.03] shadow-inner' : 'border-muted hover:border-primary/30 hover:bg-muted/30'}`}>
             <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${needsTailoring ? 'bg-primary border-primary rotate-0' : 'border-muted-foreground/30 bg-background rotate-12 group-hover:rotate-0'}`}>

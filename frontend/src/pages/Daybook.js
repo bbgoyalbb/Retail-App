@@ -271,7 +271,7 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
         ) : (
           <>
           {/* Mobile card view */}
-          <div className="md:hidden divide-y divide-border/30">
+          <div className="lg:hidden divide-y divide-border/30">
             {(() => {
               const swipeStartX = { current: null };
               return visibleEntries.map((entry) => {
@@ -373,7 +373,7 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
           </div>
 
           {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto custom-scrollbar border-t border-border/50">
+          <div className="hidden lg:block overflow-x-auto custom-scrollbar border-t border-border/50">
             <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="bg-muted/30 border-b border-border/50">
