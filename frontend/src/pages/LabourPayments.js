@@ -667,7 +667,7 @@ export default function LabourPayments() {
                 <div className="p-2 rounded-xl bg-primary/10 text-primary">
                   <Receipt size={20} weight="duotone" />
                 </div>
-                <CardTitle className="text-lg font-black uppercase tracking-tight">Settlement Engine</CardTitle>
+                <CardTitle className="text-sm font-black uppercase tracking-widest whitespace-nowrap">Settlement Engine</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
