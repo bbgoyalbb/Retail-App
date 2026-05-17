@@ -10,9 +10,8 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     try {
       const stored = localStorage.getItem("theme");
-      if (stored) return stored;
-      // Check system preference on first load
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      if (stored === "dark" || stored === "light") return stored;
+      return "light";
     } catch {
       return "light";
     }

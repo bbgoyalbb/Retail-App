@@ -61,8 +61,8 @@ body {
   font-family: 'IBM Plex Sans', -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg);
-  color: var(--text-primary);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -142,12 +142,12 @@ html {
 
 /* Form elements: inherit theme colors in dark mode */
 input, select, textarea {
-  background-color: var(--surface);
-  color: var(--text-primary);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 option {
-  background-color: var(--surface);
-  color: var(--text-primary);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 /* Selection color */

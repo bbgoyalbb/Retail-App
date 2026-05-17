@@ -77,10 +77,7 @@ if errorlevel 1 (
     exit /b 1
 )
 echo [2/4] Build complete!
-echo Copying build to backend...
-if exist "%ROOT%backend\frontend" rmdir /s /q "%ROOT%backend\frontend"
-xcopy /e /i /q "%ROOT%frontend\build" "%ROOT%backend\frontend\build" >nul
-echo [2/4] Build copied to backend\frontend\build
+echo [2/4] Build is served directly from frontend\build (no copy needed)
 echo.
 
 :: ---- Step 3: Kill any existing backend process on port ----

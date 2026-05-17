@@ -272,24 +272,25 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
           <>
           {/* Mobile card view */}
           <div className="md:hidden divide-y divide-border/30">
-            {visibleEntries.map((entry) => {
+            {(() => {
+              const swipeStartX = { current: null };
+              return visibleEntries.map((entry) => {
               const ts = entry.tally_status || {};
               const modes = entry.modes || {};
               const cats = activeCats(entry);
               const allTallied = allCatsTallied(entry);
               const anyUpdating = cats.some(c => updatingTally[`${rowKey(entry)}:${c}`]);
-              let swipeStartX = null;
               return (
                 <div
                   key={entry.id || entry.ref}
                   className="p-5 space-y-4 animate-in fade-in duration-300"
-                  onTouchStart={e => { swipeStartX = e.touches[0].clientX; }}
+                  onTouchStart={e => { swipeStartX.current = e.touches[0].clientX; }}
                   onTouchEnd={e => {
-                    if (swipeStartX === null || anyUpdating) return;
-                    const dx = e.changedTouches[0].clientX - swipeStartX;
+                    if (swipeStartX.current === null || anyUpdating) return;
+                    const dx = e.changedTouches[0].clientX - swipeStartX.current;
                     if (dx > 80) handleTallyAll(entry, true);
                     else if (dx < -80) handleTallyAll(entry, false);
-                    swipeStartX = null;
+                    swipeStartX.current = null;
                   }}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -367,7 +368,8 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
                   )}
                 </div>
               );
-            })}
+            });
+            })()}
           </div>
 
           {/* Desktop table */}

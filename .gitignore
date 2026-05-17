@@ -97,6 +97,11 @@ agenthub/agents/youtube/db
 
 memory/test_credentials.md
 
+# Audit screenshots and dev artifacts
+audit_screenshots/
+db_field_audit.txt
+create_review_zip.ps1
+
 # Mobile development
 
 # Environment and credential files

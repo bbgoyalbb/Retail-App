@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
 import { getPublicSettings, BACKEND_URL } from "@/api";
 import { useToast } from "@/hooks/use-toast";
-import { Scissors, Eye, EyeSlash, Lock, User, ArrowsClockwise, ShieldCheck, Receipt } from "@phosphor-icons/react";
+import { Scissors, Eye, EyeSlash, Lock, User, ArrowsClockwise, ShieldCheck, Receipt, Sun, Moon } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,21 +18,17 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const { theme } = useTheme();
+  const { theme, toggle } = useTheme();
   const [firmName, setFirmName] = useState("Retail Book");
   const [firmLogo, setFirmLogo] = useState(null);
-  const [firmLogoDark, setFirmLogoDark] = useState(null);
   const [showPwd, setShowPwd] = useState(false);
 
   useEffect(() => {
     getPublicSettings().then(s => {
       if (s?.firm_name) setFirmName(s.firm_name);
       if (typeof s?.firm_logo === "string" && s.firm_logo) setFirmLogo(s.firm_logo.startsWith("http") ? s.firm_logo : `${BACKEND_URL}${s.firm_logo}`);
-      if (typeof s?.firm_logo_dark === "string" && s.firm_logo_dark) setFirmLogoDark(s.firm_logo_dark.startsWith("http") ? s.firm_logo_dark : `${BACKEND_URL}${s.firm_logo_dark}`);
     }).catch(() => {});
-  }, []);
-
-  const activeLogo = theme === 'dark' ? (firmLogoDark || firmLogo) : firmLogo;
+  }, []); 
 
   const from = location.state?.from || "/";
 
@@ -56,6 +52,15 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex bg-background overflow-hidden selection:bg-primary/20">
+      {/* Theme toggle — fixed top right */}
+      <button
+        onClick={toggle}
+        className="fixed top-4 right-4 z-50 p-2.5 rounded-full bg-card border border-border/50 shadow-md text-muted-foreground hover:text-primary hover:border-primary/40 transition-all"
+        title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+      >
+        {theme === "light" ? <Moon size={18} weight="bold" /> : <Sun size={18} weight="bold" />}
+      </button>
+
       {/* Left side - Login form */}
       <div className="relative flex-1 flex items-center justify-center p-6 lg:p-12 z-10">
         {/* Subtle background decoration */}
@@ -68,8 +73,8 @@ export default function LoginPage() {
           {/* Brand mark */}
           <div className="flex flex-col items-center text-center">
             <div className="w-24 h-24 rounded-3xl bg-primary/5 p-1 mb-6 shadow-2xl shadow-primary/10 border border-primary/10 transition-transform hover:scale-105 duration-500 overflow-hidden flex items-center justify-center">
-              {activeLogo ? (
-                <img src={activeLogo} alt={firmName} className="w-full h-full object-contain p-2" />
+              {firmLogo ? (
+                <img src={firmLogo} alt={firmName} className="w-full h-full object-contain p-2" />
               ) : (
                 <div className="w-full h-full bg-primary flex items-center justify-center">
                   <span className="text-white font-black text-4xl">{firmName.charAt(0).toUpperCase()}</span>
@@ -154,6 +159,9 @@ export default function LoginPage() {
           </Card>
 
           <div className="flex flex-col items-center gap-4 pt-4">
+            <p className="text-[9px] font-medium text-muted-foreground/50 text-center leading-relaxed">
+              Session is stored per tab and expires on close.
+            </p>
             <p className="text-[9px] uppercase tracking-[0.3em] font-black text-muted-foreground/40">
               Retail Management Engine v2.0
             </p>

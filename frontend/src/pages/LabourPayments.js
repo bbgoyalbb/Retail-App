@@ -405,12 +405,22 @@ export default function LabourPayments() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
-                      {items.map((item, i) => {
-                        const amount = item.labour_type === "Tailoring" ? item.labour_amount : item.emb_labour_amount;
-                        const isSelected = selected.includes(item.id);
-                        return (
+                      {(() => {
+                        const karigarGroups = {};
+                        items.forEach(item => {
+                          const k = (item.labour_type === "Tailoring" ? "Tailoring" : (item.karigar !== "N/A" ? item.karigar : "Unassigned"));
+                          if (!karigarGroups[k]) karigarGroups[k] = [];
+                          karigarGroups[k].push(item);
+                        });
+                        const rows = [];
+                        Object.entries(karigarGroups).forEach(([karigar, kItems]) => {
+                          const subtotal = kItems.reduce((s, it) => s + (it.labour_type === "Tailoring" ? (it.labour_amount || 0) : (it.emb_labour_amount || 0)), 0);
+                          kItems.forEach((item, i) => {
+                            const amount = item.labour_type === "Tailoring" ? item.labour_amount : item.emb_labour_amount;
+                            const isSelected = selected.includes(item.id);
+                            rows.push(
                           <tr 
-                            key={i} 
+                            key={item.id || i} 
                             className={cn(
                               "group transition-all duration-200 cursor-pointer",
                               isSelected ? "bg-primary/[0.04]" : "hover:bg-muted/30"
@@ -468,8 +478,25 @@ export default function LabourPayments() {
                               </Badge>
                             </td>
                           </tr>
-                        );
-                      })}
+                            );
+                          }); // end kItems.forEach
+                          rows.push(
+                            <tr key={`subtotal_${karigar}`} className="bg-muted/20 border-t-2 border-primary/10">
+                              <td></td>
+                              <td colSpan={filterType !== "Tailoring Labour" ? 3 : 2} className="px-4 py-2">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                  {karigar} · {kItems.length} article{kItems.length !== 1 ? 's' : ''}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2 text-right">
+                                <span className="font-mono text-sm font-black text-primary">₹{fmt(subtotal)}</span>
+                              </td>
+                              <td></td>
+                            </tr>
+                          );
+                        }); // end karigarGroups
+                        return rows;
+                      })()}
                     </tbody>
                   </table>
                 </div>

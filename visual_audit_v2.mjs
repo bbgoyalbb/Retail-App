@@ -16,6 +16,44 @@ const MOBILE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, ha
 
 if (!fs.existsSync(OUT)) fs.mkdirSync(OUT, { recursive: true });
 
+function resolveChromiumExecutablePath() {
+  const override = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+  if (override && fs.existsSync(override)) return override;
+
+  const localAppData = process.env.LOCALAPPDATA;
+  if (!localAppData) return null;
+  const root = path.join(localAppData, 'ms-playwright');
+  if (!fs.existsSync(root)) return null;
+
+  const parseBuild = (name) => {
+    const m = name.match(/-(\d+)/);
+    return m ? Number(m[1]) : 0;
+  };
+
+  const dirs = fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter(d => d.isDirectory())
+    .map(d => d.name);
+
+  const headlessDirs = dirs
+    .filter(n => n.startsWith('chromium_headless_shell-'))
+    .sort((a, b) => parseBuild(b) - parseBuild(a));
+  for (const d of headlessDirs) {
+    const exe = path.join(root, d, 'chrome-headless-shell-win64', 'chrome-headless-shell.exe');
+    if (fs.existsSync(exe)) return exe;
+  }
+
+  const chromiumDirs = dirs
+    .filter(n => n.startsWith('chromium-') && !n.startsWith('chromium_headless_shell-'))
+    .sort((a, b) => parseBuild(b) - parseBuild(a));
+  for (const d of chromiumDirs) {
+    const exe = path.join(root, d, 'chrome-win', 'chrome.exe');
+    if (fs.existsSync(exe)) return exe;
+  }
+
+  return null;
+}
+
 let shotCount = 0;
 async function shot(page, name) {
   const file = path.join(OUT, `${String(shotCount++).padStart(3,'0')}_${name}.png`);
@@ -76,7 +114,15 @@ async function getToken() {
 
 
 async function nav(page, path, wait = 1500) {
-  await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle' });
+  const res = await page.goto(`${BASE}${path}`, { waitUntil: 'domcontentloaded' }).catch(() => null);
+  if (!res || res.status() === 404) {
+    await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await page.evaluate(p => {
+      window.history.pushState({}, '', p);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, path).catch(() => {});
+  }
+  await page.waitForLoadState('networkidle').catch(() => {});
   await page.waitForTimeout(wait);
 }
 
@@ -88,9 +134,13 @@ async function tapText(page, text) {
 
 async function scrollMain(page, y) {
   await page.evaluate(top => {
-    // Pick the largest scrollable container (main content, not sidebar nav)
-    const candidates = [...document.querySelectorAll('div.overflow-y-auto, div[class*="overflow-y-auto"]')]
-      .filter(el => el.scrollHeight > 1000);
+    // Pick the scrollable container with the greatest scrollHeight (main content area)
+    const candidates = [...document.querySelectorAll('div')]
+      .filter(el => {
+        const s = window.getComputedStyle(el);
+        return (s.overflowY === 'auto' || s.overflowY === 'scroll') && el.scrollHeight > 1000;
+      })
+      .sort((a, b) => b.scrollHeight - a.scrollHeight);
     const el = candidates[0] || document.scrollingElement;
     if (el) el.scrollTop = top;
     else window.scrollTo(0, top);
@@ -98,7 +148,8 @@ async function scrollMain(page, y) {
 }
 
 async function run() {
-  const browser = await chromium.launch({ headless: true });
+  const executablePath = resolveChromiumExecutablePath();
+  const browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}) });
   const token = await getToken();
   console.log('✓ Token acquired');
 
@@ -112,7 +163,7 @@ async function run() {
   await setupProxy(p);
 
   // Inject auth: navigate to login, set token in sessionStorage, reload
-  await p.goto(BASE + '/login', { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await p.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 15000 });
   await p.waitForTimeout(600);
   await p.evaluate(t => sessionStorage.setItem('token', t), token);
   await p.reload({ waitUntil: 'networkidle', timeout: 20000 }).catch(() => {});
@@ -649,51 +700,27 @@ async function run() {
   await shot(p, '08_settings_top');
 
   // Scroll the settings inner scrollable container
-  await p.evaluate(() => {
-    const el = document.querySelector('[class*="overflow-y-auto"], main, .overflow-y-auto');
-    if (el) el.scrollTop = 400;
-    else window.scrollTo(0, 400);
-  });
+  await scrollMain(p, 400);
   await p.waitForTimeout(400);
   await shot(p, '08_settings_article_types');
 
-  await p.evaluate(() => {
-    const el = document.querySelector('[class*="overflow-y-auto"], main, .overflow-y-auto');
-    if (el) el.scrollTop = 900;
-    else window.scrollTo(0, 900);
-  });
+  await scrollMain(p, 900);
   await p.waitForTimeout(400);
   await shot(p, '08_settings_payment_modes');
 
-  await p.evaluate(() => {
-    const el = document.querySelector('[class*="overflow-y-auto"], main, .overflow-y-auto');
-    if (el) el.scrollTop = 1400;
-    else window.scrollTo(0, 1400);
-  });
+  await scrollMain(p, 1400);
   await p.waitForTimeout(400);
   await shot(p, '08_settings_addon_items');
 
-  await p.evaluate(() => {
-    const el = document.querySelector('[class*="overflow-y-auto"], main, .overflow-y-auto');
-    if (el) el.scrollTop = 1900;
-    else window.scrollTo(0, 1900);
-  });
+  await scrollMain(p, 1900);
   await p.waitForTimeout(400);
   await shot(p, '08_settings_karigars');
 
-  await p.evaluate(() => {
-    const el = document.querySelector('[class*="overflow-y-auto"], main, .overflow-y-auto');
-    if (el) el.scrollTop = 2500;
-    else window.scrollTo(0, 2500);
-  });
+  await scrollMain(p, 2500);
   await p.waitForTimeout(400);
   await shot(p, '08_settings_firm_details');
 
-  await p.evaluate(() => {
-    const el = document.querySelector('[class*="overflow-y-auto"], main, .overflow-y-auto');
-    if (el) el.scrollTop = 99999;
-    else window.scrollTo(0, 99999);
-  });
+  await scrollMain(p, 99999);
   await p.waitForTimeout(400);
   await shot(p, '08_settings_bottom');
 
@@ -701,11 +728,7 @@ async function run() {
   await shotFull(p, '08_settings_full_page');
 
   // Dirty state
-  await p.evaluate(() => {
-    const el = document.querySelector('[class*="overflow-y-auto"], main, .overflow-y-auto');
-    if (el) el.scrollTop = 0;
-    else window.scrollTo(0, 0);
-  });
+  await scrollMain(p, 0);
   await p.waitForTimeout(300);
   const rateInput = p.locator('input[type="number"]').first();
   if (await rateInput.isVisible().catch(() => false)) {
@@ -821,13 +844,15 @@ async function run() {
   await p.locator('header button').first().tap().catch(() => {});
   await p.waitForTimeout(400);
   await tapText(p, 'Dark').catch(() => tapText(p, 'Light'));
-  await p.waitForTimeout(400);
+  // Wait for theme class to apply on <html> before closing sidebar
+  await p.waitForFunction(() => document.documentElement.classList.contains('dark'), { timeout: 3000 }).catch(() => {});
+  await p.waitForTimeout(300);
   await shot(p, '11_sidebar_dark_mode_active');
-  // Close
+  // Close sidebar and wait for overlay to fully disappear
   await p.locator('aside button[aria-label="Close sidebar"]').first().tap().catch(async () => {
     await p.locator('.fixed.inset-0').first().tap().catch(() => {});
   });
-  await p.waitForTimeout(400);
+  await p.waitForTimeout(600);
   await shot(p, '11_dark_mode_dashboard');
 
   // Navigate while dark
@@ -840,7 +865,8 @@ async function run() {
   await p.locator('header button').first().tap().catch(() => {});
   await p.waitForTimeout(400);
   await tapText(p, 'Light').catch(() => tapText(p, 'Dark'));
-  await p.waitForTimeout(400);
+  await p.waitForFunction(() => !document.documentElement.classList.contains('dark'), { timeout: 3000 }).catch(() => {});
+  await p.waitForTimeout(300);
   await p.locator('aside button[aria-label="Close sidebar"]').first().tap().catch(async () => {
     await p.locator('.fixed.inset-0').first().tap().catch(() => {});
   });
@@ -875,13 +901,19 @@ async function run() {
   await p.waitForTimeout(400);
   await shot(p, '13_login_validation_error');
   // Wrong password
-  await p.fill('input[placeholder*="sername"]', 'admin');
-  await p.fill('input[type="password"]', 'wrongpass');
+  await p.fill('#username', 'admin').catch(async () => {
+    await p.fill('input[autocomplete="username"]', 'admin').catch(() => {});
+  });
+  await p.fill('#password', 'wrongpass').catch(async () => {
+    await p.fill('input[autocomplete="current-password"]', 'wrongpass').catch(() => {});
+  });
   await p.locator('button[type="submit"]').tap();
   await p.waitForTimeout(1000);
   await shot(p, '13_login_wrong_password');
   // Correct login
-  await p.fill('input[type="password"]', 'admin123');
+  await p.fill('#password', 'admin123').catch(async () => {
+    await p.fill('input[autocomplete="current-password"]', 'admin123').catch(() => {});
+  });
   await p.locator('button[type="submit"]').tap();
   await p.waitForTimeout(1500);
   await shot(p, '13_login_success_redirect');

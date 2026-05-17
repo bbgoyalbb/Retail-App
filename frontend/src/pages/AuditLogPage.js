@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowClockwise, Funnel, X, ShieldCheck, 
   User, Clock, Info, CaretDown,
-  ArrowLeft, ArrowRight
+  ArrowLeft, ArrowRight, DownloadSimple
 } from "@phosphor-icons/react";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,6 +111,31 @@ export default function AuditLogPage() {
           <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium truncate">Comprehensive ledger of all system interactions and modifications</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!logs.length) return;
+              const headers = ["Timestamp", "User", "Action", "Resource", "Resource ID", "Details"];
+              const rows = logs.map(l => [
+                l.timestamp ? new Date(l.timestamp).toLocaleString("en-IN") : "",
+                l.username || "",
+                l.action || "",
+                l.resource || "",
+                l.resource_id || "",
+                JSON.stringify(l.details || {}),
+              ]);
+              const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+              a.download = `audit-log-${new Date().toISOString().split("T")[0]}.csv`;
+              a.click();
+            }}
+            disabled={!logs.length}
+            className="h-10 px-4 font-black uppercase tracking-widest text-[10px] rounded-xl gap-2"
+          >
+            <DownloadSimple size={16} weight="bold" /> Export CSV
+          </Button>
           <Button
             variant={showFilters ? "default" : "outline"}
             onClick={() => setShowFilters(!showFilters)}

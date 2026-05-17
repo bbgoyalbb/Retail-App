@@ -98,6 +98,7 @@ export default function Reports() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let timer;
@@ -129,7 +130,7 @@ export default function Reports() {
         const params = { period };
         if (dateFrom) params.date_from = dateFrom;
         if (dateTo) params.date_to = dateTo;
-        const paramsKey = JSON.stringify(params);
+        const paramsKey = JSON.stringify({ ...params, refreshKey });
         if (paramsKey !== lastParams.current) {
           fetchedTabs.current = new Set();
           lastParams.current = paramsKey;
@@ -153,7 +154,7 @@ export default function Reports() {
       }
     };
     loadReports();
-  }, [period, dateFrom, dateTo, tab, toast]);
+  }, [period, dateFrom, dateTo, tab, toast, refreshKey]);
 
   return (
     <div data-testid="reports-page" className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -235,7 +236,7 @@ export default function Reports() {
             )}
 
             <div className="flex-1" />
-            <Button variant="ghost" size="icon" onClick={() => lastParams.current = ""} disabled={loading} className="rounded-full">
+            <Button variant="ghost" size="icon" onClick={() => { lastParams.current = ""; setRefreshKey(k => k + 1); }} disabled={loading} className="rounded-full">
               <ArrowsClockwise size={18} className={loading ? "animate-spin text-primary" : ""} />
             </Button>
           </div>

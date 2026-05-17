@@ -4,7 +4,7 @@ import { getJobwork, moveJobwork, moveJobworkBack, moveJobworkEmb, editJobworkEm
 import { 
   ArrowRight, ArrowLeft, Funnel, X, PencilSimple, 
   CheckSquare, ArrowsClockwise, Scissors, ChartBar, 
-  Calendar, User, Package, MagnifyingGlass 
+  Calendar, User, Package, MagnifyingGlass, Warning
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,6 +146,13 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
                 {selected.includes(item.id) && <CheckSquare size={14} weight="bold" className="text-white" />}
               </div>
               <div className="flex-1 min-w-0">
+                {(() => { const today = new Date().toISOString().split("T")[0]; const isOverdue = item.delivery_date && item.delivery_date !== "N/A" && item.delivery_date < today; return isOverdue ? (
+                  <div className="mb-1.5 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-destructive/10 border border-destructive/20 w-fit">
+                    <Warning size={10} weight="fill" className="text-destructive" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-destructive">Overdue</span>
+                  </div>
+                ) : null; })()
+                }
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-black text-primary truncate uppercase tracking-tight">{item.article_type}</p>
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -471,7 +478,7 @@ export default function JobWork() {
           <div className="flex-1 flex flex-wrap gap-3">
             <div className="relative flex-1 min-w-[140px]">
               <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <select value={orderFilter} onChange={e => setOrderFilter(e.target.value)} className="w-full h-10 pl-9 pr-4 text-[11px] font-bold uppercase tracking-wider bg-background border border-muted-foreground/20 rounded-lg focus:ring-2 focus:ring-primary appearance-none cursor-pointer">
+              <select value={orderFilter} onChange={e => setOrderFilter(e.target.value)} className="w-full h-10 pl-9 pr-4 text-[11px] font-bold uppercase tracking-wider bg-background text-foreground border border-muted-foreground/20 rounded-lg focus:ring-2 focus:ring-primary appearance-none cursor-pointer">
                 <option value="All">All Order References</option>
                 {filters.order_nos?.sort().map(o => <option key={o} value={o}>{o}</option>)}
               </select>
@@ -479,7 +486,7 @@ export default function JobWork() {
 
             <div className="relative flex-1 min-w-[140px]">
               <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <select value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="w-full h-10 pl-9 pr-4 text-[11px] font-bold uppercase tracking-wider bg-background border border-muted-foreground/20 rounded-lg focus:ring-2 focus:ring-primary appearance-none cursor-pointer">
+              <select value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="w-full h-10 pl-9 pr-4 text-[11px] font-bold uppercase tracking-wider bg-background text-foreground border border-muted-foreground/20 rounded-lg focus:ring-2 focus:ring-primary appearance-none cursor-pointer">
                 <option value="All">All Booking Dates</option>
                 {filters.dates?.sort().reverse().map(d => <option key={d} value={d}>{d}</option>)}
               </select>
@@ -487,7 +494,7 @@ export default function JobWork() {
 
             <div className="relative flex-1 min-w-[140px]">
               <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-info" />
-              <select value={deliveryFilter} onChange={e => setDeliveryFilter(e.target.value)} className="w-full h-10 pl-9 pr-4 text-[11px] font-bold uppercase tracking-wider bg-background border border-muted-foreground/20 rounded-lg focus:ring-2 focus:ring-primary appearance-none cursor-pointer text-info">
+              <select value={deliveryFilter} onChange={e => setDeliveryFilter(e.target.value)} className="w-full h-10 pl-9 pr-4 text-[11px] font-bold uppercase tracking-wider bg-background text-foreground border border-muted-foreground/20 rounded-lg focus:ring-2 focus:ring-primary appearance-none cursor-pointer">
                 <option value="All">All Delivery Deadlines</option>
                 {filters.delivery_dates?.sort().reverse().map(d => <option key={d} value={d}>{d}</option>)}
               </select>

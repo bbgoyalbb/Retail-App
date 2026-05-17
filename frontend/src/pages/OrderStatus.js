@@ -65,6 +65,7 @@ export default function OrderStatus() {
   const [overdueOnly, setOverdueOnly] = useState(searchParams.get("overdue") === "1");
   const [loading, setLoading] = useState(false);
   const [delivering, setDelivering] = useState(null);
+  const [deliverConfirm, setDeliverConfirm] = useState(null);
   const [editingDelivery, setEditingDelivery] = useState(null); // { order_no, value }
   const [savingDelivery, setSavingDelivery] = useState(false);
   const today = new Date().toISOString().split("T")[0];
@@ -130,7 +131,8 @@ export default function OrderStatus() {
   };
 
   const handleDeliver = async (order_no) => {
-    if (!window.confirm(`Mark Order #${order_no} as Delivered? This cannot be easily undone.`)) return;
+    if (deliverConfirm !== order_no) { setDeliverConfirm(order_no); return; }
+    setDeliverConfirm(null);
     setDelivering(order_no);
     try {
       await markOrderDelivered(order_no);
@@ -379,15 +381,22 @@ export default function OrderStatus() {
                         </span>
                       </div>
                       {hasUndelivered && (
-                        <Button
-                          size="sm"
-                          disabled={delivering === row.order_no}
-                          onClick={() => handleDeliver(row.order_no)}
-                          className="h-8 px-4 font-black uppercase tracking-widest text-[9px] bg-success hover:bg-success/90 shadow-md shadow-success/10"
-                        >
-                          {delivering === row.order_no ? <ArrowsClockwise size={12} className="animate-spin" /> : <Truck size={12} className="mr-2" />} 
-                          Deliver
-                        </Button>
+                        deliverConfirm === row.order_no ? (
+                          <div className="flex items-center gap-1 animate-in slide-in-from-right-2">
+                            <Button size="sm" onClick={() => handleDeliver(row.order_no)} disabled={delivering === row.order_no} className="h-8 px-3 font-black uppercase tracking-widest text-[9px] bg-destructive hover:bg-destructive/90">Confirm</Button>
+                            <Button size="sm" variant="outline" onClick={() => setDeliverConfirm(null)} className="h-8 px-3 font-black uppercase tracking-widest text-[9px]">Cancel</Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            disabled={delivering === row.order_no}
+                            onClick={() => handleDeliver(row.order_no)}
+                            className="h-8 px-4 font-black uppercase tracking-widest text-[9px] bg-success hover:bg-success/90 shadow-md shadow-success/10"
+                          >
+                            {delivering === row.order_no ? <ArrowsClockwise size={12} className="animate-spin" /> : <Truck size={12} className="mr-2" />} 
+                            Deliver
+                          </Button>
+                        )
                       )}
                     </div>
                   </div>
@@ -494,15 +503,22 @@ export default function OrderStatus() {
                     </td>
                     <td className="px-4 py-4 text-right">
                       {hasUndelivered && (
-                        <Button
-                          size="sm"
-                          disabled={delivering === row.order_no}
-                          onClick={() => handleDeliver(row.order_no)}
-                          className="h-9 px-4 font-black uppercase tracking-widest text-[10px] bg-success hover:bg-success/90 shadow-lg shadow-success/10"
-                        >
-                          {delivering === row.order_no ? <ArrowsClockwise size={14} className="animate-spin" /> : <Truck size={14} className="mr-2" />} 
-                          Deliver
-                        </Button>
+                        deliverConfirm === row.order_no ? (
+                          <div className="flex items-center gap-1 animate-in slide-in-from-right-2">
+                            <Button size="sm" onClick={() => handleDeliver(row.order_no)} disabled={delivering === row.order_no} className="h-8 px-3 font-black uppercase tracking-widest text-[10px] bg-destructive hover:bg-destructive/90">Confirm</Button>
+                            <Button size="sm" variant="outline" onClick={() => setDeliverConfirm(null)} className="h-8 px-3 font-black uppercase tracking-widest text-[10px]">Cancel</Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            disabled={delivering === row.order_no}
+                            onClick={() => handleDeliver(row.order_no)}
+                            className="h-9 px-4 font-black uppercase tracking-widest text-[10px] bg-success hover:bg-success/90 shadow-lg shadow-success/10"
+                          >
+                            {delivering === row.order_no ? <ArrowsClockwise size={14} className="animate-spin" /> : <Truck size={14} className="mr-2" />} 
+                            Deliver
+                          </Button>
+                        )
                       )}
                     </td>
                   </tr>

@@ -283,28 +283,35 @@ export default function ItemsManager() {
     setShowFilters(false); setSearchResults([]);
   };
 
+  const PAGE_SIZE = 150;
+  const [itemsPage, setItemsPage] = useState(1);
+  const [hasMoreItems, setHasMoreItems] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   // Load data (grouped list mode)
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (page = 1) => {
+    if (page === 1) setLoading(true); else setLoadingMore(true);
     try {
-      const params = { limit: 500, summary: true };
+      const params = { limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE, summary: true };
       const itemsRes = await getItems(params);
-      const items = itemsRes.data.items || [];
-      setAllItems(items);
-      // Scope advances to the refs actually loaded — avoids full-table scan
-      const uniqueRefs = [...new Set(items.map(i => i.ref).filter(Boolean))];
-      const advRes = uniqueRefs.length > 0
-        ? await getAdvances({ refs: uniqueRefs })
-        : { data: [] };
-      setAdvances(advRes.data || []);
+      const newItems = itemsRes.data.items || [];
+      const total = itemsRes.data.total ?? newItems.length;
+      setAllItems(prev => page === 1 ? newItems : [...prev, ...newItems]);
+      setHasMoreItems((page * PAGE_SIZE) < total);
+      setItemsPage(page);
+      if (page === 1) {
+        const uniqueRefs = [...new Set(newItems.map(i => i.ref).filter(Boolean))];
+        const advRes = uniqueRefs.length > 0 ? await getAdvances({ refs: uniqueRefs }) : { data: [] };
+        setAdvances(advRes.data || []);
+      }
     } catch {
       toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
     } finally {
-      setLoading(false);
+      setLoading(false); setLoadingMore(false);
     }
   }, [toast]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadData(1); }, [loadData]);
 
   // Settled = every section with amount > 0 has pay_mode starting with "Settled"
   const isOrderSettled = (group) => {
@@ -494,7 +501,7 @@ export default function ItemsManager() {
       setSaving(false); setSelectedSection(null);
       setAdvanceData({}); setOrigAdvData({}); setNewAdvances([]); setDeletedAdvances([]); setEditItems([]);
       toast({ title: fail===0?"Success":"Partial Success", description: fail===0?`Advances saved`:`${fail} operations failed`, variant: fail===0?"default":"destructive" });
-      invalidateItemsCache(); invalidateAdvancesCache(); loadData();
+      invalidateItemsCache(); invalidateAdvancesCache(); loadData(1);
       return;
     }
     // Items
@@ -516,7 +523,7 @@ export default function ItemsManager() {
       else if (reRef) { setReSettlePrompt({ ref:reRef,customer:reCust,sections:reSecs }); toast({ title:"Success", description:`${ok} items saved` }); }
       else { toast({ title:"Success", description:`${ok} items saved` }); }
     } else { toast({ title:"Partial Success", description:`${fail} failed, ${ok} saved`, variant: "destructive" }); }
-    invalidateItemsCache(); loadData();
+    invalidateItemsCache(); loadData(1);
   };
 
   const cancelEdit = () => {
@@ -531,7 +538,7 @@ export default function ItemsManager() {
       else await deleteItem(delConfirm.id);
       toast({ title: "Deleted", description: delMode==="order"?`Order ${delConfirm.ref} deleted`:"Item deleted" });
     } catch { toast({ title: "Error", description: "Failed to delete", variant: "destructive" }); }
-    setDelConfirm(null); invalidateItemsCache(); loadData();
+    setDelConfirm(null); invalidateItemsCache(); loadData(1);
   };
 
   const handleCancelOrder = async (group) => {
@@ -543,7 +550,7 @@ export default function ItemsManager() {
       description: ok===group.items.length?`Order ${group.ref} cancelled`:`${group.items.length-ok} items failed`,
       variant: ok===group.items.length?"default":"destructive"
     });
-    setCancelConfirm(null); invalidateItemsCache(); loadData();
+    setCancelConfirm(null); invalidateItemsCache(); loadData(1);
   };
 
   const handleCancelItem = async (item) => {
@@ -554,7 +561,7 @@ export default function ItemsManager() {
     } catch { 
       toast({ title: "Error", description: "Failed to cancel article", variant: "destructive" }); 
     }
-    invalidateItemsCache(); loadData();
+    invalidateItemsCache(); loadData(1);
   };
 
   const _sf = selectedSection ? (
@@ -637,7 +644,7 @@ export default function ItemsManager() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(); }}
+                onClick={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(1); }}
                 className={cn("h-8 w-8 text-muted-foreground hover:text-primary transition-all", loading && "animate-spin")}
                 title="Refresh"
               >
@@ -648,12 +655,15 @@ export default function ItemsManager() {
                   variant="ghost"
                   size="icon"
                   onClick={() => {
-                    const lines = refs.map(g => {
+                    const source = selectedRefs.size > 0
+                      ? refs.filter(g => selectedRefs.has(g.ref))
+                      : refs;
+                    const lines = source.map(g => {
                       const orderNos = [...new Set(g.items.map(i=>i.order_no).filter(o=>o&&o!=="N/A"))];
                       return `${g.ref} — ${g.name}${orderNos.length ? ` (#${orderNos.join(", #")})` : ""} — ₹${fmt(g.totals.pending)} pending`;
                     });
                     const text = `Orders Summary (${new Date().toLocaleDateString("en-IN")})\n${"─".repeat(40)}\n${lines.join("\n")}`;
-                    navigator.clipboard.writeText(text).then(() => toast({ title: "Copied", description: `${refs.length} orders copied to clipboard` }));
+                    navigator.clipboard.writeText(text).then(() => toast({ title: "Copied", description: `${source.length} orders copied to clipboard` }));
                   }}
                   className="h-8 w-8 text-muted-foreground hover:text-primary transition-all"
                   title="Copy summary"
@@ -696,6 +706,21 @@ export default function ItemsManager() {
                     Clear All Filters
                   </Button>
                 )}
+              </div>
+            )}
+
+            {!loading && !isSearchMode && hasMoreItems && (
+              <div className="px-4 py-3 border-b border-border/30">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadData(itemsPage + 1)}
+                  disabled={loadingMore}
+                  className="w-full h-9 font-black uppercase tracking-widest text-[10px] border-primary/20 text-primary hover:bg-primary/5"
+                >
+                  {loadingMore ? <ArrowsClockwise size={14} className="animate-spin mr-2" /> : null}
+                  {loadingMore ? "Loading…" : "Load More Orders"}
+                </Button>
               </div>
             )}
 
@@ -1129,7 +1154,7 @@ export default function ItemsManager() {
         <SettlementPanel
           orders={settlementOrders}
           onClose={() => setSettlementOrders(null)}
-          onSuccess={() => { invalidateItemsCache(); invalidateAdvancesCache(); setSelectedRefs(new Set()); loadData(); }}
+          onSuccess={() => { invalidateItemsCache(); invalidateAdvancesCache(); setSelectedRefs(new Set()); loadData(1); }}
         />
       )}
 
@@ -1138,7 +1163,7 @@ export default function ItemsManager() {
         <TailoringOverlay
           group={tailoringGroup}
           onClose={() => setTailoringGroup(null)}
-          onSuccess={() => { invalidateItemsCache(); loadData(); }}
+          onSuccess={() => { invalidateItemsCache(); loadData(1); }}
         />
       )}
 
@@ -1147,7 +1172,7 @@ export default function ItemsManager() {
         <AddOnOverlay
           group={addonGroup}
           onClose={() => setAddonGroup(null)}
-          onSuccess={() => loadData()}
+          onSuccess={() => loadData(1)}
         />
       )}
     </div>

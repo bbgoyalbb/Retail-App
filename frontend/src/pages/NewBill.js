@@ -224,13 +224,20 @@ export default function NewBill() {
 
   const addItem = useCallback(() => {
     if (!barcode || !qty || !price) return;
+    const parsedPrice = parseFloat(price) || 0;
+    if (parsedPrice === 0 && editingIndex === null && dupWarning !== `zero_${barcode}`) {
+      setDupWarning(`zero_${barcode}`);
+      setMessage({ type: "error", text: `Price is ₹0 for "${barcode}". Add again to confirm zero-price item.` });
+      setTimeout(() => { setDupWarning(null); setMessage(null); }, 4000);
+      return;
+    }
     const d = parseFloat(discount) || 0;
-    const total = Math.round((parseFloat(price) - parseFloat(price) * d / 100) * parseFloat(qty));
+    const total = Math.round((parsedPrice - parsedPrice * d / 100) * parseFloat(qty));
 
     if (editingIndex !== null) {
       setItems(prev => prev.map((row, idx) => (
         idx === editingIndex
-          ? { ...row, barcode, qty: parseFloat(qty), price: parseFloat(price), discount: d, total }
+          ? { ...row, barcode, qty: parseFloat(qty), price: parsedPrice, discount: d, total }
           : row
       )));
     } else {
@@ -565,7 +572,7 @@ export default function NewBill() {
                       placeholder="Name or ID..." 
                     />
                     {showSuggestions && nameSuggestions.length > 0 && (
-                      <Card className="absolute z-50 left-0 right-0 top-full mt-2 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                      <Card className="absolute z-50 left-0 top-full mt-2 shadow-2xl animate-in fade-in zoom-in-95 duration-200 min-w-[320px] w-max max-w-[480px]">
                         <div className="max-h-64 overflow-y-auto p-1">
                           {nameSuggestions.map(c => (
                             <div key={c}
