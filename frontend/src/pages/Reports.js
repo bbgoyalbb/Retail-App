@@ -87,7 +87,7 @@ export default function Reports() {
   const { theme } = useTheme();
   const { toast } = useToast();
   const chartRef = useRef(null);
-  const [chartWidth, setChartWidth] = useState(800);
+  const [chartWidth, setChartWidth] = useState(0);
   const COLORS = useMemo(() => getChartColors(theme), [theme]);
   const [tab, setTab] = useState("revenue");
   const [period, setPeriod] = useState("daily");

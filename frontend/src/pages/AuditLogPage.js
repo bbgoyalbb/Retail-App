@@ -257,10 +257,10 @@ export default function AuditLogPage() {
               <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border/50">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left"><div className="flex items-center gap-2"><Clock size={12} weight="bold" /> Temporal Stamp</div></th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left"><div className="flex items-center gap-2"><User size={12} weight="bold" /> Operational Agent</div></th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left"><div className="flex items-center gap-2"><Clock size={12} weight="bold" /> Execution Action</div></th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left">Protocol Details</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap"><div className="flex items-center gap-2"><Clock size={12} weight="bold" /> Temporal Stamp</div></th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap"><div className="flex items-center gap-2"><User size={12} weight="bold" /> Operational Agent</div></th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap"><div className="flex items-center gap-2"><Clock size={12} weight="bold" /> Execution Action</div></th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Protocol Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
