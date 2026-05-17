@@ -257,10 +257,10 @@ export default function UsersPage() {
               <table className="w-full min-w-[700px]">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border/50">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left">Agent Identity</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left">Clearance</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left">Operation State</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left">Initialized</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Agent Identity</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Clearance</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Operation State</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Initialized</th>
                     <th className="px-6 py-4 text-right"></th>
                   </tr>
                 </thead>

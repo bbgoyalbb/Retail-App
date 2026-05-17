@@ -237,12 +237,12 @@ export default function SettingsPage() {
           <CardContent className="p-6 space-y-6">
             <div className="overflow-hidden border border-border/50 rounded-2xl bg-muted/5">
               <div className="overflow-x-auto custom-scrollbar">
-                <table className="w-full min-w-[360px] text-xs">
+                <table className="w-full min-w-[420px] text-xs">
                   <thead>
                     <tr className="bg-muted/50 border-b border-border/50">
                       <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">Article Discipline</th>
-                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-28 whitespace-nowrap">Retail (₹)</th>
-                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-28 whitespace-nowrap">Labour (₹)</th>
+                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-32 whitespace-nowrap">Retail (₹)</th>
+                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-32 whitespace-nowrap">Labour (₹)</th>
                       <th className="px-4 py-4 w-12"></th>
                     </tr>
                   </thead>
