@@ -108,7 +108,7 @@ export default function AuditLogPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="min-w-0">
           <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Security Audit</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium truncate">Comprehensive ledger of all system interactions and modifications</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Comprehensive ledger of all system interactions and modifications</p>
         </div>
         <div className="flex items-center gap-3">
           <Button

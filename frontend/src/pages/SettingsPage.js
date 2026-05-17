@@ -200,7 +200,7 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Settings</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium truncate">Global system configuration and identity management</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Global system configuration and identity management</p>
         </div>
         <Button 
           data-testid="save-settings-btn" 
@@ -237,12 +237,12 @@ export default function SettingsPage() {
           <CardContent className="p-6 space-y-6">
             <div className="overflow-hidden border border-border/50 rounded-2xl bg-muted/5">
               <div className="overflow-x-auto custom-scrollbar">
-                <table className="w-full text-xs">
+                <table className="w-full min-w-[360px] text-xs">
                   <thead>
                     <tr className="bg-muted/50 border-b border-border/50">
                       <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Article Discipline</th>
-                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Retail (₹)</th>
-                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Labour (₹)</th>
+                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-28">Retail (₹)</th>
+                      <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground w-28">Labour (₹)</th>
                       <th className="px-4 py-4 w-12"></th>
                     </tr>
                   </thead>

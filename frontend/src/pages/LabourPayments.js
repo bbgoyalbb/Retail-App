@@ -267,7 +267,7 @@ export default function LabourPayments() {
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Labour Payments</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium truncate">Settle accounts for tailoring and embroidery services</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Settle accounts for tailoring and embroidery services</p>
         </div>
         <Button variant="outline" size="icon" onClick={() => loadData(true)} disabled={loading} className="rounded-full shadow-sm hover:rotate-180 transition-transform duration-500">
           <ArrowsClockwise size={20} className={loading ? "animate-spin text-primary" : ""} />
@@ -332,7 +332,7 @@ export default function LabourPayments() {
             )}
 
             {/* Totals */}
-            <div className="ml-auto flex items-center gap-4">
+            <div className="ml-auto flex-shrink-0 flex items-center gap-4 pr-1">
               {viewMode === "unpaid" ? (
                 <>
                   <div className="flex flex-col items-end">

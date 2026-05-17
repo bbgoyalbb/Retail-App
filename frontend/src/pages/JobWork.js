@@ -442,7 +442,7 @@ export default function JobWork() {
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Production Pipeline</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium truncate">Real-time tracking of tailoring and embroidery workflows</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Real-time tracking of tailoring and embroidery workflows</p>
         </div>
         <Button variant="outline" size="icon" onClick={() => loadData()} className="rounded-full shadow-sm">
           <ArrowsClockwise size={20} className="text-primary" />

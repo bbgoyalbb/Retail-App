@@ -164,7 +164,7 @@ export default function OrderStatus() {
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Order Status</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium truncate">Master tracking board for tailoring and delivery pipelines</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Master tracking board for tailoring and delivery pipelines</p>
         </div>
         <Button variant="outline" size="icon" onClick={() => { invalidateOrderStatusCache(); loadData(); }} disabled={loading} className="rounded-full shadow-sm hover:rotate-180 transition-transform duration-500">
           <ArrowsClockwise size={20} className={loading ? "animate-spin text-primary" : ""} />

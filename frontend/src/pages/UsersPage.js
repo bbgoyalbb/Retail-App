@@ -210,7 +210,7 @@ export default function UsersPage() {
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Personnel</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium truncate">Control authentication protocols and operational permissions</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Control authentication protocols and operational permissions</p>
         </div>
         <Button
           onClick={() => { setShowAdd(true); setForm(EMPTY_FORM); }}
