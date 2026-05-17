@@ -278,90 +278,82 @@ export default function LabourPayments() {
         {/* Main Workspace */}
         <div className="lg:col-span-3 space-y-6">
           {/* Filters Bar */}
-          <Card className="bg-card border-none shadow-lg shadow-black/5 overflow-hidden">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
-            <CardContent className="p-4 flex flex-wrap gap-4 items-center">
-              <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-xl">
-                <Button
-                  variant={viewMode === "unpaid" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("unpaid")}
-                  className={cn(
-                    "h-9 px-4 text-xs font-black uppercase tracking-widest rounded-lg transition-all",
-                    viewMode === "unpaid" ? "shadow-md" : "text-muted-foreground"
-                  )}
-                >
-                  <Circle size={14} weight={viewMode === "unpaid" ? "fill" : "bold"} className="mr-2" /> Pending
-                </Button>
-                <Button
-                  variant={viewMode === "paid" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("paid")}
-                  className={cn(
-                    "h-9 px-4 text-xs font-black uppercase tracking-widest rounded-lg transition-all",
-                    viewMode === "paid" ? "shadow-md" : "text-muted-foreground"
-                  )}
-                >
-                  <CheckCircle size={14} weight={viewMode === "paid" ? "fill" : "bold"} className="mr-2" /> Settled
-                </Button>
-              </div>
-              
-              <div className="flex flex-wrap gap-3 items-center">
-                <div className="relative group">
-                  <select 
-                    data-testid="labour-type-filter" 
-                    value={filterType} 
-                    onChange={e => setFilterType(e.target.value)} 
-                    className="h-10 pl-4 pr-10 text-[11px] font-black uppercase tracking-widest bg-background border border-border/50 rounded-xl appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
-                  >
-                    <option value="All">All Disciplines</option>
-                    <option value="Tailoring Labour">Tailoring</option>
-                    <option value="Embroidery Labour">Embroidery</option>
-                  </select>
-                  <CaretDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" />
-                  {filterType !== "All" && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background animate-pulse" />}
-                </div>
+          <div className="flex flex-wrap items-center gap-3 px-1">
+            {/* Pending / Settled toggle */}
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+              <Button
+                variant={viewMode === "unpaid" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("unpaid")}
+                className={cn("h-8 px-3 text-[11px] font-black uppercase tracking-widest rounded-md transition-all", viewMode === "unpaid" ? "shadow-sm" : "text-muted-foreground")}
+              >
+                <Circle size={12} weight={viewMode === "unpaid" ? "fill" : "bold"} className="mr-1.5" /> Pending
+              </Button>
+              <Button
+                variant={viewMode === "paid" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("paid")}
+                className={cn("h-8 px-3 text-[11px] font-black uppercase tracking-widest rounded-md transition-all", viewMode === "paid" ? "shadow-sm" : "text-muted-foreground")}
+              >
+                <CheckCircle size={12} weight={viewMode === "paid" ? "fill" : "bold"} className="mr-1.5" /> Settled
+              </Button>
+            </div>
 
-                {filterType !== "Tailoring Labour" && (
-                  <div className="relative group">
-                    <select 
-                      data-testid="labour-karigar-filter" 
-                      value={filterKarigar} 
-                      onChange={e => setFilterKarigar(e.target.value)} 
-                      className="h-10 pl-4 pr-10 text-[11px] font-black uppercase tracking-widest bg-background border border-border/50 rounded-xl appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
-                    >
-                      <option value="All">All Artisans</option>
-                      {karigars.map(k => <option key={k} value={k}>{k}</option>)}
-                    </select>
-                    <UsersThree size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" />
-                    {filterKarigar !== "All" && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background animate-pulse" />}
-                  </div>
-                )}
+            {/* Filters */}
+            <div className="relative group">
+              <select
+                data-testid="labour-type-filter"
+                value={filterType}
+                onChange={e => setFilterType(e.target.value)}
+                className="h-8 pl-3 pr-8 text-[11px] font-black uppercase tracking-widest bg-background border border-border/50 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer hover:border-primary/50 transition-colors"
+              >
+                <option value="All">All Disciplines</option>
+                <option value="Tailoring Labour">Tailoring</option>
+                <option value="Embroidery Labour">Embroidery</option>
+              </select>
+              <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              {filterType !== "All" && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary border-2 border-background" />}
+            </div>
+
+            {filterType !== "Tailoring Labour" && (
+              <div className="relative group">
+                <select
+                  data-testid="labour-karigar-filter"
+                  value={filterKarigar}
+                  onChange={e => setFilterKarigar(e.target.value)}
+                  className="h-8 pl-3 pr-8 text-[11px] font-black uppercase tracking-widest bg-background border border-border/50 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer hover:border-primary/50 transition-colors"
+                >
+                  <option value="All">All Artisans</option>
+                  {karigars.map(k => <option key={k} value={k}>{k}</option>)}
+                </select>
+                <UsersThree size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                {filterKarigar !== "All" && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary border-2 border-background" />}
               </div>
-              
-              <div className="sm:ml-auto flex items-center gap-6">
-                {viewMode === "unpaid" ? (
-                  <>
-                    <div className="flex flex-col items-end">
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-black opacity-60 leading-none mb-1">Total Outstanding</span>
-                      <span className="font-mono text-base font-black text-warning tracking-tighter">₹{fmt(totalUnpaid)}</span>
-                    </div>
-                    <div className="flex flex-col items-end border-l border-border/50 pl-6">
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-black opacity-60 leading-none mb-1">Selected Allocation</span>
-                      <span className="font-mono text-base font-black text-primary tracking-tighter">₹{fmt(selectedTotal)}</span>
-                    </div>
-                  </>
-                ) : (
+            )}
+
+            {/* Totals */}
+            <div className="ml-auto flex items-center gap-4">
+              {viewMode === "unpaid" ? (
+                <>
                   <div className="flex flex-col items-end">
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-black opacity-60 leading-none mb-1">Processed Batches</span>
-                    <Badge variant="secondary" className="font-mono text-sm font-black px-3 py-0.5 rounded-lg text-success bg-success/10 border-success/20">
-                      {items.length} Entries
-                    </Badge>
+                    <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-black opacity-60 leading-none">Total Outstanding</span>
+                    <span className="font-mono text-sm font-black text-warning tracking-tighter">₹{fmt(totalUnpaid)}</span>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="flex flex-col items-end border-l border-border/50 pl-4">
+                    <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-black opacity-60 leading-none">Selected Allocation</span>
+                    <span className="font-mono text-sm font-black text-primary tracking-tighter">₹{fmt(selectedTotal)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-end">
+                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-black opacity-60 leading-none">Processed Batches</span>
+                  <Badge variant="secondary" className="font-mono text-xs font-black px-2 py-0.5 text-success bg-success/10 border-success/20 mt-0.5">
+                    {items.length} Entries
+                  </Badge>
+                </div>
+              )}
+            </div>
+          </div>
 
           <Card className="border-none shadow-xl shadow-black/5 overflow-hidden bg-background min-h-[400px]">
             <CardContent className="p-0">
