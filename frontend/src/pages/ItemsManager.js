@@ -706,21 +706,6 @@ export default function ItemsManager() {
               </div>
             )}
 
-            {!loading && !isSearchMode && hasMoreItems && (
-              <div className="px-4 py-3 border-b border-border/30">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => loadData(itemsPage + 1)}
-                  disabled={loadingMore}
-                  className="w-full h-9 font-black uppercase tracking-widest text-[10px] border-primary/20 text-primary hover:bg-primary/5"
-                >
-                  {loadingMore ? <ArrowsClockwise size={14} className="animate-spin mr-2" /> : null}
-                  {loadingMore ? "Loading…" : "Load More Orders"}
-                </Button>
-              </div>
-            )}
-
             {!loading && (() => {
               let lastDate = null;
               return refs.map(group => {
@@ -796,6 +781,20 @@ export default function ItemsManager() {
                 );
               });
             })()}
+
+            {!loading && !isSearchMode && hasMoreItems && (
+              <div className="flex items-center justify-center px-4 py-2 border-t border-border/20">
+                <button
+                  onClick={() => loadData(itemsPage + 1)}
+                  disabled={loadingMore}
+                  className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary transition-colors disabled:opacity-40"
+                >
+                  {loadingMore
+                    ? <><ArrowsClockwise size={11} className="animate-spin" /> Loading…</>
+                    : <><ArrowsClockwise size={11} /> Load more orders</>}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>{/* end BODY */}
