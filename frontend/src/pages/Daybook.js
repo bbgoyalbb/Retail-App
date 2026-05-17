@@ -220,10 +220,10 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
 
   return (
     <Card className="border-none shadow-xl shadow-black/5 overflow-hidden bg-background min-h-[400px]">
-      <CardHeader className="px-6 py-4 border-b border-border/50 bg-background/50 backdrop-blur-md flex flex-row items-center justify-between space-y-0">
+      <CardHeader className="px-4 sm:px-6 py-4 border-b border-border/50 bg-background/50 backdrop-blur-md flex flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-4 min-w-0">
           <div className="flex flex-col min-w-0">
-            <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground leading-none mb-1.5 whitespace-nowrap">
+            <CardTitle className="text-sm font-black uppercase tracking-wider text-muted-foreground leading-none mb-1.5 truncate">
               {viewMode === "pending" ? "Awaiting Tally" : "Reconciled Ledger"}
             </CardTitle>
             <div className="flex items-center gap-2 min-w-0">
@@ -242,7 +242,7 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
               size="sm"
               onClick={() => setViewMode(mode)}
               className={cn(
-                "h-8 px-4 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                "h-8 px-2.5 sm:px-4 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
                 viewMode === mode ? "shadow-md" : "text-muted-foreground"
               )}
             >
