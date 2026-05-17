@@ -21,12 +21,16 @@ export default function LoginPage() {
   const { theme, toggle } = useTheme();
   const [firmName, setFirmName] = useState("Retail Book");
   const [firmLogo, setFirmLogo] = useState(null);
+  const [firmLogoDark, setFirmLogoDark] = useState(null);
   const [showPwd, setShowPwd] = useState(false);
 
   useEffect(() => {
     getPublicSettings().then(s => {
       if (s?.firm_name) setFirmName(s.firm_name);
-      if (typeof s?.firm_logo === "string" && s.firm_logo) setFirmLogo(s.firm_logo.startsWith("http") ? s.firm_logo : `${BACKEND_URL}${s.firm_logo}`);
+      if (typeof s?.firm_logo === "string" && s.firm_logo)
+        setFirmLogo(s.firm_logo.startsWith("http") ? s.firm_logo : `${BACKEND_URL}${s.firm_logo}`);
+      if (typeof s?.firm_logo_dark === "string" && s.firm_logo_dark)
+        setFirmLogoDark(s.firm_logo_dark.startsWith("http") ? s.firm_logo_dark : `${BACKEND_URL}${s.firm_logo_dark}`);
     }).catch(() => {});
   }, []); 
 
@@ -73,13 +77,13 @@ export default function LoginPage() {
           {/* Brand mark */}
           <div className="flex flex-col items-center text-center">
             <div className="w-24 h-24 rounded-3xl bg-primary/5 p-1 mb-6 shadow-2xl shadow-primary/10 border border-primary/10 transition-transform hover:scale-105 duration-500 overflow-hidden flex items-center justify-center">
-              {firmLogo ? (
-                <img src={firmLogo} alt={firmName} className="w-full h-full object-contain p-2" />
+              {(() => { const src = theme === "dark" ? (firmLogoDark || firmLogo) : firmLogo; return src ? (
+                <img src={src} alt={firmName} className="w-full h-full object-contain p-2" />
               ) : (
                 <div className="w-full h-full bg-primary flex items-center justify-center">
                   <span className="text-white font-black text-4xl">{firmName.charAt(0).toUpperCase()}</span>
                 </div>
-              )}
+              ); })()}
             </div>
             <h1 className="font-heading text-3xl font-black tracking-tighter text-foreground mb-1">
               {firmName}
@@ -169,24 +173,24 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right side - Decorative visual panel */}
-      <div className="hidden lg:flex lg:flex-1 relative bg-foreground overflow-hidden">
+      {/* Right side - Decorative visual panel — always dark regardless of theme */}
+      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden" style={{ backgroundColor: '#1a1917' }}>
         {/* Professional architectural background */}
         <div className="absolute inset-0 opacity-10" style={{
           backgroundImage: `radial-gradient(circle at 2px 2px, #C86B4D 1px, transparent 0)`,
           backgroundSize: '32px 32px'
         }} />
-        <div className="absolute inset-0 bg-gradient-to-br from-background/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
         
         <div className="absolute inset-0 flex items-center justify-center p-20">
           <div className="relative w-full max-w-lg aspect-square border border-primary/10 rounded-[4rem] flex items-center justify-center animate-in zoom-in-95 duration-1000">
             <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full" />
             <div className="relative text-center space-y-6 p-12">
               <div className="w-16 h-1 bg-primary mx-auto rounded-full mb-8" />
-              <h2 className="font-heading text-5xl font-black tracking-tighter text-background leading-none">
+              <h2 className="font-heading text-5xl font-black tracking-tighter text-white leading-none">
                 Precision <span className="text-primary italic">Craftsmanship</span>
               </h2>
-              <p className="text-lg text-background/50 font-medium leading-relaxed">
+              <p className="text-lg text-white/50 font-medium leading-relaxed">
                 A world-class administrative suite designed specifically for the fabric industry. Manage inventory, tailoring protocols, and financial settlements with surgical precision.
               </p>
               <div className="pt-8 flex items-center justify-center gap-8">
@@ -196,10 +200,10 @@ export default function LoginPage() {
                   { label: "Security", icon: ShieldCheck },
                 ].map(item => (
                   <div key={item.label} className="flex flex-col items-center gap-2">
-                    <div className="p-3 rounded-2xl bg-background/5 text-primary border border-background/10">
+                    <div className="p-3 rounded-2xl bg-white/5 text-primary border border-white/10">
                       <item.icon size={20} weight="duotone" />
                     </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-background/30">{item.label}</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/30">{item.label}</span>
                   </div>
                 ))}
               </div>
@@ -211,8 +215,8 @@ export default function LoginPage() {
         <div className="absolute bottom-12 left-12 flex items-center gap-4">
           <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/20" />
           <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase tracking-widest text-background/80">Premium Enterprise Edition</span>
-            <span className="text-[9px] font-medium text-background/30">Proprietary Software Protocol</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Premium Enterprise Edition</span>
+            <span className="text-[9px] font-medium text-white/30">Proprietary Software Protocol</span>
           </div>
         </div>
       </div>
