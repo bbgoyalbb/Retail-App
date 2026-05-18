@@ -414,8 +414,9 @@ uploads_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 build_dir = ROOT_DIR.parent / "frontend" / "build"
-if build_dir.exists():
-    app.mount("/static", StaticFiles(directory=build_dir / "static"), name="react-static")
+static_dir = build_dir / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=static_dir), name="react-static")
 
     @app.get("/{full_path:path}", include_in_schema=False)
     async def spa_fallback(full_path: str):
