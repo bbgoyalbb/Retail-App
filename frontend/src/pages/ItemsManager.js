@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import {
   getItems, getItem, getAdvances, updateItem, deleteItem, createItem,
   updateAdvance, createAdvance, deleteAdvance, invalidateItemsCache,
-  invalidateAdvancesCache, getSettings, searchItems, getCustomers,
+  invalidateAdvancesCache, invalidateCustomersCache, getSettings, searchItems, getCustomers,
 } from "@/api";
 import { fmt } from "@/lib/fmt";
 import { DatePickerInput } from "@/components/DatePickerInput";
@@ -520,7 +520,7 @@ export default function ItemsManager() {
       else if (reRef) { setReSettlePrompt({ ref:reRef,customer:reCust,sections:reSecs }); toast({ title:"Success", description:`${ok} items saved` }); }
       else { toast({ title:"Success", description:`${ok} items saved` }); }
     } else { toast({ title:"Partial Success", description:`${fail} failed, ${ok} saved`, variant: "destructive" }); }
-    invalidateItemsCache(); loadData(1);
+    invalidateItemsCache(); invalidateCustomersCache(); loadData(1);
   };
 
   const cancelEdit = () => {
@@ -535,7 +535,7 @@ export default function ItemsManager() {
       else await deleteItem(delConfirm.id);
       toast({ title: "Deleted", description: delMode==="order"?`Order ${delConfirm.ref} deleted`:"Item deleted" });
     } catch { toast({ title: "Error", description: "Failed to delete", variant: "destructive" }); }
-    setDelConfirm(null); invalidateItemsCache(); loadData(1);
+    setDelConfirm(null); invalidateItemsCache(); invalidateCustomersCache(); loadData(1);
   };
 
   const handleCancelOrder = async (group) => {
@@ -547,7 +547,7 @@ export default function ItemsManager() {
       description: ok===group.items.length?`Order ${group.ref} cancelled`:`${group.items.length-ok} items failed`,
       variant: ok===group.items.length?"default":"destructive"
     });
-    setCancelConfirm(null); invalidateItemsCache(); loadData(1);
+    setCancelConfirm(null); invalidateItemsCache(); invalidateCustomersCache(); loadData(1);
   };
 
   const handleCancelItem = async (item) => {
@@ -558,7 +558,7 @@ export default function ItemsManager() {
     } catch { 
       toast({ title: "Error", description: "Failed to cancel article", variant: "destructive" }); 
     }
-    invalidateItemsCache(); loadData(1);
+    invalidateItemsCache(); invalidateCustomersCache(); loadData(1);
   };
 
   const _sf = selectedSection ? (
