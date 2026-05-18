@@ -109,11 +109,11 @@ export function AddOnConfigurator({
 
   return (
     <div 
-      className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300"
+      className="fixed inset-0 z-[150] bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={onClose}
     >
       <Card 
-        className="w-full sm:max-w-5xl max-h-[94vh] flex flex-col shadow-2xl border-border/50 animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 overflow-hidden"
+        className="w-full sm:max-w-5xl max-h-[94vh] flex flex-col shadow-2xl border-border/50 animate-in zoom-in-95 duration-150 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <CardHeader className="px-6 py-5 border-b border-border/50 bg-success/[0.03] shrink-0">
@@ -141,7 +141,7 @@ export function AddOnConfigurator({
           {msg && (
             <Badge 
               variant={msg.type === "success" ? "success" : "destructive"} 
-              className="w-full py-3 justify-center mb-6 text-[10px] font-black uppercase tracking-widest animate-in slide-in-from-top-2"
+              className="w-full py-3 justify-center mb-6 text-[10px] font-black uppercase tracking-widest"
             >
               {msg.type === "success" ? <Check className="mr-2" size={14}/> : <Info className="mr-2" size={14}/>}
               {msg.text}
@@ -177,7 +177,7 @@ export function AddOnConfigurator({
                       <td className="px-4 py-3.5">
                         <div className="flex flex-wrap gap-2">
                           {a.addons.map((addon, idx) => (
-                            <div key={idx} className="flex items-center gap-2 p-1 bg-background border border-border/50 rounded-xl shadow-sm animate-in fade-in zoom-in-95">
+                            <div key={idx} className="flex items-center gap-2 p-1 bg-background border border-border/50 rounded-xl shadow-sm">
                               <select
                                 value={addon.name}
                                 onChange={e => updateAddonField(i, idx, "name", e.target.value)}

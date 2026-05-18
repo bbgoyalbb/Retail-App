@@ -332,10 +332,15 @@ async def create_bill(req: CreateBillRequest, db = Depends(get_db), current_user
 
     fabric_only_total = 0
     addon_only_total = 0
+    tailoring_only_total = 0
     for item in req.items:
         fabric_only_total += round_money((item.price - item.price * item.discount / 100) * item.qty)
         addon_only_total += round_money(sum(float(a.get("price", 0)) for a in (item.addons or [])))
-    grand_total = round_money(fabric_only_total + addon_only_total)
+        # Calculate tailoring amount based on article type
+        item_article_type = item.article_type or "N/A"
+        tail_amt, _ = TAILORING_RATES.get(item_article_type, (0, 0)) if item_article_type != "N/A" else (0, 0)
+        tailoring_only_total += tail_amt
+    grand_total = round_money(fabric_only_total + addon_only_total + tailoring_only_total)
 
     # No hard block: amount_paid may be less than, equal to, or greater than grand_total.
     # Any amount received marks the section as Settled; pending stores the actual difference.

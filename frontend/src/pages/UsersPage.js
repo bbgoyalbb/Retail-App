@@ -189,7 +189,7 @@ export default function UsersPage() {
 
   if (me?.role !== "admin") {
     return (
-      <div className="flex flex-col items-center justify-center py-32 gap-6 animate-in zoom-in-95 duration-300">
+      <div className="flex flex-col items-center justify-center py-32 gap-6">
         <div className="p-6 rounded-full bg-destructive/10 text-destructive">
           <ShieldCheck size={48} weight="duotone" />
         </div>
@@ -352,8 +352,8 @@ export default function UsersPage() {
 
       {/* Add User Modal */}
       {showAdd && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <Card className="max-w-md w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <Card className="max-w-md w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-150">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Add User</CardTitle>
             </CardHeader>
@@ -395,8 +395,8 @@ export default function UsersPage() {
 
       {/* Edit User Modal */}
       {editUser && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <Card className="max-w-md w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <Card className="max-w-md w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-150">
             <CardHeader className="pb-4">
               <div className="flex flex-col gap-1">
                 <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Edit User</CardTitle>
@@ -432,8 +432,8 @@ export default function UsersPage() {
 
       {/* Page Permissions Modal */}
       {pagesUser && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <Card className="max-w-md w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <Card className="max-w-md w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
             <CardHeader className="pb-4 border-b border-border/50">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-info/10 text-info">
@@ -504,7 +504,7 @@ export default function UsersPage() {
                 </div>
               </div>
             </CardContent>
-            <div className="p-6 border-t border-border/50 bg-background/80 backdrop-blur-md">
+            <div className="p-6 border-t border-border/50 bg-background/80">
               <div className="flex gap-3">
                 <Button variant="ghost" onClick={() => setPagesUser(null)} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px]">Cancel</Button>
                 <Button onClick={handleSavePages} disabled={busy} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
@@ -518,8 +518,8 @@ export default function UsersPage() {
 
       {/* Reset Password Modal */}
       {resetUser && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <Card className="max-w-sm w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <Card className="max-w-sm w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-150">
             <CardHeader className="pb-4">
               <div className="flex flex-col gap-1">
                 <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Reset Password</CardTitle>
