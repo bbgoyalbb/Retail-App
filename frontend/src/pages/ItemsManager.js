@@ -520,7 +520,7 @@ export default function ItemsManager() {
       else if (reRef) { setReSettlePrompt({ ref:reRef,customer:reCust,sections:reSecs }); toast({ title:"Success", description:`${ok} items saved` }); }
       else { toast({ title:"Success", description:`${ok} items saved` }); }
     } else { toast({ title:"Partial Success", description:`${fail} failed, ${ok} saved`, variant: "destructive" }); }
-    invalidateItemsCache(); invalidateCustomersCache(); loadData(1);
+    invalidateItemsCache(); loadData(1);
   };
 
   const cancelEdit = () => {
@@ -547,7 +547,7 @@ export default function ItemsManager() {
       description: ok===group.items.length?`Order ${group.ref} cancelled`:`${group.items.length-ok} items failed`,
       variant: ok===group.items.length?"default":"destructive"
     });
-    setCancelConfirm(null); invalidateItemsCache(); invalidateCustomersCache(); loadData(1);
+    setCancelConfirm(null); invalidateItemsCache(); loadData(1);
   };
 
   const handleCancelItem = async (item) => {
@@ -558,7 +558,7 @@ export default function ItemsManager() {
     } catch { 
       toast({ title: "Error", description: "Failed to cancel article", variant: "destructive" }); 
     }
-    invalidateItemsCache(); invalidateCustomersCache(); loadData(1);
+    invalidateItemsCache(); loadData(1);
   };
 
   const _sf = selectedSection ? (
