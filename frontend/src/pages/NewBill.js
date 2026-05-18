@@ -763,11 +763,13 @@ function TailoringModal({ items, setItems, customerName, articleTypes, onClose }
   // Handle changes from configurator (split updates, etc.)
   const handleChange = (assignments) => {
     // Map assignments back to bill items format
+    // Use _original_item_id to find the correct item after splits
     const newItems = assignments.map(a => {
-      const existing = items.find(i => i.id === a.item_id) || {};
+      const lookupId = a._original_item_id || a.item_id;
+      const existing = items.find(i => i.id === lookupId) || {};
       return {
         ...existing,
-        id: a.item_id,
+        id: lookupId,
         barcode: a.barcode,
         qty: a.qty,
         tailoring: {
@@ -815,11 +817,13 @@ function AddOnModal({ items, setItems, customerName, onClose }) {
   // Handle changes from configurator
   const handleChange = (assignments) => {
     // Map assignments back to bill items format
+    // Use _original_item_id to find the correct item
     const newItems = assignments.map(a => {
-      const existing = items.find(i => i.id === a.item_id) || {};
+      const lookupId = a._original_item_id || a.item_id;
+      const existing = items.find(i => i.id === lookupId) || {};
       return {
         ...existing,
-        id: a.item_id,
+        id: lookupId,
         barcode: a.barcode,
         qty: a.qty,
         addon: {

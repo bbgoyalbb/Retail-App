@@ -55,8 +55,12 @@ export function AddOnConfigurator({
         : a
     );
     setAssignments(newAssignments);
+    // Include _original_item_id so parent can map back to original items
     if (mode === "create" && onChange) {
-      onChange(newAssignments.map(({ _original, ...rest }) => rest));
+      onChange(newAssignments.map(({ _original, ...rest }) => ({
+        ...rest,
+        _original_item_id: rest._original_item_id
+      })));
     }
   };
 

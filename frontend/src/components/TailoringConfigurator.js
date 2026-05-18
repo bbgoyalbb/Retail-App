@@ -131,8 +131,12 @@ export function TailoringConfigurator({
     const newAssignments = assignments.map((a, j) => j === i ? { ...a, [f]: v } : a);
     setAssignments(newAssignments);
     // Notify parent of changes (for create mode)
+    // Include _original_item_id so parent can map back to original items
     if (mode === "create" && onChange) {
-      onChange(newAssignments.map(({ _original, ...rest }) => rest));
+      onChange(newAssignments.map(({ _original, ...rest }) => ({
+        ...rest,
+        _original_item_id: rest._original_item_id
+      })));
     }
   };
 
@@ -174,8 +178,12 @@ export function TailoringConfigurator({
     setSplitItem(null);
     
     // Notify parent
+    // Include _original_item_id so parent can map back to original items after split
     if (mode === "create" && onChange) {
-      onChange(newAssignments.map(({ _original, ...rest }) => rest));
+      onChange(newAssignments.map(({ _original, ...rest }) => ({
+        ...rest,
+        _original_item_id: rest._original_item_id
+      })));
     }
   };
 
