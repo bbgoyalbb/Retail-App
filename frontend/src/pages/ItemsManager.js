@@ -599,11 +599,11 @@ export default function ItemsManager() {
 
         {/* Order list */}
         <div className={cn(
-          "flex flex-col bg-background overflow-hidden flex-shrink-0 transition-all duration-300",
+          "flex flex-col bg-background overflow-hidden flex-shrink-0",
           detailOpen ? "hidden sm:flex sm:flex-1" : "flex w-full sm:flex-1"
         )}>
 
-          <div className="flex-shrink-0 px-4 py-3 border-b border-border/50 bg-background/50 backdrop-blur-sm flex items-center gap-4">
+          <div className="flex-shrink-0 px-4 py-3 border-b border-border/50 bg-background/50 flex items-center gap-4">
             <div className="flex items-center gap-2">
               <p className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground">
                 {isSearchMode ? "Search Results" : "Orders"}
@@ -681,7 +681,7 @@ export default function ItemsManager() {
             )}
 
             {!loading && refs.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-24 px-6 text-center animate-in fade-in zoom-in duration-500">
+              <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
                 <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-6">
                   <Package size={32} className="text-muted-foreground/30" />
                 </div>
@@ -719,7 +719,7 @@ export default function ItemsManager() {
                   <React.Fragment key={group.ref}>
                     {showDiv && (
                       <div className="sticky top-0 z-10">
-                        <div className="px-5 py-3 bg-muted/50 border-y border-border/50 backdrop-blur-md shadow-sm">
+                        <div className="px-5 py-3 bg-muted/50 border-y border-border/50 shadow-sm">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 rounded-full bg-primary/80" />
                             <p className="text-[10px] uppercase tracking-[0.35em] font-black text-primary/80">
@@ -802,7 +802,7 @@ export default function ItemsManager() {
 
       {/* Detail pane */}
       <div className={cn(
-        "flex-shrink-0 bg-background overflow-hidden border-l border-border/50 transition-all duration-300 relative",
+        "flex-shrink-0 bg-background overflow-hidden border-l border-border/50 relative",
         detailOpen ? "w-full sm:w-[50%] lg:w-[40%] xl:w-[35%]" : "w-0"
       )}>
         <div className="absolute inset-0 flex flex-col">

@@ -38,7 +38,7 @@ export const SectionAccordion = ({ icon: Icon, label, amount, children, onEdit, 
               <PencilSimple size={14} weight="bold" />
             </Button>
           )}
-          <div className={cn("transition-transform duration-300", open ? "rotate-0" : "-rotate-90")}>
+          <div className={cn("transition-transform duration-150", open ? "rotate-0" : "-rotate-90")}>
             <CaretDown size={14} className="text-muted-foreground" />
           </div>
         </div>
