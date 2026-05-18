@@ -198,8 +198,12 @@ export default function NewBill() {
 
   const grandTotal = useMemo(() => items.reduce((sum, item) => {
     const addonTotal = (item.addon?.items || []).reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
-    return sum + item.total + addonTotal;
-  }, 0), [items]);
+    // Get tailoring amount from settings based on article type
+    const articleType = item.tailoring?.article_type;
+    const tailoringRate = articleType ? (tailoringRates[articleType]?.tailoring || 0) : 0;
+    const tailoringTotal = item.tailoring?.enabled ? tailoringRate : 0;
+    return sum + item.total + addonTotal + tailoringTotal;
+  }, 0), [items, tailoringRates]);
 
   // Get default article type (extracted for dependency clarity)
   const defaultArticleType = articleTypes[0] || "Shirt";
