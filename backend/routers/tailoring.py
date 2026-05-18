@@ -191,7 +191,13 @@ async def split_and_assign(req: SplitTailoringRequest, db = Depends(get_db), cur
         await asyncio.gather(*ops)
 
     await audit_log(db, "split", current_user, "item", req.item_id, {"pieces": len(req.splits)})
-    return {"message": f"Item split into {len(req.splits)} pieces. Fill in order details to assign."}
+    
+    # Return all item IDs (original + new) so frontend can track them
+    all_item_ids = [req.item_id] + [doc["id"] for doc in new_docs]
+    return {
+        "message": f"Item split into {len(req.splits)} pieces. Fill in order details to assign.",
+        "item_ids": all_item_ids
+    }
 
 # ==========================================
 # ADDONS

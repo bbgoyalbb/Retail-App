@@ -123,7 +123,8 @@ export function TailoringConfigurator({
       delivery_date: item.tailoring?.delivery_date || "",
       selected: true,
       // Keep reference to original item for callbacks
-      _original: item
+      _original: item,
+      _original_item_id: item.id || item._id
     }));
     setAssignments(normalized);
   }, [items, articleTypes]);
