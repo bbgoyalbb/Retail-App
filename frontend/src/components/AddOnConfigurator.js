@@ -46,7 +46,7 @@ export function AddOnConfigurator({
       _original_item_id: item.id || item._id
     }));
     setAssignments(normalized);
-  }, [items, addonOptions.length]); // addonOptions.length to trigger once loaded
+  }, [items, addonOptions]); // include addonOptions since we use addonOptions[0]
 
   const updateItemAddons = (index, newAddons) => {
     const newAssignments = assignments.map((a, j) => 
