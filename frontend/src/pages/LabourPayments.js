@@ -659,7 +659,7 @@ export default function LabourPayments() {
         </div>
 
         {/* Action Panel — desktop only; mobile uses sticky bar */}
-        <div className="hidden lg:block space-y-6">
+        <div className="hidden lg:block">
           <Card className="bg-card border-none shadow-xl shadow-black/5 overflow-hidden sticky top-8">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-primary" />
             <CardHeader className="pb-4 pt-6">
@@ -673,7 +673,7 @@ export default function LabourPayments() {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Execution Date</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Payment Date</label>
                   <DatePickerInput data-testid="labour-pay-date" value={payDate} onChange={setPayDate} placeholder="Payment date" />
                 </div>
 
@@ -727,18 +727,14 @@ export default function LabourPayments() {
                   <><CurrencyDollar size={20} weight="bold" /> Settle Accounts</>
                 )}
               </Button>
-            </CardContent>
-          </Card>
 
-          {/* Quick Stats or Info */}
-          <Card className="bg-muted/20 border-none p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <Info size={18} className="text-muted-foreground" weight="duotone" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Settlement Protocol</p>
-            </div>
-            <p className="text-[11px] font-medium text-muted-foreground/70 leading-relaxed">
-              Batch processing allows for multiple article settlements under a single transaction reference. All selected items will be marked as paid and moved to the settled archive.
-            </p>
+              <div className="flex items-start gap-3 p-4 bg-muted/20 rounded-2xl border border-border/30">
+                <Info size={16} className="text-muted-foreground mt-0.5 shrink-0" weight="duotone" />
+                <p className="text-[11px] font-medium text-muted-foreground/70 leading-relaxed">
+                  Select items from the list then click <strong>Settle Accounts</strong> to mark them as paid.
+                </p>
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>
