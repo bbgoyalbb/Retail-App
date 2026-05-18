@@ -46,6 +46,7 @@ export default function NewBill() {
     articleTypes: ["Shirt", "Pant", "Kurta"],
     addonItems: ["Buttons", "Tie", "Bow"],
     paymentModes: ["Cash", "PhonePe", "Google Pay [E]", "Google Pay [S]", "Bank Transfer"],
+    tailoringRates: {},
   });
 
   // Bill-level form fields
@@ -97,7 +98,7 @@ export default function NewBill() {
   const updateUi        = useCallback((key, val) => setUi(p        => ({ ...p, [key]: val })), []);
 
   // Destructure for backwards-compatible local names used throughout the component
-  const { customers, articleTypes, addonItems, paymentModes } = config;
+  const { customers, articleTypes, addonItems, paymentModes, tailoringRates } = config;
   const { customerName, orderDate, payDate, amountPaid, selectedModes, isSettled, needsTailoring } = billForm;
   const { barcode, qty, price, discount, editingIndex } = itemForm;
   const { saving, message, showScanner, showPostSave, showInvoice, showTailoringModal, showAddonModal, dupWarning, showSuggestions, lastBillRef, lastBillTotal } = ui;
@@ -189,6 +190,7 @@ export default function NewBill() {
           ...(Array.isArray(s.article_types) && s.article_types.length > 0 ? { articleTypes: s.article_types } : {}),
           ...(Array.isArray(s.addon_items)    && s.addon_items.length > 0    ? { addonItems: s.addon_items }       : {}),
           ...(Array.isArray(s.payment_modes)  && s.payment_modes.length > 0  ? { paymentModes: s.payment_modes }   : {}),
+          ...(s.tailoring_rates ? { tailoringRates: s.tailoring_rates } : {}),
         }));
       })
       .catch((err) => {
