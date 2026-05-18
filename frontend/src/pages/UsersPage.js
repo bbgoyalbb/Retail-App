@@ -209,15 +209,15 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Personnel</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Control authentication protocols and operational permissions</p>
+          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Users</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Manage user accounts, roles, and page access permissions</p>
         </div>
         <Button
           onClick={() => { setShowAdd(true); setForm(EMPTY_FORM); }}
           className="h-12 px-6 font-black uppercase tracking-[0.15em] text-xs shadow-lg shadow-primary/20 gap-2 transition-all active:scale-95"
         >
           <UserPlus size={20} weight="bold" />
-          Add Personnel
+          Add User
         </Button>
       </div>
 
@@ -228,8 +228,8 @@ export default function UsersPage() {
               <UsersThree size={18} weight="duotone" />
             </div>
             <div className="flex flex-col">
-              <CardTitle className="text-sm font-black uppercase tracking-[0.2em]">Agent Roster</CardTitle>
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{loading ? "Synchronizing..." : `${users.length} Active Accounts`}</span>
+              <CardTitle className="text-sm font-black uppercase tracking-[0.2em]">User Accounts</CardTitle>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{loading ? "Loading..." : `${users.length} accounts`}</span>
             </div>
           </div>
           <Button variant="outline" size="icon" onClick={fetchUsers} disabled={loading} className="h-9 w-9 rounded-full">
@@ -247,9 +247,9 @@ export default function UsersPage() {
               <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mb-6">
                 <UsersThree size={40} className="text-muted-foreground opacity-40" weight="duotone" />
               </div>
-              <h3 className="text-lg font-black uppercase tracking-[0.2em] text-foreground mb-2">Roster Empty</h3>
+              <h3 className="text-lg font-black uppercase tracking-[0.2em] text-foreground mb-2">No Users Yet</h3>
               <p className="text-sm text-muted-foreground font-medium max-w-[280px] leading-relaxed">
-                No personnel accounts detected. Initialize your first operational agent.
+                No user accounts found. Add your first user to get started.
               </p>
             </div>
           ) : (
@@ -257,10 +257,10 @@ export default function UsersPage() {
               <table className="w-full min-w-[700px]">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border/50">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Agent Identity</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Clearance</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Operation State</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Initialized</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Name</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Role</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Status</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Created</th>
                     <th className="px-6 py-4 text-right"></th>
                   </tr>
                 </thead>
@@ -301,18 +301,19 @@ export default function UsersPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => setEditUser({ ...u })} className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full">
+                          <Button title="Edit user" variant="ghost" size="icon" onClick={() => setEditUser({ ...u })} className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full">
                             <PencilSimple size={16} weight="bold" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setResetUser(u)} className="h-8 w-8 text-muted-foreground hover:text-warning hover:bg-warning/10 rounded-full">
+                          <Button title="Reset password" variant="ghost" size="icon" onClick={() => setResetUser(u)} className="h-8 w-8 text-muted-foreground hover:text-warning hover:bg-warning/10 rounded-full">
                             <Key size={16} weight="bold" />
                           </Button>
                           {u.username !== "admin" && (
-                            <Button variant="ghost" size="icon" onClick={() => openPagesEditor(u)} className="h-8 w-8 text-muted-foreground hover:text-info hover:bg-info/10 rounded-full">
+                            <Button title="Edit page permissions" variant="ghost" size="icon" onClick={() => openPagesEditor(u)} className="h-8 w-8 text-muted-foreground hover:text-info hover:bg-info/10 rounded-full">
                               <ShieldCheck size={16} weight="bold" />
                             </Button>
                           )}
                           <Button 
+                            title={u.is_active ? "Deactivate user" : "Activate user"}
                             variant="ghost" 
                             size="icon" 
                             onClick={() => handleToggleActive(u)} 
@@ -332,7 +333,7 @@ export default function UsersPage() {
                                   <Button size="sm" variant="outline" onClick={() => setDeleteConfirm(null)} className="h-7 px-2 text-[10px] font-black uppercase tracking-widest">X</Button>
                                 </div>
                               ) : (
-                                <Button variant="ghost" size="icon" onClick={() => setDeleteConfirm(u.username)} className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+                                <Button title="Delete user" variant="ghost" size="icon" onClick={() => setDeleteConfirm(u.username)} className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
                                   <Trash size={16} weight="bold" />
                                 </Button>
                               )}
@@ -354,36 +355,36 @@ export default function UsersPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
           <Card className="max-w-md w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-300">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Initialize Agent</CardTitle>
+              <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Add User</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleAdd} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Full Identity</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Full Name</label>
                   <input className="w-full h-11 px-4 text-xs font-bold bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} placeholder="e.g. Alexander Pierce" required />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Agent Username</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Username</label>
                   <input className="w-full h-11 px-4 text-xs font-black font-mono bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g, "") }))} placeholder="e.g. alexp" required />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Security Key</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Password</label>
                   <input type="password" className="w-full h-11 px-4 text-xs font-black font-mono bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Min. 6 characters" required />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Clearance Role</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Role</label>
                   <select className="w-full h-11 px-4 text-[11px] font-black uppercase tracking-widest bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
                     value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
                     {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <Button type="button" variant="ghost" onClick={() => setShowAdd(false)} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px]">Abort</Button>
+                  <Button type="button" variant="ghost" onClick={() => setShowAdd(false)} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px]">Cancel</Button>
                   <Button type="submit" disabled={busy} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
-                    {busy ? "Processing..." : "Deploy Agent"}
+                    {busy ? "Creating..." : "Create User"}
                   </Button>
                 </div>
               </form>
@@ -398,19 +399,19 @@ export default function UsersPage() {
           <Card className="max-w-md w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-300">
             <CardHeader className="pb-4">
               <div className="flex flex-col gap-1">
-                <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Modify Agent</CardTitle>
+                <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Edit User</CardTitle>
                 <Badge variant="outline" className="w-fit font-mono text-[10px] bg-primary/5 text-primary border-primary/20 uppercase">@{editUser.username}</Badge>
               </div>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleEdit} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Full Identity</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Full Name</label>
                   <input className="w-full h-11 px-4 text-xs font-bold bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     value={editUser.full_name} onChange={e => setEditUser(u => ({ ...u, full_name: e.target.value }))} required />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Clearance Role</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Role</label>
                   <select className="w-full h-11 px-4 text-[11px] font-black uppercase tracking-widest bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
                     value={editUser.role} onChange={e => setEditUser(u => ({ ...u, role: e.target.value }))}
                     disabled={editUser.username === "admin"}>
@@ -418,9 +419,9 @@ export default function UsersPage() {
                   </select>
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <Button type="button" variant="ghost" onClick={() => setEditUser(null)} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px]">Discard</Button>
+                  <Button type="button" variant="ghost" onClick={() => setEditUser(null)} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px]">Cancel</Button>
                   <Button type="submit" disabled={busy} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
-                    {busy ? "Processing..." : "Commit Changes"}
+                    {busy ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </form>
@@ -507,7 +508,7 @@ export default function UsersPage() {
               <div className="flex gap-3">
                 <Button variant="ghost" onClick={() => setPagesUser(null)} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px]">Cancel</Button>
                 <Button onClick={handleSavePages} disabled={busy} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
-                  {busy ? "Syncing..." : "Sync Permissions"}
+                  {busy ? "Saving..." : "Save Permissions"}
                 </Button>
               </div>
             </div>
@@ -521,21 +522,21 @@ export default function UsersPage() {
           <Card className="max-w-sm w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-300">
             <CardHeader className="pb-4">
               <div className="flex flex-col gap-1">
-                <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Reset Sequence</CardTitle>
+                <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Reset Password</CardTitle>
                 <Badge variant="outline" className="w-fit font-mono text-[10px] bg-warning/5 text-warning border-warning/20 uppercase">@{resetUser.username}</Badge>
               </div>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">New Security Key</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">New Password</label>
                   <input type="password" className="w-full h-11 px-4 text-xs font-black font-mono bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Minimum 6 characters" required autoFocus />
                 </div>
                 <div className="flex gap-3 pt-4">
                   <Button type="button" variant="ghost" onClick={() => { setResetUser(null); setNewPassword(""); }} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px]">Cancel</Button>
                   <Button type="submit" disabled={busy} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px] bg-warning hover:bg-warning/90 shadow-lg shadow-warning/20">
-                    {busy ? "Updating..." : "Override Key"}
+                    {busy ? "Saving..." : "Reset Password"}
                   </Button>
                 </div>
               </form>

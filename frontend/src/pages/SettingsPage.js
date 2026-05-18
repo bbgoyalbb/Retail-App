@@ -236,7 +236,31 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="overflow-hidden border border-border/50 rounded-2xl bg-muted/5">
-              <div className="overflow-x-auto custom-scrollbar">
+              {/* Mobile stacked layout */}
+              <div className="sm:hidden divide-y divide-border/30">
+                {settings.article_types?.map(type => (
+                  <div key={type} className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-black text-foreground">{type}</span>
+                      <Button variant="ghost" size="icon" onClick={() => removeArticle(type)} className="h-7 w-7 text-destructive hover:bg-destructive/10 rounded-full">
+                        <Trash size={13} weight="bold" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Retail (₹)</label>
+                        <input type="number" inputMode="decimal" value={settings.tailoring_rates?.[type]?.tailoring || 0} onChange={e => updateRate(type, "tailoring", e.target.value)} className="w-full h-9 px-3 text-sm font-mono font-black border border-border/50 rounded-xl bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Labour (₹)</label>
+                        <input type="number" inputMode="decimal" value={settings.tailoring_rates?.[type]?.labour || 0} onChange={e => updateRate(type, "labour", e.target.value)} className="w-full h-9 px-3 text-sm font-mono font-black border border-border/50 rounded-xl bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop/tablet table layout */}
+              <div className="hidden sm:block overflow-x-auto custom-scrollbar">
                 <table className="w-full min-w-[420px] text-xs">
                   <thead>
                     <tr className="bg-muted/50 border-b border-border/50">
@@ -253,30 +277,13 @@ export default function SettingsPage() {
                           <span className="text-sm font-black text-foreground group-hover:text-primary transition-colors">{type}</span>
                         </td>
                         <td className="px-4 py-3">
-                          <input 
-                            type="number" 
-                            inputMode="decimal" 
-                            value={settings.tailoring_rates?.[type]?.tailoring || 0} 
-                            onChange={e => updateRate(type, "tailoring", e.target.value)} 
-                            className="w-full h-9 px-3 text-sm font-mono font-black border border-border/50 rounded-xl bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
-                          />
+                          <input type="number" inputMode="decimal" value={settings.tailoring_rates?.[type]?.tailoring || 0} onChange={e => updateRate(type, "tailoring", e.target.value)} className="w-full h-9 px-3 text-sm font-mono font-black border border-border/50 rounded-xl bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
                         </td>
                         <td className="px-4 py-3">
-                          <input 
-                            type="number" 
-                            inputMode="decimal" 
-                            value={settings.tailoring_rates?.[type]?.labour || 0} 
-                            onChange={e => updateRate(type, "labour", e.target.value)} 
-                            className="w-full h-9 px-3 text-sm font-mono font-black border border-border/50 rounded-xl bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
-                          />
+                          <input type="number" inputMode="decimal" value={settings.tailoring_rates?.[type]?.labour || 0} onChange={e => updateRate(type, "labour", e.target.value)} className="w-full h-9 px-3 text-sm font-mono font-black border border-border/50 rounded-xl bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => removeArticle(type)} 
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10 rounded-full"
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => removeArticle(type)} className="h-8 w-8 text-destructive hover:bg-destructive/10 rounded-full">
                             <Trash size={14} weight="bold" />
                           </Button>
                         </td>

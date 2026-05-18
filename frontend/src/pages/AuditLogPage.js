@@ -165,14 +165,14 @@ export default function AuditLogPage() {
           <CardContent className="p-6 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Agent Identity</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">User</label>
                 <div className="relative group">
                   <select 
                     value={filterUser} 
                     onChange={e => setFilterUser(e.target.value)}
                     className="w-full h-11 pl-4 pr-10 text-xs font-bold bg-muted/30 border border-border/50 rounded-xl appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
                   >
-                    <option value="">Global (All Agents)</option>
+                    <option value="">All Users</option>
                     {users.map(u => <option key={u.username} value={u.username}>{u.full_name} ({u.username})</option>)}
                   </select>
                   <CaretDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" />
@@ -180,14 +180,14 @@ export default function AuditLogPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Operation Type</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Action Type</label>
                 <div className="relative group">
                   <select 
                     value={filterAction} 
                     onChange={e => setFilterAction(e.target.value)}
                     className="w-full h-11 pl-4 pr-10 text-xs font-bold bg-muted/30 border border-border/50 rounded-xl appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
                   >
-                    <option value="">Global (All Operations)</option>
+                    <option value="">All Actions</option>
                     {ACTION_TYPES.map(a => <option key={a} value={a}>{a.charAt(0).toUpperCase() + a.slice(1)}</option>)}
                   </select>
                   <CaretDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" />
@@ -195,12 +195,12 @@ export default function AuditLogPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">From Timeline</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">From Date</label>
                 <DatePickerInput value={filterDateFrom} onChange={setFilterDateFrom} placeholder="Start date" />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">To Timeline</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">To Date</label>
                 <DatePickerInput value={filterDateTo} onChange={setFilterDateTo} placeholder="End date" />
               </div>
             </div>
@@ -211,13 +211,13 @@ export default function AuditLogPage() {
                 onClick={clearFilters}
                 className="h-10 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground hover:text-destructive hover:bg-destructive/5"
               >
-                <X size={14} weight="bold" className="mr-2" /> Reset Engine
+                <X size={14} weight="bold" className="mr-2" /> Clear Filters
               </Button>
               <Button
                 onClick={() => { setPage(0); fetchLogs(0); }}
                 className="h-10 px-8 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
               >
-                Execute Protocol
+                Apply Filters
               </Button>
             </div>
           </CardContent>
@@ -231,8 +231,8 @@ export default function AuditLogPage() {
               <ShieldCheck size={18} weight="duotone" />
             </div>
             <div className="flex flex-col">
-              <CardTitle className="text-sm font-black uppercase tracking-[0.2em]">Audit Sequence</CardTitle>
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{loading ? "Querying Database..." : `${totalLogs} Total Events Logged`}</span>
+              <CardTitle className="text-sm font-black uppercase tracking-[0.2em]">Audit Log</CardTitle>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{loading ? "Loading..." : `${totalLogs} events`}</span>
             </div>
           </div>
         </CardHeader>
@@ -247,9 +247,9 @@ export default function AuditLogPage() {
               <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mb-6">
                 <Clock size={40} className="text-muted-foreground opacity-40" weight="duotone" />
               </div>
-              <h3 className="text-lg font-black uppercase tracking-[0.2em] text-foreground mb-2">No Sequence Detected</h3>
+              <h3 className="text-lg font-black uppercase tracking-[0.2em] text-foreground mb-2">No Events Found</h3>
               <p className="text-sm text-muted-foreground font-medium max-w-[280px] leading-relaxed">
-                The current audit filters returned zero operational sequences. Try expanding your timeline.
+                No audit events match the current filters. Try adjusting your date range or filters.
               </p>
             </div>
           ) : (
@@ -257,10 +257,10 @@ export default function AuditLogPage() {
               <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border/50">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap"><div className="flex items-center gap-2"><Clock size={12} weight="bold" /> Temporal Stamp</div></th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap"><div className="flex items-center gap-2"><User size={12} weight="bold" /> Operational Agent</div></th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap"><div className="flex items-center gap-2"><Clock size={12} weight="bold" /> Execution Action</div></th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Protocol Details</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap"><div className="flex items-center gap-2"><Clock size={12} weight="bold" /> Timestamp</div></th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap"><div className="flex items-center gap-2"><User size={12} weight="bold" /> User</div></th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap"><div className="flex items-center gap-2"><Info size={12} weight="bold" /> Action</div></th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left whitespace-nowrap">Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
@@ -279,22 +279,32 @@ export default function AuditLogPage() {
                       <td className="px-6 py-4">
                         <ActionBadge action={log.action} />
                       </td>
-                      <td className="px-6 py-4 max-w-md">
-                        <div 
-                          className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors truncate cursor-help flex items-center gap-2"
-                          title={
-                            log.details && typeof log.details === "object"
-                              ? Object.entries(log.details).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" | ")
-                              : (log.details || log.message || "")
-                          }
-                        >
-                          <Info size={14} className="opacity-40 group-hover:opacity-100 transition-opacity" weight="duotone" />
-                          <span className="truncate">
-                            {log.details && typeof log.details === "object"
-                              ? Object.entries(log.details).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" | ") || "—"
-                              : (log.details || log.message || "—")}
+                      <td className="px-6 py-4 max-w-sm">
+                        {log.details && typeof log.details === "object" && Object.keys(log.details).length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {Object.entries(log.details).map(([k, v]) => {
+                              const val = Array.isArray(v) ? v.join(", ") : String(v ?? "");
+                              if (!val || val === "undefined") return null;
+                              const labelMap = { customer: "Customer", items: "Items", total: "Total", ip: "IP", ref: "Ref", bill_ref: "Bill", action: null };
+                              const label = labelMap[k] !== undefined ? labelMap[k] : k.replace(/_/g, " ");
+                              if (!label) return null;
+                              const isMonetary = k === "total";
+                              const isCount = k === "items";
+                              return (
+                                <span key={k} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/60 border border-border/40 text-[10px] font-bold text-foreground/70 whitespace-nowrap">
+                                  <span className="text-muted-foreground/60 font-medium">{label}</span>
+                                  <span className={cn("font-black", isMonetary ? "text-success" : isCount ? "text-info" : "text-foreground/80")}>
+                                    {isMonetary ? `₹${Number(val).toLocaleString("en-IN")}` : val}
+                                  </span>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/50 italic">
+                            {typeof log.details === "string" && log.details ? log.details : (log.message || "—")}
                           </span>
-                        </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -314,7 +324,7 @@ export default function AuditLogPage() {
             onClick={() => goPage(page - 1)}
             className="h-10 px-6 font-black uppercase tracking-widest text-[10px] rounded-xl border-border/50 hover:border-primary/50 transition-all disabled:opacity-20"
           >
-            <ArrowLeft size={14} weight="bold" className="mr-2" /> Previous Sequence
+            <ArrowLeft size={14} weight="bold" className="mr-2" /> Previous
           </Button>
           
           <div className="flex items-center gap-3">
@@ -323,7 +333,7 @@ export default function AuditLogPage() {
             </Badge>
             {totalLogs > 0 && (
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">
-                {totalLogs} Records Synchronized
+                {totalLogs} total
               </span>
             )}
           </div>
@@ -334,7 +344,7 @@ export default function AuditLogPage() {
             onClick={() => goPage(page + 1)}
             className="h-10 px-6 font-black uppercase tracking-widest text-[10px] rounded-xl border-border/50 hover:border-primary/50 transition-all disabled:opacity-20"
           >
-            Next Sequence <ArrowRight size={14} weight="bold" className="ml-2" />
+            Next <ArrowRight size={14} weight="bold" className="ml-2" />
           </Button>
         </div>
       )}

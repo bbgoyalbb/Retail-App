@@ -25,6 +25,7 @@ export default function DataManager() {
   const [dragActive, setDragActive] = useState(false);
   const [restoreConfirm, setRestoreConfirm] = useState(false);
   const [pendingRestoreFile, setPendingRestoreFile] = useState(null);
+  const [replaceConfirmText, setReplaceConfirmText] = useState("");
   const [audit, setAudit] = useState(null);
   const [normalizationResult, setNormalizationResult] = useState(null);
   const [repairResult, setRepairResult] = useState(null);
@@ -90,6 +91,10 @@ export default function DataManager() {
     if (!file) return;
     if (!file.name.match(/\.(xlsm|xlsx|xls)$/i)) {
       toast({ title: "Invalid File", description: "Please upload an Excel file (.xlsm or .xlsx)", variant: "destructive" });
+      return;
+    }
+    if (importMode === "replace" && replaceConfirmText !== "REPLACE") {
+      toast({ title: "Confirmation required", description: "Type REPLACE in the confirmation field before uploading.", variant: "destructive" });
       return;
     }
 
@@ -203,6 +208,7 @@ export default function DataManager() {
       </div>
 
       {/* Tabs */}
+      <div className="relative">
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1">
         {[
           { key: "import", label: "Import Excel", icon: Upload },
@@ -224,6 +230,8 @@ export default function DataManager() {
             {t.label}
           </Button>
         ))}
+      </div>
+      <div className="absolute right-0 top-0 bottom-2 w-10 pointer-events-none bg-gradient-to-l from-background to-transparent" />
       </div>
 
       <div className="grid grid-cols-1 gap-8">
@@ -268,7 +276,7 @@ export default function DataManager() {
                         importMode === mode.id ? "bg-primary/5 border-primary shadow-sm" : "bg-background border-border/50 hover:border-primary/30"
                       )}
                     >
-                      <input type="radio" name="importMode" value={mode.id} checked={importMode === mode.id} onChange={() => setImportMode(mode.id)} className="hidden" />
+                      <input type="radio" name="importMode" value={mode.id} checked={importMode === mode.id} onChange={() => { setImportMode(mode.id); setReplaceConfirmText(""); }} className="hidden" />
                       <div className={cn(
                         "p-2.5 rounded-xl transition-colors",
                         importMode === mode.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"
@@ -289,9 +297,21 @@ export default function DataManager() {
                   ))}
                 </div>
                 {importMode === "replace" && (
-                  <p className="text-[10px] text-destructive font-black uppercase tracking-widest flex items-center gap-2 animate-pulse px-1">
-                    <Warning size={14} weight="fill" /> Critical: This operation will permanently discard all current operational data.
-                  </p>
+                  <div className="space-y-3 p-4 bg-destructive/5 border border-destructive/20 rounded-2xl">
+                    <p className="text-xs text-destructive font-black uppercase tracking-widest flex items-center gap-2">
+                      <Warning size={16} weight="fill" /> Warning: This will permanently delete all current data and cannot be undone.
+                    </p>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-destructive/80">Type <span className="font-mono bg-destructive/10 px-1.5 py-0.5 rounded">REPLACE</span> to confirm</label>
+                      <input
+                        type="text"
+                        value={replaceConfirmText}
+                        onChange={e => setReplaceConfirmText(e.target.value)}
+                        placeholder="REPLACE"
+                        className="w-full h-10 px-4 text-sm font-mono font-black border-2 border-destructive/30 rounded-xl bg-background focus:ring-2 focus:ring-destructive/20 outline-none transition-all placeholder:text-destructive/20"
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
 
