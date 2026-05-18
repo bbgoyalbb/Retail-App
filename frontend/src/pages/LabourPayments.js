@@ -659,8 +659,8 @@ export default function LabourPayments() {
         </div>
 
         {/* Action Panel — desktop only; mobile uses sticky bar */}
-        <div className="hidden lg:block">
-          <Card className="bg-card border-none shadow-xl shadow-black/5 overflow-hidden sticky top-8">
+        <div className="hidden lg:block sticky top-8 self-start">
+          <Card className="bg-card border-none shadow-xl shadow-black/5 overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-primary" />
             <CardHeader className="pb-4 pt-6">
               <div className="flex items-center gap-3">
@@ -670,16 +670,16 @@ export default function LabourPayments() {
                 <CardTitle className="text-sm font-black uppercase tracking-widest whitespace-nowrap">Settlement Engine</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Payment Date</label>
+            <CardContent className="space-y-5 px-5 pb-5">
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Payment Date</label>
                   <DatePickerInput data-testid="labour-pay-date" value={payDate} onChange={setPayDate} placeholder="Payment date" />
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Payment Channel</label>
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Payment Channel</label>
+                  <div className="grid grid-cols-2 gap-1.5">
                     {paymentModes.map(m => {
                       const isActive = selectedModes.includes(m);
                       return (
@@ -689,7 +689,7 @@ export default function LabourPayments() {
                           size="sm"
                           onClick={() => toggleMode(m)} 
                           className={cn(
-                            "h-10 px-2 text-[10px] font-black uppercase tracking-tight border-border/50 transition-all truncate",
+                            "h-9 px-2 text-[10px] font-black uppercase tracking-tight border-border/50 transition-all truncate",
                             isActive ? "shadow-md bg-primary" : "bg-muted/30 text-muted-foreground hover:bg-primary/5 hover:text-primary hover:border-primary/30"
                           )}
                           title={m}
@@ -702,36 +702,34 @@ export default function LabourPayments() {
                 </div>
               </div>
 
-              <div className="p-5 bg-muted/30 rounded-2xl border border-border/50 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <CurrencyDollar size={64} weight="duotone" className="text-primary" />
+              <div className="p-4 bg-muted/30 rounded-xl border border-border/50 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <CurrencyDollar size={48} weight="duotone" className="text-primary" />
                 </div>
-                <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground opacity-60 leading-none">Net Allocation</p>
-                <p className="font-heading text-3xl font-black tracking-tighter text-primary mt-2">₹{fmt(selectedTotal)}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="secondary" className="text-[9px] font-black px-2 py-0.5 rounded-md bg-primary/10 text-primary border-none">
-                    {selected.length} Articles Selected
-                  </Badge>
-                </div>
+                <p className="text-[10px] uppercase tracking-widest font-black text-muted-foreground opacity-60 leading-none mb-1.5">Net Allocation</p>
+                <p className="font-heading text-2xl font-black tracking-tighter text-primary">₹{fmt(selectedTotal)}</p>
+                <Badge variant="secondary" className="mt-2 text-[9px] font-black px-2 py-0.5 rounded-md bg-primary/10 text-primary border-none">
+                  {selected.length} Articles Selected
+                </Badge>
               </div>
 
               <Button 
                 data-testid="pay-labour-btn" 
                 onClick={handlePay} 
                 disabled={saving || selected.length === 0} 
-                className="w-full h-14 text-sm font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 transition-all active:scale-95 gap-3"
+                className="w-full h-12 text-xs font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 transition-all active:scale-95 gap-2"
               >
                 {saving ? (
-                  <div className="flex items-center gap-2">Processing <ArrowsClockwise size={20} className="animate-spin" /></div>
+                  <div className="flex items-center gap-2">Processing <ArrowsClockwise size={16} className="animate-spin" /></div>
                 ) : (
-                  <><CurrencyDollar size={20} weight="bold" /> Settle Accounts</>
+                  <><CurrencyDollar size={16} weight="bold" /> Settle Accounts</>
                 )}
               </Button>
 
-              <div className="flex items-start gap-3 p-4 bg-muted/20 rounded-2xl border border-border/30">
-                <Info size={16} className="text-muted-foreground mt-0.5 shrink-0" weight="duotone" />
-                <p className="text-[11px] font-medium text-muted-foreground/70 leading-relaxed">
-                  Select items from the list then click <strong>Settle Accounts</strong> to mark them as paid.
+              <div className="flex items-start gap-2.5 p-3 bg-muted/20 rounded-xl border border-border/30">
+                <Info size={14} className="text-muted-foreground mt-0.5 shrink-0" weight="duotone" />
+                <p className="text-[10px] font-medium text-muted-foreground/70 leading-relaxed">
+                  Select items then click <strong>Settle Accounts</strong> to mark as paid.
                 </p>
               </div>
             </CardContent>

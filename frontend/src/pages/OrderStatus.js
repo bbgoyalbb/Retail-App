@@ -225,65 +225,65 @@ export default function OrderStatus() {
       {/* Filters Bar */}
       <Card className="bg-card border-none shadow-xl shadow-black/5 overflow-hidden">
         <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                <UsersThree size={14} weight="bold" /> Client Identity
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5 flex-1 min-w-[160px]">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5">
+                <UsersThree size={12} weight="bold" /> Customer
               </label>
               <div className="relative group">
                 <select 
                   value={customer} 
                   onChange={(e) => setCustomer(e.target.value)} 
-                  className="w-full h-11 pl-4 pr-10 text-xs font-bold bg-muted/30 border border-border/50 rounded-xl appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
+                  className="w-full h-9 pl-3 pr-8 text-xs font-bold bg-muted/30 border border-border/50 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
                 >
-                  <option value="">Global Search (All Clients)</option>
+                  <option value="">All Customers</option>
                   {[...customers].sort().map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-                <CaretDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" />
-                {customer && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background animate-pulse" />}
+                <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" />
+                {customer && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary border-2 border-background animate-pulse" />}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                <Receipt size={14} weight="bold" /> Order Protocol
+            <div className="space-y-1.5 flex-1 min-w-[140px]">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5">
+                <Receipt size={12} weight="bold" /> Order No.
               </label>
               <div className="relative group">
                 <input 
                   value={orderNo} 
-                  onChange={(e) => setOrderNo(e.target.value)} 
-                  placeholder="Order No. (e.g. 4502)" 
-                  className="w-full h-11 px-4 text-xs font-black font-mono bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all group-hover:border-primary/50" 
+                  onChange={(e) => setOrderNo(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && loadData()}
+                  placeholder="e.g. 4502" 
+                  className="w-full h-9 pl-3 pr-8 text-xs font-black font-mono bg-muted/30 border border-border/50 rounded-lg focus:ring-2 focus:ring-primary/20 outline-none transition-all group-hover:border-primary/50" 
                 />
-                <MagnifyingGlass size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" />
-                {orderNo && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary border-2 border-background animate-pulse" />}
+                <MagnifyingGlass size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" />
+                {orderNo && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary border-2 border-background animate-pulse" />}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                <CalendarCheck size={14} weight="bold" /> From Date
+            <div className="space-y-1.5 flex-1 min-w-[130px]">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5">
+                <CalendarCheck size={12} weight="bold" /> From
               </label>
-              <DatePickerInput value={fromDate} onChange={setFromDate} placeholder="Filter start date" />
+              <DatePickerInput value={fromDate} onChange={setFromDate} placeholder="Start date" className="h-9 text-xs rounded-lg" />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                <CalendarCheck size={14} weight="bold" /> To Date
+            <div className="space-y-1.5 flex-1 min-w-[130px]">
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5">
+                <CalendarCheck size={12} weight="bold" /> To
               </label>
-              <DatePickerInput value={toDate} onChange={setToDate} placeholder="Filter end date" />
+              <DatePickerInput value={toDate} onChange={setToDate} placeholder="End date" className="h-9 text-xs rounded-lg" />
             </div>
-          </div>
-          <div className="mt-8 flex justify-end border-t border-border/50 pt-6">
+
             <Button 
               data-testid="order-status-filter-btn" 
               onClick={loadData} 
-              className="h-12 px-8 font-black uppercase tracking-[0.2em] text-xs shadow-lg shadow-primary/20 gap-3"
+              className="h-9 px-5 font-black uppercase tracking-widest text-[10px] shadow-md shadow-primary/20 gap-2 shrink-0"
             >
-              <MagnifyingGlass size={18} weight="bold" /> Execute Filter
+              <MagnifyingGlass size={14} weight="bold" /> Filter
             </Button>
           </div>
         </CardContent>
