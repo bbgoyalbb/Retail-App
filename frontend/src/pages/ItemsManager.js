@@ -214,6 +214,13 @@ export default function ItemsManager() {
   const [selectedRefs, setSelectedRefs] = useState(new Set());
   const [detailOpen, setDetailOpen]     = useState(false); // mobile toggle
 
+  // Close detail pane when no orders are selected
+  useEffect(() => {
+    if (selectedRefs.size === 0 && detailOpen) {
+      setDetailOpen(false);
+    }
+  }, [selectedRefs, detailOpen]);
+
   // Overlays
   const [settlementOrders, setSettlementOrders] = useState(null);
   const [invoiceRef, setInvoiceRef]             = useState(null);
