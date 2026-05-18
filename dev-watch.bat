@@ -1,12 +1,13 @@
 @echo off
 :: Dev Watch Mode - For testing and bug fixes
 :: NO admin required, NO build step, auto-reload on file changes
+:: Uses react-scripts directly (avoids craco issues)
 :: Original build_and_run.bat remains for production
 
 setlocal EnableDelayedExpansion
 set "ROOT=%~dp0"
 set "BACKEND_PORT=8001"
-set "FRONTEND_PORT=3000"
+set "FRONTEND_PORT=3020"
 set "ENV_FILE=%ROOT%backend\.env"
 set "PYTHON=%ROOT%backend\venv\Scripts\python.exe"
 
@@ -23,6 +24,7 @@ echo.
 echo  Features:
 echo  - Frontend: Auto-rebuild on save (port %FRONTEND_PORT%)
 echo  - Backend:  Auto-restart on save (port %BACKEND_PORT%)
+echo  - Uses react-scripts directly (no craco issues)
 echo  - NO build step needed - just save files!
 echo.
 echo ==========================================
@@ -40,12 +42,14 @@ if not exist "%ENV_FILE%" (
     )
 )
 
-:: ---- Kill any existing processes on ports ----
+:: ---- Kill ALL node processes and processes on ports ----
 echo.
-echo [CLEANUP] Stopping any existing processes on ports %FRONTEND_PORT% and %BACKEND_PORT%...
+echo [CLEANUP] Stopping all Node processes and clearing ports...
+powershell -Command "try { Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force } catch {}"
+powershell -Command "try { Get-Process nodejs -ErrorAction SilentlyContinue | Stop-Process -Force } catch {}"
 powershell -Command "Get-NetTCPConnection -LocalPort %FRONTEND_PORT% -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
 powershell -Command "Get-NetTCPConnection -LocalPort %BACKEND_PORT% -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
-timeout /t 2 /nobreak >nul 2>&1
+timeout /t 3 /nobreak >nul 2>&1
 
 echo.
 echo ==========================================
@@ -67,12 +71,14 @@ timeout /t 3 /nobreak >nul 2>&1
 :: ---- Start Frontend in new window ----
 echo [2/2] Starting Frontend (React Dev Server)...
 echo     URL: http://localhost:%FRONTEND_PORT%/
+echo     Note: Uses react-scripts directly (bypasses craco issues)
+echo     Note: Source map warnings for html5-qrcode are normal
 echo.
-start "Frontend Dev Server" cmd /k "cd /d "%ROOT%frontend" && echo [Frontend] Installing dependencies if needed... && yarn install && echo [Frontend] Starting dev server... && yarn start"
+start "Frontend Dev Server" cmd /k "cd /d "%ROOT%frontend" && set "PORT=%FRONTEND_PORT%" && set "BROWSER=none" && echo [Frontend] Starting dev server on port %FRONTEND_PORT%... && npx react-scripts start"
 
 echo.
 echo ==========================================
-echo  BOTH SERVERS STARTED!
+echo  BOTH SERVERS STARTING...
 echo ==========================================
 echo.
 echo  Backend:  http://localhost:%BACKEND_PORT%/
@@ -84,11 +90,11 @@ echo  - Edit any backend .py file ^& save = auto-restart server
 echo  - Press Ctrl+C in either window to stop that server
 echo  - Close both windows to stop completely
 echo.
-echo  ^>^>^> Opening browser in 5 seconds... ^<^<^
+echo  ^>^>^> Opening browser in 8 seconds... ^<^<^
 echo.
 
 :: ---- Open browser after delay ----
-timeout /t 5 /nobreak >nul 2>&1
+timeout /t 8 /nobreak >nul 2>&1
 start "" "http://localhost:%FRONTEND_PORT%/"
 
 echo ==========================================
