@@ -765,14 +765,22 @@ function TailoringModal({ items, setItems, customerName, articleTypes, onClose }
   const handleChange = (assignments) => {
     // Map assignments back to bill items format
     // Use _original_item_id to find the correct item after splits
-    const newItems = assignments.map(a => {
+    const newItems = assignments.map((a, idx) => {
       const lookupId = a._original_item_id || a.item_id;
       const existing = items.find(i => i.id === lookupId) || {};
+      // Recalculate total when qty changes (e.g., after split) to prevent double-counting
+      const price = parseFloat(existing.price) || 0;
+      const discount = parseFloat(existing.discount) || 0;
+      const qty = parseFloat(a.qty) || 0;
+      const total = Math.round((price - price * discount / 100) * qty);
+      // Generate unique ID for split pieces to ensure they're tracked separately
+      const uniqueId = a.item_id || `${lookupId}_split_${idx}_${Date.now()}`;
       return {
         ...existing,
-        id: lookupId,
+        id: uniqueId, // Use assignment's unique ID, not the original
         barcode: a.barcode,
-        qty: a.qty,
+        qty: qty,
+        total: total, // Recalculated based on new qty
         tailoring: {
           enabled: true,
           article_type: a.article_type,
