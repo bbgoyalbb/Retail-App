@@ -140,6 +140,12 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
     status_dot = "●" if is_settled else "○"
     status_color = "#111111"
 
+    # Pre-calculate section totals for thermal format summary
+    tail_amt_total = sum(float(i.get("tailoring_amount", 0)) for i in items)
+    emb_amt_total = sum(float(i.get("embroidery_amount", 0)) for i in items)
+    ao_amt_total = sum(float(i.get("addon_amount", 0)) for i in items)
+    grand_total_calc = grand_total  # Use the already-calculated grand total
+
     # ---- Thermal format ----
     is_thermal = format == "thermal"
     max_width = "280px" if is_thermal else "600px"
@@ -147,18 +153,54 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
     font_size = "11px" if is_thermal else "12px"
     
     if is_thermal:
-        # Simplified thermal layout
+        # Simplified thermal layout - now includes all charges (fabric, tailoring, embroidery, addons)
         thermal_items = ""
         for item in items:
-            amt = float(item.get("fabric_amount", 0))
+            # Fabric line
+            fab_amt = float(item.get("fabric_amount", 0))
             thermal_items += f"""
             <div style="border-bottom:1px dashed #D6D1C4;padding:4px 0;">
               <div style="font-size:10px;">{html_mod.escape(str(item.get('barcode','N/A'))[:20])}</div>
               <div style="display:flex;justify-content:space-between;font-size:10px;">
                 <span>{item.get('qty',0)}m × ₹{fmt(item.get('price',0))}</span>
-                <span>₹{fmt(amt)}</span>
-              </div>
-            </div>"""
+                <span>₹{fmt(fab_amt)}</span>
+              </div>"""
+            # Tailoring charge (if any)
+            tail_amt = float(item.get("tailoring_amount", 0))
+            if tail_amt > 0:
+                art_type = html_mod.escape(str(item.get('article_type','Tailoring'))[:12])
+                thermal_items += f"""
+              <div style="display:flex;justify-content:space-between;font-size:9px;color:#555;padding-left:8px;">
+                <span>✂ {art_type}</span>
+                <span>₹{fmt(tail_amt)}</span>
+              </div>"""
+            # Embroidery charge (if any)
+            emb_amt = float(item.get("embroidery_amount", 0))
+            if emb_amt > 0:
+                thermal_items += f"""
+              <div style="display:flex;justify-content:space-between;font-size:9px;color:#555;padding-left:8px;">
+                <span>🧵 Embroidery</span>
+                <span>₹{fmt(emb_amt)}</span>
+              </div>"""
+            # Add-ons (if any)
+            addon_amt = float(item.get("addon_amount", 0))
+            if addon_amt > 0:
+                addon_desc = html_mod.escape(str(item.get('addon_desc','Add-ons'))[:15])
+                thermal_items += f"""
+              <div style="display:flex;justify-content:space-between;font-size:9px;color:#555;padding-left:8px;">
+                <span>+ {addon_desc}</span>
+                <span>₹{fmt(addon_amt)}</span>
+              </div>"""
+            thermal_items += "</div>"
+        
+        # Summary section
+        summary_lines = ""
+        if tail_amt_total > 0:
+            summary_lines += f'<div style="display:flex;justify-content:space-between;font-size:9px;"><span>Tailoring</span><span>₹{fmt(tail_amt_total)}</span></div>'
+        if emb_amt_total > 0:
+            summary_lines += f'<div style="display:flex;justify-content:space-between;font-size:9px;"><span>Embroidery</span><span>₹{fmt(emb_amt_total)}</span></div>'
+        if ao_amt_total > 0:
+            summary_lines += f'<div style="display:flex;justify-content:space-between;font-size:9px;"><span>Add-ons</span><span>₹{fmt(ao_amt_total)}</span></div>'
         
         html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -184,9 +226,10 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
   <div class="center meta">{html_mod.escape(firm_phones)}<br/>Ref: {html_mod.escape(ref_id)}</div>
   <div style="margin-bottom:8px;"><b>{html_mod.escape(customer_name[:20])}</b></div>
   {thermal_items}
+  {summary_lines}
   <div class="total" style="display:flex;justify-content:space-between;">
     <span>TOTAL</span>
-    <span>₹{fmt(grand_total)}</span>
+    <span>₹{fmt(grand_total_calc)}</span>
   </div>
   <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;">
     <span>{'PAID' if is_settled else 'DUE'}</span>
