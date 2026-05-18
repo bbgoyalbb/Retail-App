@@ -9,6 +9,8 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { TailoringConfigurator } from "@/components/TailoringConfigurator";
+import { AddOnConfigurator } from "@/components/AddOnConfigurator";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import InvoiceModal from "@/components/InvoiceModal";
 import { BillLineItemRow, ItemInputForm, PaymentSummaryPanel, BillSuccessPanel } from "@/components/bill";
@@ -287,51 +289,6 @@ export default function NewBill() {
     setItems(prev => prev.map((row, idx) => idx === index ? { ...row, tailoring: { ...(row.tailoring || defaultTailoring), ...patch } } : row));
   };
 
-  const updateItemAddon = (index, patch) => {
-    setItems(prev => prev.map((row, idx) => idx === index ? { ...row, addon: { ...(row.addon || defaultAddon), ...patch } } : row));
-  };
-
-  const addAddonItem = (itemIndex) => {
-    setItems(prev => prev.map((row, idx) => {
-      if (idx !== itemIndex) return row;
-      const currentItems = row.addon?.items || [];
-      return {
-        ...row,
-        addon: {
-          enabled: true,
-          items: [...currentItems, { name: addonItems[0] || "Buttons", amount: "" }]
-        }
-      };
-    }));
-  };
-
-  const removeAddonItem = (itemIndex, addonIdx) => {
-    setItems(prev => prev.map((row, idx) => {
-      if (idx !== itemIndex) return row;
-      const currentItems = (row.addon?.items || []).filter((_, i) => i !== addonIdx);
-      return {
-        ...row,
-        addon: {
-          enabled: currentItems.length > 0,
-          items: currentItems
-        }
-      };
-    }));
-  };
-
-  const updateAddonItem = (itemIndex, addonIdx, patch) => {
-    setItems(prev => prev.map((row, idx) => {
-      if (idx !== itemIndex) return row;
-      const currentItems = row.addon?.items || [];
-      return {
-        ...row,
-        addon: {
-          ...row.addon,
-          items: currentItems.map((item, i) => i === addonIdx ? { ...item, ...patch } : item)
-        }
-      };
-    }));
-  };
 
   const validateTailoringRows = () => {
     const invalid = items.find(row => row.tailoring?.enabled && (!row.tailoring.order_no || !row.tailoring.delivery_date || !row.tailoring.article_type));
@@ -776,605 +733,120 @@ export default function NewBill() {
 
       {/* Add-on Modal */}
       {showAddonModal && (
-        <div 
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowAddonModal(false); }}
-        >
-          <Card className="w-full max-w-5xl border-none shadow-2xl shadow-black/40 overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300">
-            <CardHeader className="border-b border-border/50 bg-muted/20 px-6 py-4 flex flex-row items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-success/10 text-success">
-                  <Plus size={20} weight="duotone" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-black uppercase tracking-widest">Article Add-ons</CardTitle>
-                  <p className="text-xs text-muted-foreground font-medium">Extra charges for embroidery, buttons, etc.</p>
-                </div>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setShowAddonModal(false)} className="rounded-full">
-                <X size={20} />
-              </Button>
-            </CardHeader>
-            
-            <CardContent className="p-0 overflow-auto flex-1 custom-scrollbar">
-              {/* Mobile View */}
-              <div className="sm:hidden p-4 space-y-4">
-                {items.map((item, idx) => (
-                  <Card key={`addon-mob-${idx}`} className={cn(
-                    "border-border/50 shadow-none overflow-hidden",
-                    (item.addon?.items?.length > 0) ? "bg-success/[0.02] border-success/20" : "bg-muted/10"
-                  )}>
-                    <CardContent className="p-4 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-sm font-black text-primary">#{item.barcode}</span>
-                        <Badge variant="outline" className="font-mono text-[10px] font-black">{item.qty}m</Badge>
-                      </div>
-
-                      <div className="space-y-3">
-                        {(item.addon?.items || []).map((addon, addonIdx) => (
-                          <div key={addonIdx} className="flex items-center gap-2 p-2 bg-background border border-border/50 rounded-xl shadow-sm">
-                            <select
-                              value={addon.name}
-                              onChange={e => updateAddonItem(idx, addonIdx, { name: e.target.value })}
-                              className="flex-1 h-9 px-3 text-xs font-bold bg-transparent outline-none cursor-pointer"
-                            >
-                              {addonItems.map(name => <option key={name} value={name}>{name}</option>)}
-                            </select>
-                            <div className="relative w-24">
-                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black text-muted-foreground">₹</span>
-                              <input
-                                type="number"
-                                inputMode="decimal"
-                                value={addon.amount}
-                                onChange={e => updateAddonItem(idx, addonIdx, { amount: e.target.value })}
-                                className="w-full h-9 pl-6 pr-3 text-xs font-mono font-black border-none bg-muted/20 rounded-lg focus:ring-1 focus:ring-success/30 transition-all outline-none"
-                                placeholder="0"
-                              />
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeAddonItem(idx, addonIdx)}
-                              className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-lg"
-                            >
-                              <Trash size={16} />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addAddonItem(idx)}
-                        className="w-full h-10 font-black uppercase tracking-widest text-[10px] border-dashed border-2 hover:border-success/50 hover:bg-success/5 hover:text-success gap-2 rounded-xl transition-all"
-                      >
-                        <Plus size={14} weight="bold" /> Add Add-on
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Desktop View */}
-              <div className="hidden sm:block">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-muted/30 border-b border-border/50">
-                      <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Article</th>
-                      <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Qty</th>
-                      <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Extra Add-ons</th>
-                      <th className="text-right px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Total Extra</th>
-                      <th className="text-right px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/30">
-                    {items.map((item, idx) => (
-                      <tr key={`addon-row-${idx}`} className="group hover:bg-success/[0.01] transition-colors">
-                        <td className="px-6 py-4">
-                          <span className="font-mono text-sm font-black text-primary">#{item.barcode}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-bold text-foreground">{item.qty}m</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-wrap gap-2">
-                            {(item.addon?.items || []).map((addon, addonIdx) => (
-                              <div key={addonIdx} className="flex items-center gap-2 p-1 bg-background border border-border/50 rounded-xl shadow-sm animate-in fade-in zoom-in-95">
-                                <select
-                                  value={addon.name}
-                                  onChange={e => updateAddonItem(idx, addonIdx, { name: e.target.value })}
-                                  className="h-8 pl-3 pr-1 text-xs font-bold bg-transparent outline-none cursor-pointer hover:text-success transition-colors"
-                                >
-                                  {addonItems.map(name => <option key={name} value={name}>{name}</option>)}
-                                </select>
-                                <div className="relative w-24">
-                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black text-muted-foreground opacity-40">₹</span>
-                                  <input
-                                    type="number"
-                                    inputMode="decimal"
-                                    value={addon.amount}
-                                    onChange={e => updateAddonItem(idx, addonIdx, { amount: e.target.value })}
-                                    className="w-full h-8 pl-6 pr-2 text-xs font-mono font-black border-none bg-muted/20 rounded-lg focus:ring-1 focus:ring-success/30 transition-all outline-none"
-                                    placeholder="0"
-                                  />
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeAddonItem(idx, addonIdx)}
-                                  className="h-8 w-8 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
-                                >
-                                  <Trash size={14} />
-                                </Button>
-                              </div>
-                            ))}
-                            {(item.addon?.items || []).length === 0 && (
-                              <span className="text-xs text-muted-foreground/40 font-bold uppercase tracking-widest italic py-2">No extra charges</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className="font-mono text-sm font-black text-success tracking-tighter">
-                            ₹{(item.addon?.items || []).reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0).toLocaleString()}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => addAddonItem(idx)}
-                            className="h-9 px-4 font-black uppercase tracking-widest text-[10px] border-dashed border-2 hover:border-success/50 hover:bg-success/5 hover:text-success gap-2 rounded-xl transition-all"
-                          >
-                            <Plus size={14} weight="bold" /> Add
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-            
-            <CardFooter className="border-t border-border/50 bg-muted/20 px-6 py-4 flex justify-end gap-3">
-              <Button onClick={() => setShowAddonModal(false)} className="h-10 px-8 font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20">
-                Finalize Add-ons
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
+        <AddOnModal
+          items={items}
+          setItems={setItems}
+          customerName={customerName}
+          onClose={() => setShowAddonModal(false)}
+        />
       )}
     </div>
   );
 }
 
-// Tailoring Modal Component with Split Functionality
+// Tailoring Modal - Thin wrapper around shared TailoringConfigurator for "create" mode (New Bill)
 function TailoringModal({ items, setItems, customerName, articleTypes, onClose }) {
-  const [splitItem, setSplitItem] = useState(null);
-  const [splitError, setSplitError] = useState(null);
-  const trapRef = useFocusTrap(true);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        if (splitItem) setSplitItem(null);
-        else onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, splitItem]);
-
-  const updateItemTailoring = (index, patch) => {
-    setItems(prev => prev.map((row, idx) => idx === index ? { ...row, tailoring: { ...(row.tailoring || {}), ...patch } } : row));
-  };
-
-  const handleSplit = (itemIdx) => {
-    const item = items[itemIdx];
-    if (item.qty <= 0) return;
-    setSplitItem({
-      itemIdx,
-      originalQty: item.qty,
-      originalTotal: item.total,
-      originalPrice: item.price,
-      originalDiscount: item.discount,
-      splits: [
-        { qty: (item.qty / 2).toFixed(2), article_type: articleTypes[0] || "Shirt" },
-        { qty: (item.qty / 2).toFixed(2), article_type: articleTypes[0] || "Shirt" }
-      ]
-    });
-  };
-
-  const addSplitPart = () => {
-    if (!splitItem) return;
-    setSplitItem(prev => ({
-      ...prev,
-      splits: [...prev.splits, { qty: "0", article_type: articleTypes[0] || "Shirt" }]
-    }));
-  };
-
-  const updateSplitPart = (idx, patch) => {
-    if (!splitItem) return;
-    setSplitItem(prev => ({
-      ...prev,
-      splits: prev.splits.map((s, i) => i === idx ? { ...s, ...patch } : s)
-    }));
-  };
-
-  const removeSplitPart = (idx) => {
-    if (!splitItem) return;
-    setSplitItem(prev => ({ ...prev, splits: prev.splits.filter((_, i) => i !== idx) }));
-  };
-
-  const applySplit = () => {
-    if (!splitItem) return;
-    const totalSplitQty = splitItem.splits.reduce((sum, s) => sum + (parseFloat(s.qty) || 0), 0);
-    if (Math.abs(totalSplitQty - splitItem.originalQty) > 0.01) {
-      setSplitError(`Total split qty (${totalSplitQty.toFixed(2)}) must equal original qty (${splitItem.originalQty.toFixed(2)})`);
-      return;
+  // Convert bill items to configurator format
+  const configuratorItems = items.map(item => ({
+    id: item.id,
+    barcode: item.barcode,
+    qty: item.qty,
+    tailoring: item.tailoring || {
+      enabled: false,
+      article_type: articleTypes[0] || "Shirt",
+      embroidery_status: "Not Required",
+      order_no: "",
+      delivery_date: ""
     }
-    setSplitError(null);
+  }));
 
-    const originalItem = items[splitItem.itemIdx];
-    const newItems = [...items];
-    const totalQty = splitItem.originalQty;
-
-    let runningTotal = 0;
-    const splitData = splitItem.splits.map((split, i) => {
-      const isLast = i === splitItem.splits.length - 1;
-      const ratio = (parseFloat(split.qty) || 0) / totalQty;
-      const splitTotal = isLast
-        ? originalItem.total - runningTotal
-        : Math.round(originalItem.total * ratio);
-      if (!isLast) runningTotal += splitTotal;
+  // Handle changes from configurator (split updates, etc.)
+  const handleChange = (assignments) => {
+    // Map assignments back to bill items format
+    const newItems = assignments.map(a => {
+      const existing = items.find(i => i.id === a.item_id) || {};
       return {
-        ...split,
-        ratio,
-        total: splitTotal,
-        price: originalItem.price,
-        discount: originalItem.discount
-      };
-    });
-
-    newItems[splitItem.itemIdx] = {
-      ...originalItem,
-      qty: parseFloat(splitData[0].qty),
-      total: splitData[0].total,
-      tailoring: {
-        enabled: true,
-        article_type: splitData[0].article_type,
-        order_no: "",
-        delivery_date: "",
-        embroidery_status: "Not Required"
-      }
-    };
-
-    for (let i = 1; i < splitData.length; i++) {
-      newItems.splice(splitItem.itemIdx + i, 0, {
-        ...originalItem,
-        id: `${originalItem.barcode}_split_${i}_${Date.now()}`,
-        qty: parseFloat(splitData[i].qty),
-        total: splitData[i].total,
+        ...existing,
+        id: a.item_id,
+        barcode: a.barcode,
+        qty: a.qty,
         tailoring: {
           enabled: true,
-          article_type: splitData[i].article_type,
-          order_no: "",
-          delivery_date: "",
-          embroidery_status: "Not Required"
+          article_type: a.article_type,
+          embroidery_status: a.embroidery_status,
+          order_no: a.order_no,
+          delivery_date: a.delivery_date
         }
-      });
-    }
-
+      };
+    });
     setItems(newItems);
-    setSplitItem(null);
   };
 
-  if (splitItem) {
-    const currentTotal = splitItem.splits.reduce((sum, s) => sum + (parseFloat(s.qty) || 0), 0);
-    const isBalanced = Math.abs(currentTotal - splitItem.originalQty) < 0.01;
-    return (
-      <div 
-        className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
-        onClick={(e) => { if (e.target === e.currentTarget) setSplitItem(null); }}
-      >
-        <Card className="w-full max-w-2xl border-none shadow-2xl animate-in zoom-in-95 duration-300">
-          <CardHeader className="border-b border-border/50 bg-muted/20 px-6 py-4 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-black uppercase tracking-widest">Split Article: #{items[splitItem.itemIdx]?.barcode}</CardTitle>
-              <div className="flex items-center gap-4 mt-1">
-                <Badge variant="outline" className="font-mono text-[10px] font-black">Qty: {splitItem.originalQty}</Badge>
-                <Badge variant="outline" className="font-mono text-[10px] font-black">Amount: ₹{splitItem.originalTotal?.toLocaleString()}</Badge>
-              </div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => setSplitItem(null)} className="rounded-full">
-              <X size={20} />
-            </Button>
-          </CardHeader>
-          
-          <CardContent className="p-6 max-h-[60vh] overflow-auto custom-scrollbar">
-            <div className="space-y-4">
-              {splitItem.splits.map((split, idx) => {
-                const ratio = splitItem.originalQty > 0 ? (parseFloat(split.qty) || 0) / splitItem.originalQty : 0;
-                const splitAmount = Math.round((splitItem.originalTotal || 0) * ratio);
-                return (
-                  <div key={idx} className="flex items-center gap-4 p-4 bg-muted/30 border border-border/50 rounded-2xl animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
-                    <div className="w-24 space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Qty</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={split.qty}
-                        onChange={e => updateSplitPart(idx, { qty: e.target.value })}
-                        className="w-full h-10 px-3 text-sm font-mono font-black bg-background border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                      />
-                    </div>
-                    <div className="flex-1 space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Type</label>
-                      <select
-                        value={split.article_type}
-                        onChange={e => updateSplitPart(idx, { article_type: e.target.value })}
-                        className="w-full h-10 px-3 text-sm font-bold bg-background border border-border/50 rounded-xl outline-none cursor-pointer"
-                      >
-                        {articleTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                      </select>
-                    </div>
-                    <div className="w-28 text-right space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Amount</label>
-                      <p className="font-mono text-base font-black tracking-tighter">₹{splitAmount.toLocaleString()}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={splitItem.splits.length <= 1}
-                      onClick={() => removeSplitPart(idx)}
-                      className="mt-5 h-10 w-10 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all"
-                    >
-                      <Trash size={18} />
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-            
-            <div className="mt-6 flex items-center justify-between">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addSplitPart}
-                className="font-black uppercase tracking-widest text-[10px] border-dashed border-2 rounded-xl gap-2 h-10"
-              >
-                <Plus size={14} weight="bold" /> Add Split Part
-              </Button>
-              <div className={cn(
-                "px-4 py-2 rounded-xl font-mono text-xs font-black tracking-widest uppercase",
-                isBalanced ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive animate-pulse"
-              )}>
-                {currentTotal.toFixed(2)} / {splitItem.originalQty} {isBalanced ? '✓' : '⚠️'}
-              </div>
-            </div>
-          </CardContent>
-          
-          <CardFooter className="border-t border-border/50 bg-muted/20 px-6 py-4 flex justify-between gap-3">
-            <Button variant="ghost" onClick={() => { setSplitItem(null); setSplitError(null); }} className="h-10 px-6 font-black uppercase tracking-widest text-[10px] rounded-xl">
-              Cancel
-            </Button>
-            <Button 
-              onClick={applySplit} 
-              disabled={!isBalanced}
-              className="h-10 px-8 font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20"
-            >
-              Apply Split Logic
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
+  // Save just closes the modal - data is already in items state
+  const handleSave = async () => {
+    onClose();
+    return Promise.resolve();
+  };
 
   return (
-    <div 
-      className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <Card ref={trapRef} className="w-full max-w-6xl border-none shadow-2xl shadow-black/40 overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300">
-        <CardHeader className="border-b border-border/50 bg-muted/20 px-6 py-4 flex flex-row items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-info/10 text-info">
-              <Scissors size={20} weight="duotone" />
-            </div>
-            <div>
-              <CardTitle className="text-lg font-black uppercase tracking-widest">Tailoring Configuration</CardTitle>
-              <p className="text-xs text-muted-foreground font-medium">Customer: <span className="text-foreground font-bold">{customerName || 'Standard Partner'}</span></p>
-            </div>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-            <X size={20} />
-          </Button>
-        </CardHeader>
-        
-        <CardContent className="p-0 overflow-auto flex-1 custom-scrollbar">
-          {/* Mobile View */}
-          <div className="sm:hidden p-4 space-y-4">
-            {items.map((item, idx) => (
-              <Card key={`tail-mob-${idx}`} className={cn(
-                "border-border/50 shadow-none overflow-hidden",
-                item.tailoring?.enabled ? "bg-info/[0.02] border-info/20" : "bg-muted/10"
-              )}>
-                <CardContent className="p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <input 
-                        type="checkbox" 
-                        checked={!!item.tailoring?.enabled} 
-                        onChange={e => updateItemTailoring(idx, { enabled: e.target.checked })} 
-                        className="w-5 h-5 rounded-md border-border/50 accent-info transition-all cursor-pointer"
-                      />
-                      <span className="font-mono text-sm font-black text-primary">#{item.barcode}</span>
-                    </div>
-                    <Badge variant="outline" className="font-mono text-[10px] font-black">{item.qty}m</Badge>
-                  </div>
-                  
-                  {item.tailoring?.enabled && (
-                    <div className="space-y-4 pt-4 border-t border-border/30 animate-in slide-in-from-top-2 duration-300">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Order #</label>
-                          <input 
-                            value={item.tailoring?.order_no || ""} 
-                            onChange={e => updateItemTailoring(idx, { order_no: e.target.value })} 
-                            className="w-full h-10 px-3 text-sm font-mono font-black bg-background border border-border/50 rounded-xl outline-none focus:ring-2 focus:ring-info/20 transition-all"
-                            placeholder="TL-XXX"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Delivery</label>
-                          <DatePickerInput 
-                            value={item.tailoring?.delivery_date || ""} 
-                            onChange={(val) => updateItemTailoring(idx, { delivery_date: val })} 
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Type</label>
-                          <select 
-                            value={item.tailoring?.article_type || (articleTypes[0] || "Shirt")} 
-                            onChange={e => updateItemTailoring(idx, { article_type: e.target.value })} 
-                            className="w-full h-10 px-3 text-sm font-bold bg-background border border-border/50 rounded-xl outline-none"
-                          >
-                            {articleTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                          </select>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Embroidery</label>
-                          <select 
-                            value={item.tailoring?.embroidery_status || "Not Required"} 
-                            onChange={e => updateItemTailoring(idx, { embroidery_status: e.target.value })} 
-                            className="w-full h-10 px-3 text-sm font-bold bg-background border border-border/50 rounded-xl outline-none"
-                          >
-                            <option value="Not Required">None</option>
-                            <option value="Required">Required</option>
-                          </select>
-                        </div>
-                      </div>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSplit(idx)}
-                        disabled={item.qty <= 0}
-                        className="w-full h-10 font-black uppercase tracking-widest text-[10px] border-dashed border-2 rounded-xl gap-2 hover:bg-info/5 hover:text-info hover:border-info/30"
-                      >
-                        <ArrowsSplit size={14} weight="bold" /> Split Article
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {!item.tailoring?.enabled && (
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 text-center py-2 italic">Tailoring not enabled</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          {/* Desktop View */}
-          <div className="hidden sm:block">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-muted/30 border-b border-border/50">
-                  <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground w-16">Apply</th>
-                  <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Article</th>
-                  <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground w-20">Qty</th>
-                  <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground w-40">Order No</th>
-                  <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground w-48">Delivery</th>
-                  <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground w-44">Type</th>
-                  <th className="text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground w-40">Embroidery</th>
-                  <th className="text-right px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/30">
-                {items.map((item, idx) => (
-                  <tr key={`tail-row-${idx}`} className={cn(
-                    "group transition-colors",
-                    item.tailoring?.enabled ? "bg-info/[0.01]" : "opacity-60"
-                  )}>
-                    <td className="px-6 py-4">
-                      <input 
-                        type="checkbox" 
-                        checked={!!item.tailoring?.enabled} 
-                        onChange={e => updateItemTailoring(idx, { enabled: e.target.checked })} 
-                        className="w-5 h-5 rounded-md border-border/50 accent-info transition-all cursor-pointer"
-                      />
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="font-mono text-sm font-black text-primary">#{item.barcode}</span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm font-bold text-foreground">{item.qty}m</span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <input 
-                        value={item.tailoring?.order_no || ""} 
-                        onChange={e => updateItemTailoring(idx, { order_no: e.target.value })} 
-                        disabled={!item.tailoring?.enabled} 
-                        className="w-full h-10 px-3 text-sm font-mono font-black bg-background border border-border/50 rounded-xl outline-none focus:ring-2 focus:ring-info/20 disabled:bg-muted/30 disabled:opacity-50 transition-all"
-                        placeholder="TL-XXX"
-                      />
-                    </td>
-                    <td className="px-4 py-4">
-                      <DatePickerInput 
-                        value={item.tailoring?.delivery_date || ""} 
-                        onChange={(val) => updateItemTailoring(idx, { delivery_date: val })} 
-                        disabled={!item.tailoring?.enabled}
-                      />
-                    </td>
-                    <td className="px-4 py-4">
-                      <select 
-                        value={item.tailoring?.article_type || (articleTypes[0] || "Shirt")} 
-                        onChange={e => updateItemTailoring(idx, { article_type: e.target.value })} 
-                        disabled={!item.tailoring?.enabled} 
-                        className="w-full h-10 px-3 text-sm font-bold bg-background border border-border/50 rounded-xl outline-none disabled:bg-muted/30 disabled:opacity-50"
-                      >
-                        {articleTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                      </select>
-                    </td>
-                    <td className="px-4 py-4">
-                      <select 
-                        value={item.tailoring?.embroidery_status || "Not Required"} 
-                        onChange={e => updateItemTailoring(idx, { embroidery_status: e.target.value })} 
-                        disabled={!item.tailoring?.enabled} 
-                        className="w-full h-10 px-3 text-sm font-bold bg-background border border-border/50 rounded-xl outline-none disabled:bg-muted/30 disabled:opacity-50"
-                      >
-                        <option value="Not Required">Not Required</option>
-                        <option value="Required">Required</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSplit(idx)}
-                        disabled={item.qty <= 0 || !item.tailoring?.enabled}
-                        className="h-9 px-4 font-black uppercase tracking-widest text-[10px] border-dashed border-2 rounded-xl gap-2 hover:bg-info/5 hover:text-info hover:border-info/30 transition-all disabled:opacity-30"
-                      >
-                        <ArrowsSplit size={14} weight="bold" /> Split
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-        
-        <CardFooter className="border-t border-border/50 bg-muted/20 px-6 py-4 flex justify-end gap-3">
-          <Button onClick={onClose} className="h-10 px-8 font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-info/20 bg-info hover:bg-info/90">
-            Confirm Configuration
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
+    <TailoringConfigurator
+      items={configuratorItems}
+      onChange={handleChange}
+      onSave={handleSave}
+      onClose={onClose}
+      mode="create"
+      customerName={customerName}
+      title="Tailoring Configuration"
+      saveButtonText="Confirm Configuration"
+    />
+  );
+}
+
+// Add-on Modal - Thin wrapper around shared AddOnConfigurator for "create" mode (New Bill)
+function AddOnModal({ items, setItems, customerName, onClose }) {
+  // Convert bill items to configurator format
+  const configuratorItems = items.map(item => ({
+    id: item.id,
+    barcode: item.barcode,
+    qty: item.qty,
+    addon: item.addon || { items: [] }
+  }));
+
+  // Handle changes from configurator
+  const handleChange = (assignments) => {
+    // Map assignments back to bill items format
+    const newItems = assignments.map(a => {
+      const existing = items.find(i => i.id === a.item_id) || {};
+      return {
+        ...existing,
+        id: a.item_id,
+        barcode: a.barcode,
+        qty: a.qty,
+        addon: {
+          enabled: a.addons.length > 0,
+          items: a.addons.map(x => ({ name: x.name, amount: x.price }))
+        }
+      };
+    });
+    setItems(newItems);
+  };
+
+  // Save just closes the modal - data is already in items state
+  const handleSave = async () => {
+    onClose();
+    return Promise.resolve();
+  };
+
+  return (
+    <AddOnConfigurator
+      items={configuratorItems}
+      onChange={handleChange}
+      onSave={handleSave}
+      onClose={onClose}
+      mode="create"
+      customerName={customerName}
+      title="Article Add-ons"
+      saveButtonText="Confirm Add-ons"
+    />
   );
 }

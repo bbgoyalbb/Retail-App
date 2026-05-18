@@ -39,14 +39,45 @@ if not exist "%ENV_FILE%" (
 )
 echo.
 
-:: ---- Detect local IP ----
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
-    set "IP=%%a"
-    set "IP=!IP: =!"
-    goto :found_ip
+:: ---- Detect local IP: find the interface with a default gateway (real internet connection) ----
+:: Skip virtual adapters (Hyper-V, VMware, VirtualBox, WSL, Docker)
+set "IP="
+for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "(Get-NetRoute -DestinationPrefix '0.0.0.0/0' ^| Where-Object { $_.NextHop -and $_.NextHop -ne '0.0.0.0' -and $_.InterfaceAlias -notmatch '(VirtualBox|VMware|vEthernet|WSL|Docker|Hyper-V)' } ^| Select-Object -First 1 -ExpandProperty InterfaceIndex) ^| ForEach-Object { (Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $_ ^| Where-Object { $_.IPAddress -notmatch '^127\.' } ^| Select-Object -First 1 -ExpandProperty IPAddress) }"`) do (
+    set "IP=%%i"
+)
+:: Fallback: any 192.168.x.x or 10.x.x.x address
+if "!IP!"=="" (
+    for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "Get-NetIPAddress -AddressFamily IPv4 ^| Where-Object { $_.IPAddress -match '^(192\.168\.|10\.)' -and $_.IPAddress -notmatch '^(192\.168\.56\.)' } ^| Select-Object -First 1 -ExpandProperty IPAddress"`) do (
+        set "IP=%%i"
+    )
+)
+:: Last resort: manual parse, skip 172.x, 169.254.x, 192.168.56.x
+if "!IP!"=="" (
+    for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
+        set "TMP=%%a"
+        set "TMP=!TMP: =!"
+        call :check_ip_valid
+        if not "!IP!"=="" goto :found_ip
+    )
 )
 :found_ip
 if "!IP!"=="" set "IP=127.0.0.1"
+goto :ip_done
+
+:check_ip_valid
+:: Check if TMP is a valid IP we want (skip 172.x, 169.254.x, 192.168.56.x)
+set "VALID=1"
+echo %TMP% | findstr /b "172." >nul && set "VALID=0"
+if "%VALID%"=="0" goto :ip_check_end
+echo %TMP% | findstr /b "169.254." >nul && set "VALID=0"
+if "%VALID%"=="0" goto :ip_check_end
+echo %TMP% | findstr /b "192.168.56." >nul && set "VALID=0"
+if "%VALID%"=="0" goto :ip_check_end
+if "%VALID%"=="1" set "IP=%TMP%"
+:ip_check_end
+goto :eof
+
+:ip_done
 
 :: ---- Step 1: Windows Firewall rule ----
 echo [1/4] Configuring Windows Firewall for port %BACKEND_PORT%...
