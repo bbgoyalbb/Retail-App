@@ -44,7 +44,7 @@ export const SectionAccordion = ({ icon: Icon, label, amount, children, onEdit, 
         </div>
       </div>
       {open && (
-        <CardContent className="p-4 space-y-3 border-t border-border/50 bg-background animate-in slide-in-from-top-1 duration-300">
+        <CardContent className="p-4 space-y-3 border-t border-border/50 bg-background">
           {children}
         </CardContent>
       )}
@@ -432,11 +432,8 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
   const [viewTab, setViewTab] = useState("order");
 
   if (!selectedGroups.length) return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center animate-in fade-in duration-500">
-      <div className="relative">
-        <div className="absolute inset-0 bg-primary/5 rounded-full blur-2xl scale-150 animate-pulse" />
-        <Package size={64} weight="duotone" className="text-muted-foreground/20 relative" />
-      </div>
+    <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center">
+      <Package size={64} weight="duotone" className="text-muted-foreground/20" />
       <div className="space-y-2 relative">
         <p className="text-sm font-black uppercase tracking-[0.3em] text-muted-foreground/60">No Order Selected</p>
         <p className="text-[11px] text-muted-foreground/40 font-bold max-w-[180px] mx-auto leading-relaxed">
@@ -450,9 +447,9 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
   );
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-background/50 backdrop-blur-sm">
+    <div className="flex-1 flex flex-col min-h-0 bg-background/50">
       {/* Header */}
-      <div className="flex-shrink-0 px-5 py-4 border-b border-border/50 bg-background/80 backdrop-blur-md flex items-center gap-4 sticky top-0 z-10">
+      <div className="flex-shrink-0 px-5 py-4 border-b border-border/50 bg-background/80 flex items-center gap-4 sticky top-0 z-10">
         <div className="min-w-0 flex-1">
           {selectedGroups.length === 1 ? (
             <div className="space-y-1">

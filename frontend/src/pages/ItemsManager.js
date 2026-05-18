@@ -821,8 +821,8 @@ export default function ItemsManager() {
 
       {/* ════ SECTION SELECTOR MODAL ════ */}
       {showSectionSelector && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <Card className="max-w-2xl w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <Card className="max-w-2xl w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-150">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6 border-b border-border/50">
               <div className="space-y-1">
                 <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Select Section</CardTitle>
@@ -852,9 +852,9 @@ export default function ItemsManager() {
 
       {/* ════ SECTION EDIT MODAL ════ */}
       {selectedSection && _sf && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <Card className="max-w-[96vw] w-full max-h-[94vh] flex flex-col shadow-2xl border-border/50 animate-in zoom-in-95 duration-300 overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 px-6 py-4 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-4">
+          <Card className="max-w-[96vw] w-full max-h-[94vh] flex flex-col shadow-2xl border-border/50 animate-in zoom-in-95 duration-150 overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 px-6 py-4 border-b border-border/50 bg-background/80">
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
                   <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">{_sf.label}</CardTitle>
@@ -989,7 +989,7 @@ export default function ItemsManager() {
               )}
             </div>
 
-            <CardContent className="px-6 py-4 border-t border-border/50 flex justify-between items-center bg-background/80 backdrop-blur-md">
+            <CardContent className="px-6 py-4 border-t border-border/50 flex justify-between items-center bg-background/80">
               <Button variant="outline" onClick={() => setShowSectionSelector(true)} className="h-10 gap-2 font-black uppercase tracking-widest text-[10px]">
                 <CaretRight size={14} className="rotate-180" /> Change Section
               </Button>
@@ -1010,8 +1010,8 @@ export default function ItemsManager() {
 
       {/* ════ DELETE CONFIRM ════ */}
       {delConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <Card className="max-w-sm w-full shadow-2xl border-destructive/20 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
+          <Card className="max-w-sm w-full shadow-2xl border-destructive/20 animate-in zoom-in-95 duration-150">
             <CardHeader className="text-center pb-2">
               <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto mb-4">
                 <Trash size={24} weight="bold" />
@@ -1035,8 +1035,8 @@ export default function ItemsManager() {
 
       {/* ════ CANCEL CONFIRM ════ */}
       {cancelConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <Card className="max-w-sm w-full shadow-2xl border-warning/20 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
+          <Card className="max-w-sm w-full shadow-2xl border-warning/20 animate-in zoom-in-95 duration-150">
             <CardHeader className="text-center pb-2">
               <div className="w-12 h-12 rounded-full bg-warning/10 text-warning flex items-center justify-center mx-auto mb-4">
                 <X size={24} weight="bold" />
@@ -1058,8 +1058,8 @@ export default function ItemsManager() {
 
       {/* ════ MISMATCH PROMPT ════ */}
       {mismatchPrompt && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[300] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <Card className="max-w-lg w-full shadow-2xl border-destructive/30 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-black/70 z-[300] flex items-center justify-center p-4">
+          <Card className="max-w-lg w-full shadow-2xl border-destructive/30 overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="p-5 bg-destructive/10 flex items-center gap-4 border-b border-destructive/20">
               <div className="w-10 h-10 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center flex-shrink-0">
                 <Info size={20} weight="bold" />
@@ -1110,8 +1110,8 @@ export default function ItemsManager() {
 
       {/* ════ RE-SETTLE PROMPT ════ */}
       {reSettlePrompt && !settlementOrders && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <Card className="max-w-md w-full shadow-2xl border-warning/30 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-black/60 z-[300] flex items-center justify-center p-4">
+          <Card className="max-w-md w-full shadow-2xl border-warning/30 animate-in zoom-in-95 duration-150">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-black uppercase tracking-[0.2em] text-warning">Settlement Required</CardTitle>
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Amounts changed for previously settled articles</p>
