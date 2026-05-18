@@ -93,6 +93,7 @@ export function TailoringConfigurator({
   onChange, 
   onSave, 
   onClose, 
+  onSplit, // Callback for edit mode to split item in database
   mode = "create", // "create" (NewBill) or "edit" (Item Manager)
   customerName,
   title = "Tailoring Configuration",
@@ -149,14 +150,54 @@ export function TailoringConfigurator({
     });
   };
 
-  const handleSplitConfirm = (splits) => {
+  const handleSplitConfirm = async (splits) => {
     const idx = assignments.findIndex(a => a.item_id === splitItem.item_id);
     if (idx === -1) return;
     
     const original = assignments[idx];
     
-    // Create split parts as new assignment rows
-    // Track original DB item ID so backend can save correctly
+    // In edit mode, call API to actually split the item in database
+    if (mode === "edit" && onSplit) {
+      setSaving(true);
+      try {
+        // Call the split API - returns new item IDs
+        const result = await onSplit({
+          item_id: original._original_item_id || original.item_id,
+          splits: splits.map(s => ({
+            article_type: s.article_type || original.article_type,
+            qty: parseFloat(s.qty) || 0
+          }))
+        });
+        
+        // The API should return the new split item IDs
+        const newItemIds = result?.item_ids || result?.new_item_ids || [];
+        
+        // Create split assignments with the new database IDs
+        const splitAssignments = splits.map((sp, i) => ({
+          item_id: newItemIds[i] || `${original.item_id}_split_${i}_${Date.now()}`,
+          barcode: original.barcode,
+          qty: parseFloat(sp.qty) || 0,
+          article_type: sp.article_type || original.article_type,
+          embroidery_status: original.embroidery_status,
+          order_no: "",
+          delivery_date: "",
+          selected: true,
+          _original_item_id: newItemIds[i] || original._original_item_id || original.item_id
+        }));
+        
+        const newAssignments = [...assignments];
+        newAssignments.splice(idx, 1, ...splitAssignments);
+        setAssignments(newAssignments);
+        setSplitItem(null);
+      } catch (err) {
+        setMsg({ type: "error", text: err?.message || "Failed to split item" });
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+    
+    // Create mode: client-side split only
     const originalDbItemId = original._original_item_id || original.item_id;
     
     const splitAssignments = splits.map((sp, i) => ({

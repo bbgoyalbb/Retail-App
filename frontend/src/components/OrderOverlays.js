@@ -1,4 +1,4 @@
-import { addAddons, assignTailoring } from "@/api";
+import { addAddons, assignTailoring, splitTailoring } from "@/api";
 import { TailoringConfigurator } from "./TailoringConfigurator";
 import { AddOnConfigurator } from "./AddOnConfigurator";
 
@@ -9,6 +9,18 @@ export function TailoringOverlay({ group, onClose, onSuccess }) {
   const items = group.items.filter(i =>
     !i.order_no || i.order_no === "N/A" || i.tailoring_status === "Awaiting Order"
   );
+
+  const handleSplit = async ({ item_id, splits }) => {
+    // Call API to actually split the item in database
+    const result = await splitTailoring({
+      item_id,
+      splits: splits.map(s => ({
+        article_type: s.article_type,
+        qty: s.qty
+      }))
+    });
+    return result.data || result;
+  };
 
   const handleSave = async (assignments) => {
     // Group by order_no + delivery_date
@@ -36,6 +48,7 @@ export function TailoringOverlay({ group, onClose, onSuccess }) {
       items={items}
       onSave={handleSave}
       onClose={onClose}
+      onSplit={handleSplit}
       mode="edit"
       title="Tailoring Assignment"
       saveButtonText="Confirm Assignment"
