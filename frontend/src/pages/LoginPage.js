@@ -105,7 +105,7 @@ export default function LoginPage() {
                 </div>
               )}
               <CardTitle className="text-xl font-black uppercase tracking-tight text-foreground">Sign In</CardTitle>
-              <p className="text-xs text-muted-foreground font-medium mt-1">Initialize your operational session</p>
+              <p className="text-xs text-muted-foreground font-medium mt-1">Sign in to your account</p>
             </CardHeader>
             <CardContent className="pb-8">
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -116,7 +116,7 @@ export default function LoginPage() {
                   <input
                     id="username"
                     type="text"
-                    placeholder="Enter identity"
+                    placeholder="Your username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     autoComplete="username"
@@ -126,13 +126,13 @@ export default function LoginPage() {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="password" className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1 flex items-center gap-2">
-                    <Lock size={12} weight="bold" /> Security Key
+                    <Lock size={12} weight="bold" /> Password
                   </label>
                   <div className="relative group">
                     <input
                       id="password"
                       type={showPwd ? "text" : "password"}
-                      placeholder="Enter credentials"
+                      placeholder="Your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       autoComplete="current-password"
@@ -155,7 +155,7 @@ export default function LoginPage() {
                   {busy ? (
                     <div className="flex items-center gap-2">Authenticating <ArrowsClockwise size={20} className="animate-spin" /></div>
                   ) : (
-                    <><ShieldCheck size={20} weight="bold" /> Access System</>
+                    <><ShieldCheck size={20} weight="bold" /> Sign In</>
                   )}
                 </Button>
               </form>

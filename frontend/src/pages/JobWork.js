@@ -449,23 +449,27 @@ export default function JobWork() {
         </Button>
       </div>
 
-      <div className="flex items-center justify-between border-b pb-1">
-        <div className="flex gap-2">
+      <div className="relative border-b">
+        <div className="flex gap-1 overflow-x-auto no-scrollbar">
           {[
             { id: "tailoring", label: "Tailoring Units", icon: Scissors },
             { id: "embroidery", label: "Embroidery Studio", icon: ChartBar },
           ].map(t => (
-            <Button 
-              key={t.id} 
-              variant={tab === t.id ? "default" : "ghost"} 
-              onClick={() => { setTab(t.id); setActiveCol(t.id === "tailoring" ? "Pending" : "Required"); }} 
-              className={`h-11 px-6 font-black uppercase tracking-widest text-[10px] gap-2 transition-all ${tab === t.id ? 'shadow-lg shadow-primary/20' : 'text-muted-foreground'}`}
+            <button
+              key={t.id}
+              onClick={() => { setTab(t.id); setActiveCol(t.id === "tailoring" ? "Pending" : "Required"); }}
+              className={`flex items-center gap-2 whitespace-nowrap h-11 px-5 text-[10px] font-black uppercase tracking-widest transition-all flex-shrink-0 border-b-[3px] -mb-px ${
+                tab === t.id
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
             >
               <t.icon size={18} weight={tab === t.id ? "fill" : "bold"} />
               {t.label}
-            </Button>
+            </button>
           ))}
         </div>
+        <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none bg-gradient-to-l from-background to-transparent" />
       </div>
 
       <Card className="bg-muted/10 border-none shadow-inner">

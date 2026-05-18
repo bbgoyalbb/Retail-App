@@ -221,9 +221,9 @@ select, textarea {
 .dark {
   --background: 30 10% 10%;
   --foreground: 40 10% 95%;
-  --card: 30 10% 13%;
+  --card: 30 8% 17%;
   --card-foreground: 40 10% 95%;
-  --popover: 30 10% 13%;
+  --popover: 30 8% 17%;
   --popover-foreground: 40 10% 95%;
   --primary: 16 52% 61%;
   --primary-foreground: 0 0% 100%;
@@ -235,8 +235,8 @@ select, textarea {
   --accent-foreground: 40 10% 95%;
   --destructive: 6 50% 50%;
   --destructive-foreground: 0 0% 100%;
-  --border: 30 10% 20%;
-  --input: 30 10% 20%;
+  --border: 30 8% 24%;
+  --input: 30 8% 24%;
   --ring: 16 52% 61%;
 }
 

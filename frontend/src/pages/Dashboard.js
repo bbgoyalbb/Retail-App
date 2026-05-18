@@ -117,7 +117,7 @@ export default function Dashboard() {
             <Skeleton className="h-4 w-32 opacity-50" />
           </div>
         </div>
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -225,7 +225,7 @@ export default function Dashboard() {
       )}
 
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <StatCard icon={Receipt} label="Total Revenue" value={`₹${fmt(data.total_revenue || 0)}`} sub="All-time gross revenue" trend={data.revenue_trend} />
         <StatCard icon={TrendUp} label="Total Pending" value={`₹${fmt(totalPending || 0)}`} sub="Outstanding receivables" color="var(--info)" />
         <StatCard icon={UsersThree} label="Customer Base" value={data.unique_customers || 0} sub="Unique customer records" color="var(--success)" />

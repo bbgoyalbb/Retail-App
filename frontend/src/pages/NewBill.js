@@ -574,15 +574,20 @@ export default function NewBill() {
                     />
                     {showSuggestions && nameSuggestions.length > 0 && (
                       <Card className="absolute z-50 left-0 top-full mt-2 shadow-2xl animate-in fade-in zoom-in-95 duration-200 min-w-[320px] w-max max-w-[480px]">
-                        <div className="max-h-64 overflow-y-auto p-1">
-                          {nameSuggestions.map(c => (
-                            <div key={c}
-                              onMouseDown={e => { e.preventDefault(); setCustomerName(c); setShowSuggestions(false); setTimeout(() => dateRef.current?.focus(), 50); }}
-                              className="px-4 py-3 text-sm font-bold cursor-pointer hover:bg-primary/5 rounded-md transition-colors flex items-center justify-between group/item">
-                              {c}
-                              <ArrowRight size={14} className="opacity-0 group-hover/item:opacity-100 transition-opacity text-primary" />
-                            </div>
-                          ))}
+                        <div className="relative">
+                          <div className="max-h-64 overflow-y-auto p-1">
+                            {nameSuggestions.map(c => (
+                              <div key={c}
+                                onMouseDown={e => { e.preventDefault(); setCustomerName(c); setShowSuggestions(false); setTimeout(() => dateRef.current?.focus(), 50); }}
+                                className="px-4 py-3 text-sm font-bold cursor-pointer hover:bg-primary/5 rounded-md transition-colors flex items-center justify-between group/item">
+                                {c}
+                                <ArrowRight size={14} className="opacity-0 group-hover/item:opacity-100 transition-opacity text-primary" />
+                              </div>
+                            ))}
+                          </div>
+                          {nameSuggestions.length > 4 && (
+                            <div className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none rounded-b-lg bg-gradient-to-t from-card to-transparent" />
+                          )}
                         </div>
                       </Card>
                     )}

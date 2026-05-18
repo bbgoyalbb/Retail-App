@@ -172,10 +172,11 @@ export default function Sidebar({ open, setOpen }) {
         </div>
 
         {/* Nav */}
+        <div className="relative flex-1 min-h-0">
         <nav 
           role="navigation" 
           aria-label="Main navigation"
-          className={`flex-1 py-3 overflow-y-auto overflow-x-hidden ${collapsed ? 'px-1.5 space-y-1' : 'px-3 space-y-0.5'}`}
+          className={`h-full py-3 overflow-y-auto overflow-x-hidden ${collapsed ? 'px-1.5 space-y-1' : 'px-3 space-y-0.5'}`}
         >
           {(() => {
             return filteredNavItems.map((item, idx) => {
@@ -232,6 +233,9 @@ export default function Sidebar({ open, setOpen }) {
           });
           })()}
         </nav>
+
+          <div className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none bg-gradient-to-t from-[var(--surface)] to-transparent lg:hidden" />
+        </div>
 
         {/* Footer: desktop collapse toggle + theme */}
         <div className={`border-t border-[var(--border-subtle)] ${collapsed ? 'p-2' : 'p-3'}`}>

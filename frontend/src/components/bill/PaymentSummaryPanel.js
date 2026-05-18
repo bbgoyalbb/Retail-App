@@ -155,6 +155,11 @@ export default function PaymentSummaryPanel({
             <><FloppyDisk size={18} weight="bold" className="mr-2" />Commit Invoice</>
           )}
         </Button>
+        {!canSubmit && !saving && (
+          <p className="text-center text-[11px] text-muted-foreground/70">
+            Add at least one item to commit the invoice
+          </p>
+        )}
       </CardContent>
     </Card>
   );
