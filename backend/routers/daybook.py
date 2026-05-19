@@ -187,6 +187,9 @@ async def tally_entries(req: TallyRequest, db = Depends(get_db), current_user: d
 
     refs = req.entry_ids
     
+    # Debug logging
+    print(f"DEBUG TALLY: action={req.action}, category={req.category}, date={req.date}, refs={refs}")
+    
     # CRITICAL: Date is REQUIRED to prevent accidental mass tally/untally across all dates
     if not req.date:
         raise HTTPException(status_code=400, detail="Date is required for tally operations to prevent accidental mass updates")
@@ -205,7 +208,8 @@ async def tally_entries(req: TallyRequest, db = Depends(get_db), current_user: d
     elif req.category in date_field_map:
         tally_field, pay_date_field = date_field_map[req.category]
         item_query = {"ref": {"$in": refs}, pay_date_field: req.date}
-        await db.items.update_many(item_query, {"$set": {tally_field: tally_value}})
+        result = await db.items.update_many(item_query, {"$set": {tally_field: tally_value}})
+        print(f"DEBUG TALLY RESULT: matched={result.matched_count}, modified={result.modified_count}")
 
     # Audit log the tally action
     await audit_log(db, req.action, current_user, "daybook", ",".join(req.entry_ids[:10]),  # Limit to first 10 refs
