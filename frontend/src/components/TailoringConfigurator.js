@@ -444,6 +444,7 @@ export function TailoringConfigurator({
               <><Check size={16} weight="bold"/> {saveButtonText}</>
             )}
           </Button>
+          </div>
         </CardContent>
       </Card>
 
