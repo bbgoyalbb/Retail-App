@@ -157,7 +157,7 @@ async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = D
     """Return the number of untallied payment entries across all dates.
     Uses the exact same logic as the daybook endpoint and frontend isFullyTallied.
     """
-    # Reuse the daybook logic by calling the helper without date filter
+    # Get ALL entries (no date filter)
     entries = await _build_daybook_entries(db, date_filter=None)
     
     # Apply the exact same logic as frontend isFullyTallied
@@ -185,8 +185,16 @@ async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = D
     
     # Log for debugging
     print(f"DEBUG: Total entries: {len(entries)}, Pending count: {count}")
-    if pending_entries:
-        print(f"DEBUG: First 5 pending entries: {pending_entries[:5]}")
+    print(f"DEBUG: All pending entries (date, ref, untallied_cats):")
+    for e in pending_entries:
+        untallied = []
+        ts = e["tally_status"]
+        if e["fabric"] > 0 and not ts["fabric"]: untallied.append("fabric")
+        if e["tailoring"] > 0 and not ts["tailoring"]: untallied.append("tailoring")
+        if e["embroidery"] > 0 and not ts["embroidery"]: untallied.append("embroidery")
+        if e["addon"] > 0 and not ts["addon"]: untallied.append("addon")
+        if e["advance"] != 0 and not ts["advance"]: untallied.append("advance")
+        print(f"  {e['date']} | {e['ref']} | {untallied}")
     
     return {"count": count}
 
