@@ -187,8 +187,9 @@ async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = D
         for item in cat_result:
             key = (item["date"], item["ref"], item.get("name", ""))
             if key not in entries:
-                entries[key] = {"date": key[0], "ref": key[1], "name": key[2], "tally_status": {}}
+                entries[key] = {"date": key[0], "ref": key[1], "name": key[2], "tally_status": {}, "amounts": {}}
             entries[key]["tally_status"][item["cat"]] = item.get("tally", False)
+            entries[key]["amounts"][item["cat"]] = item.get("amount", 0)
     
     # Process advances
     for adv in results[-1]:  # Last result is advances
@@ -200,17 +201,20 @@ async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = D
             continue
         key = (adv_date, adv.get("ref", ""), adv.get("name", ""))
         if key not in entries:
-            entries[key] = {"date": key[0], "ref": key[1], "name": key[2], "tally_status": {}}
+            entries[key] = {"date": key[0], "ref": key[1], "name": key[2], "tally_status": {}, "amounts": {}}
         entries[key]["tally_status"]["advance"] = adv.get("tally", False)
+        entries[key]["amounts"]["advance"] = amount
     
     # Count entries that are not fully tallied (matching frontend isFullyTallied logic)
+    # isFullyTallied: returns false if any category with amount > 0 is not tallied
     count = 0
     for entry in entries.values():
         ts = entry["tally_status"]
-        # Check if all active categories are tallied
+        amts = entry["amounts"]
+        # Entry is fully tallied only if all categories with amount > 0 are tallied
         fully_tallied = True
-        for cat in ts:
-            if not ts[cat]:
+        for cat in amts:
+            if amts[cat] > 0 and not ts.get(cat, False):
                 fully_tallied = False
                 break
         if not fully_tallied:
