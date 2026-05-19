@@ -149,18 +149,17 @@ async def get_daybook_dates(db = Depends(get_db), current_user: dict = Depends(g
 
 @router.get("/daybook/pending-count")
 async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
-    """Return the number of untallied payment entries for today."""
-    today = date.today().isoformat()
+    """Return the number of untallied payment entries across all dates."""
     _nc = {"$ne": True}
     facet_pipeline = [{"$match": {"cancelled": _nc}}, {"$facet": {
-        "fab":  [{"$match": {"fabric_pay_date":     today, "fabric_received":     {"$gt": 0}, "tally_fabric":     {"$ne": True}}}, {"$count": "n"}],
-        "tail": [{"$match": {"tailoring_pay_date":  today, "tailoring_received":  {"$gt": 0}, "tally_tailoring":  {"$ne": True}}}, {"$count": "n"}],
-        "emb":  [{"$match": {"embroidery_pay_date": today, "embroidery_received": {"$gt": 0}, "tally_embroidery": {"$ne": True}}}, {"$count": "n"}],
-        "ao":   [{"$match": {"addon_pay_date":      today, "addon_received":      {"$gt": 0}, "tally_addon":      {"$ne": True}}}, {"$count": "n"}],
+        "fab":  [{"$match": {"fabric_received":     {"$gt": 0}, "tally_fabric":     {"$ne": True}}}, {"$count": "n"}],
+        "tail": [{"$match": {"tailoring_received":  {"$gt": 0}, "tally_tailoring":  {"$ne": True}}}, {"$count": "n"}],
+        "emb":  [{"$match": {"embroidery_received": {"$gt": 0}, "tally_embroidery": {"$ne": True}}}, {"$count": "n"}],
+        "ao":   [{"$match": {"addon_received":      {"$gt": 0}, "tally_addon":      {"$ne": True}}}, {"$count": "n"}],
     }}]
     items_res, adv_count = await asyncio.gather(
         db.items.aggregate(facet_pipeline).to_list(1),
-        db.advances.count_documents({"date": today, "tally": {"$ne": True}}),
+        db.advances.count_documents({"tally": {"$ne": True}}),
     )
     f = items_res[0] if items_res else {}
     count = (
