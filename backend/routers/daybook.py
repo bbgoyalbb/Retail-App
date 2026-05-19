@@ -162,6 +162,7 @@ async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = D
     
     # Apply the exact same logic as frontend isFullyTallied
     count = 0
+    pending_entries = []
     for entry in entries:
         ts = entry.get("tally_status", {})
         # Check each category - if amount > 0 and not tallied, entry is pending
@@ -171,6 +172,17 @@ async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = D
            (entry.get("addon", 0) > 0 and not ts.get("addon")) or \
            (entry.get("advance", 0) != 0 and not ts.get("advance")):
             count += 1
+            pending_entries.append({
+                "date": entry.get("date"),
+                "ref": entry.get("ref"),
+                "tailoring": entry.get("tailoring"),
+                "tally_tailoring": ts.get("tailoring")
+            })
+    
+    # Debug logging
+    print(f"DEBUG PENDING COUNT: total={count}, first 5 pending entries:")
+    for e in pending_entries[:5]:
+        print(f"  date={e['date']}, ref={e['ref']}, tailoring={e['tailoring']}, tally_tailoring={e['tally_tailoring']}")
     
     return {"count": count}
 
