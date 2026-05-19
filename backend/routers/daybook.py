@@ -213,29 +213,6 @@ async def tally_entries(req: TallyRequest, db = Depends(get_db), current_user: d
 
     return {"message": f"{len(req.entry_ids)} entries {req.action}ed"}
 
-@router.post("/daybook/fix-untallied-tailoring")
-async def fix_untallied_tailoring(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
-    """Temporary endpoint to fix the 27 untallied tailoring entries from April 2026."""
-    if current_user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Only admins can run this fix")
-    
-    # Fix the specific entries identified in debug output
-    april_refs = [
-        "03/010426", "01/040426", "01/050426", "13/050426", "06/030426", "07/030426", "07/080426",
-        "07/120426", "04/020426", "10/120426", "06/150426", "07/150426", "09/030426", "11/030426",
-        "08/030426", "05/120426", "02/140426", "03/140426", "05/140426", "02/110426", "01/060426",
-        "02/060426", "03/060426", "01/140426", "01/120426", "02/120426", "08/150426"
-    ]
-    
-    result = await db.items.update_many(
-        {"ref": {"$in": april_refs}, "tailoring_received": {"$gt": 0}},
-        {"$set": {"tally_tailoring": True}}
-    )
-    
-    await audit_log(db, "fix_untallied_tailoring", current_user, "daybook", "batch_fix", {"count": result.modified_count})
-    
-    return {"message": f"Fixed {result.modified_count} untallied tailoring entries"}
-
 # ==========================================
 # LABOUR PAYMENTS
 # ==========================================
