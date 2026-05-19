@@ -41,7 +41,10 @@ async def _build_daybook_entries(db, date_filter: Optional[str] = None):
                 "name": name,
                 "fabric": 0, "tailoring": 0, "embroidery": 0, "addon": 0, "advance": 0, "total": 0,
                 "modes": {"fabric": "", "tailoring": "", "embroidery": "", "addon": "", "advance": ""},
-                "tally_status": {"fabric": False, "tailoring": False, "embroidery": False, "addon": False, "advance": False},
+                # FIX: Initialize tally_status to True so AND logic works correctly across
+                # multiple items sharing the same (ref, date). All items must be tallied
+                # for the entry to be considered tallied.
+                "tally_status": {"fabric": True, "tailoring": True, "embroidery": True, "addon": True, "advance": True},
             }
         return entries[key]
 
@@ -92,14 +95,23 @@ async def _build_daybook_entries(db, date_filter: Optional[str] = None):
             e = get_or_create(pay_date, ref, name)
             e[cat_name]  += received
             e["total"]   += received
-            e["tally_status"][cat_name] = item.get(tally_field, False)
+            # FIX: Use AND so that all items for this (ref, date) must be tallied.
+            # Previously this was a plain assignment, meaning the last item processed
+            # would overwrite all prior tally values — causing tallied entries to
+            # appear pending whenever the last item had tally_<cat> = False.
+            e["tally_status"][cat_name] = e["tally_status"][cat_name] and item.get(tally_field, False)
             mode = item.get(mode_field, "")
             if mode:
                 e["modes"][cat_name] = mode
 
+    # FIX: Apply the same 12-month restriction to advances when no date_filter is given.
+    # Previously adv_query was {} (fetch all), while items were restricted to 12 months,
+    # causing old advance records to create ghost entries in the pending tab.
     adv_query = {}
     if date_filter and date_filter != "All":
         adv_query["date"] = date_filter
+    elif twelve_months_ago:
+        adv_query["date"] = {"$gte": twelve_months_ago}
 
     advances = await db.advances.find(adv_query, {"_id": 0}).to_list(500)
     for adv in advances:
@@ -169,7 +181,7 @@ async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = D
            (entry.get("tailoring", 0) > 0 and not ts.get("tailoring")) or \
            (entry.get("embroidery", 0) > 0 and not ts.get("embroidery")) or \
            (entry.get("addon", 0) > 0 and not ts.get("addon")) or \
-           (entry.get("advance", 0) != 0 and not ts.get("advance")):
+           (entry.get("advance", 0) > 0 and not ts.get("advance")):
             count += 1
     
     return {"count": count}
@@ -216,4 +228,3 @@ async def tally_entries(req: TallyRequest, db = Depends(get_db), current_user: d
 # ==========================================
 # LABOUR PAYMENTS
 # ==========================================
-
