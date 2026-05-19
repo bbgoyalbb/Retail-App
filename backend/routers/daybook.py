@@ -149,26 +149,43 @@ async def get_daybook_dates(db = Depends(get_db), current_user: dict = Depends(g
 
 @router.get("/daybook/pending-count")
 async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
-    """Return the number of untallied payment entries across all dates."""
+    """Return the number of untallied payment entries across all dates.
+    Counts unique entries (by ref+date) that have at least one untallied category,
+    matching the frontend logic where isFullyTallied checks all categories.
+    """
     _nc = {"$ne": True}
-    facet_pipeline = [{"$match": {"cancelled": _nc}}, {"$facet": {
-        "fab":  [{"$match": {"fabric_received":     {"$gt": 0}, "tally_fabric":     {"$ne": True}}}, {"$count": "n"}],
-        "tail": [{"$match": {"tailoring_received":  {"$gt": 0}, "tally_tailoring":  {"$ne": True}}}, {"$count": "n"}],
-        "emb":  [{"$match": {"embroidery_received": {"$gt": 0}, "tally_embroidery": {"$ne": True}}}, {"$count": "n"}],
-        "ao":   [{"$match": {"addon_received":      {"$gt": 0}, "tally_addon":      {"$ne": True}}}, {"$count": "n"}],
-    }}]
+    # Count items with any untallied category (matching frontend isFullyTallied logic)
+    items_pipeline = [
+        {"$match": {"cancelled": _nc}},
+        {"$project": {
+            "ref": 1,
+            "date": {"$ifNull": ["$fabric_pay_date", "$tailoring_pay_date", "$embroidery_pay_date", "$addon_pay_date"]},
+            "fabric": {"$ifNull": ["$fabric_received", 0]},
+            "tailoring": {"$ifNull": ["$tailoring_received", 0]},
+            "embroidery": {"$ifNull": ["$embroidery_received", 0]},
+            "addon": {"$ifNull": ["$addon_received", 0]},
+            "tally_fabric": 1,
+            "tally_tailoring": 1,
+            "tally_embroidery": 1,
+            "tally_addon": 1,
+        }},
+        {"$addFields": {
+            "has_fabric": {"$and": [{"$gt": ["$fabric", 0]}, {"$ne": ["$tally_fabric", True]}]},
+            "has_tailoring": {"$and": [{"$gt": ["$tailoring", 0]}, {"$ne": ["$tally_tailoring", True]}]},
+            "has_embroidery": {"$and": [{"$gt": ["$embroidery", 0]}, {"$ne": ["$tally_embroidery", True]}]},
+            "has_addon": {"$and": [{"$gt": ["$addon", 0]}, {"$ne": ["$tally_addon", True]}]},
+            "is_pending": {"$or": ["$has_fabric", "$has_tailoring", "$has_embroidery", "$has_addon"]},
+        }},
+        {"$match": {"is_pending": True}},
+        {"$group": {"_id": {"ref": "$ref", "date": "$date"}}},
+        {"$count": "n"}
+    ]
     items_res, adv_count = await asyncio.gather(
-        db.items.aggregate(facet_pipeline).to_list(1),
+        db.items.aggregate(items_pipeline).to_list(1),
         db.advances.count_documents({"tally": {"$ne": True}}),
     )
-    f = items_res[0] if items_res else {}
-    count = (
-        (f["fab"][0]["n"]  if f.get("fab")  else 0) +
-        (f["tail"][0]["n"] if f.get("tail") else 0) +
-        (f["emb"][0]["n"]  if f.get("emb")  else 0) +
-        (f["ao"][0]["n"]   if f.get("ao")   else 0) +
-        adv_count
-    )
+    items_count = items_res[0]["n"] if items_res else 0
+    count = items_count + adv_count
     return {"count": count}
 
 @router.post("/daybook/tally")
