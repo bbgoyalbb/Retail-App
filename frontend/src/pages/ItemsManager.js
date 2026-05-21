@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import {
   getItems, getItem, getAdvances, updateItem, deleteItem, createItem,
   updateAdvance, createAdvance, deleteAdvance, invalidateItemsCache,
-  invalidateAdvancesCache, invalidateCustomersCache, getSettings, searchItems, getCustomers,
+  invalidateAdvancesCache, invalidateCustomersCache, getSettings, searchItems, getCustomers, getPublicSettings,
 } from "@/api";
 import { fmt } from "@/lib/fmt";
 import { DatePickerInput } from "@/components/DatePickerInput";
@@ -66,7 +66,7 @@ const SECTIONS = {
     label: "Embroidery", description: "Embroidery and karigar details",
     fields: [
       { key: "embroidery_status", label: "Embroidery Status", type: "select", options: ["N/A","Not Required","Required","In Progress","Finished"] },
-      { key: "karigar", label: "Karigar", type: "text" },
+      { key: "karigar", label: "Karigar", type: "select", dynamicOptions: "karigars" },
       { key: "embroidery_amount", label: "Embroidery Amount", type: "number" },
       { key: "embroidery_received", label: "Embroidery Received", type: "number" },
       { key: "embroidery_pending", label: "Embroidery Pending", type: "number", computed: true },
@@ -107,7 +107,7 @@ const SECTIONS = {
 
 const FC = "w-full h-8 px-2 text-[11px] border border-border/50 rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary bg-muted/20 transition-all outline-none text-foreground font-medium";
 
-const renderFieldInput = (field, itemId, value, onChange) => {
+const renderFieldInput = (field, itemId, value, onChange, settings) => {
   switch (field.type) {
     case "date":
       return <DatePickerInput value={value || ""} onChange={(val) => onChange(itemId, field.key, val)} placeholder={field.label} />;
@@ -117,8 +117,17 @@ const renderFieldInput = (field, itemId, value, onChange) => {
         disabled={field.computed}
         className={cn(FC, field.computed && "bg-muted text-muted-foreground cursor-not-allowed opacity-70")}/>;
     case "select":
+      const options = field.dynamicOptions && settings ? (settings[field.dynamicOptions] || []) : (field.options || []);
       return <select value={value || ""} onChange={e => onChange(itemId, field.key, e.target.value)} className={FC}>
-        {field.options.map(o => <option key={o} value={o}>{o}</option>)}
+        {field.dynamicOptions ? (
+          <>
+            <option value="">Select...</option>
+            {options.map(o => <option key={o} value={o}>{o}</option>)}
+            <option value="custom">Custom (enter manually)</option>
+          </>
+        ) : (
+          options.map(o => <option key={o} value={o}>{o}</option>)
+        )}
       </select>;
     case "checkbox":
       return <input type="checkbox" checked={!!value} onChange={e => onChange(itemId, field.key, e.target.checked)} className="w-4 h-4 rounded border-border/50 text-primary focus:ring-primary/20 accent-primary transition-all"/>;
@@ -189,6 +198,7 @@ export default function ItemsManager() {
   const [advances, setAdvances]     = useState([]);
   const [loading, setLoading]       = useState(false);
   const [message, setMessage]       = useState(null);
+  const [settings, setSettings]   = useState(null);
 
   // Filters
   const [nameFilter, setNameFilter] = useState("");
@@ -357,6 +367,10 @@ export default function ItemsManager() {
   }, [toast]);
 
   useEffect(() => { loadData(1); }, [loadData]);
+
+  useEffect(() => {
+    getPublicSettings().then(res => setSettings(res.data)).catch(() => setSettings({ karigars: [] }));
+  }, []);
 
   const grouped = useMemo(() => buildGrouped(allItems, advances), [allItems, advances]);
   const searchGrouped = useMemo(() => buildGrouped(searchResults, advances), [searchResults, advances]);
@@ -931,7 +945,7 @@ export default function ItemsManager() {
                             <tbody className="divide-y divide-border/50">
                               {Object.entries(advanceData).map(([id, adv]) => (
                                 <tr key={id} className="hover:bg-muted/20 transition-colors">
-                                  {_sf.fields.map(f => <td key={f.key} className="px-3 py-2.5">{renderFieldInput(f, id, adv[f.key], handleAdvChange)}</td>)}
+                                  {_sf.fields.map(f => <td key={f.key} className="px-3 py-2.5">{renderFieldInput(f, id, adv[f.key], handleAdvChange, settings)}</td>)}
                                   <td className="px-3 py-2.5 text-center">
                                     <Button variant="ghost" size="icon" onClick={() => markAdvDelete(id)} className="h-8 w-8 text-destructive hover:bg-destructive/10"><Trash size={14}/></Button>
                                   </td>
@@ -951,7 +965,7 @@ export default function ItemsManager() {
                             <tbody className="divide-y divide-success/20">
                               {newAdvances.map((adv, idx) => (
                                 <tr key={adv.id} className="hover:bg-success/[0.05] transition-colors">
-                                  {_sf.fields.map(f => <td key={f.key} className="px-3 py-2.5">{renderFieldInput(f, idx, adv[f.key], handleNewAdvChange)}</td>)}
+                                  {_sf.fields.map(f => <td key={f.key} className="px-3 py-2.5">{renderFieldInput(f, idx, adv[f.key], handleNewAdvChange, settings)}</td>)}
                                   <td className="px-3 py-2.5 text-center">
                                     <Button variant="ghost" size="icon" onClick={() => removeNewAdvance(idx)} className="h-8 w-8 text-destructive hover:bg-destructive/10"><X size={14}/></Button>
                                   </td>
@@ -1009,7 +1023,7 @@ export default function ItemsManager() {
                               </td>
                               {_sf.fields.map(f => (
                                 <td key={f.key} className="px-3 py-3 align-top">
-                                  {renderFieldInput(f, item.id, editData[item.id]?.[f.key], handleFieldChange)}
+                                  {renderFieldInput(f, item.id, editData[item.id]?.[f.key], handleFieldChange, settings)}
                                 </td>
                               ))}
                             </tr>
