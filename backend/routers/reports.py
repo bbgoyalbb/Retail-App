@@ -526,11 +526,12 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
   .inv-billto {{
     padding: 14px 24px;
     display: flex;
-    justify-content: space-between;
+    justify-content: space-evenly;
+    align-items: flex-start;
     background: #fcfcfc;
     border-bottom: 1px solid #eee;
   }}
-  .bt-col {{ flex: 1; }}
+  .bt-col {{ flex: 1; text-align: center; }}
   .bt-label {{ font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin-bottom: 3px; }}
   .bt-name {{ font-size: 13px; font-weight: 700; color: #111; }}
   .bt-value {{ font-size: 12px; font-weight: 600; color: #111; }}
@@ -710,7 +711,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
       <div class="bt-label">Invoice No</div>
       <div class="bt-value">{html_mod.escape(ref_id)}</div>
     </div>
-    <div class="bt-col" style="text-align:right;">
+    <div class="bt-col">
       <div class="bt-label">Date</div>
       <div class="bt-value">{order_date}</div>
     </div>
