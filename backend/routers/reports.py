@@ -512,10 +512,10 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
     align-items: flex-start;
     border-bottom: 1.5px solid #111;
   }}
-  .hdr-left {{ flex: 1; }}
-  .hdr-logo {{ height: 42px; margin-bottom: 12px; filter: grayscale(1); }}
-  .hdr-name {{ font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.02em; color: #111; margin-bottom: 2px; }}
-  .hdr-addr {{ font-size: 8.5px; color: #555; line-height: 1.5; max-width: 220px; }}
+  .hdr-left {{ display: flex; align-items: center; gap: 16px; flex: 1; }}
+  .hdr-logo {{ height: 90px; filter: grayscale(1); }}
+  .hdr-name {{ font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.02em; color: #111; margin-bottom: 2px; }}
+  .hdr-addr {{ font-size: 8.5px; color: #555; line-height: 1.5; }}
 
   .hdr-right {{ text-align: right; }}
   .hdr-label {{ font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #111; margin-bottom: 8px; }}
@@ -690,12 +690,12 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
   <div class="inv-header">
     <div class="hdr-left">
       {logo_tag}
-      <div class="hdr-name">{firm_name}</div>
-      <div class="hdr-addr">{firm_address}<br/>{firm_phones}<br/>GSTIN: {firm_gstin}</div>
+      <div>
+        <div class="hdr-name">{firm_name}</div>
+        <div class="hdr-addr">{firm_address}<br/>{firm_phones}<br/>GSTIN: {firm_gstin}</div>
+      </div>
     </div>
     <div class="hdr-right">
-      <div class="hdr-label">Tax Invoice</div>
-      <div class="hdr-ref">{html_mod.escape(ref_id)}</div>
       <div class="hdr-date">{order_date}</div>
     </div>
   </div>
@@ -704,6 +704,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
     <div>
       <div class="bt-label">Bill To</div>
       <div class="bt-name">{customer_name}</div>
+      <div style="font-size:10px; color:#555; margin-top:4px;">Invoice No: {html_mod.escape(ref_id)}</div>
     </div>
   </div>
 
