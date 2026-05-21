@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
-import { getRevenueReport, getCustomerReport, getSummaryReport, exportExcelUrl } from "@/api";
+import { getRevenueReport, getCustomerReport, getSummaryReport, exportExcelUrl, invalidateReportsCache } from "@/api";
 import { fmt } from "@/lib/fmt";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { ChartBar, Users, TrendUp, Warning, DownloadSimple, Printer, CaretDown, Calendar, ArrowsClockwise, CurrencyDollar, Package } from "@phosphor-icons/react";
@@ -233,7 +233,7 @@ export default function Reports() {
             )}
 
             <div className="flex-1" />
-            <Button variant="ghost" size="icon" onClick={() => { lastParams.current = ""; setRefreshKey(k => k + 1); }} disabled={loading} className="rounded-full">
+            <Button variant="ghost" size="icon" onClick={() => { lastParams.current = ""; setRefreshKey(k => k + 1); invalidateReportsCache(); }} disabled={loading} className="rounded-full">
               <ArrowsClockwise size={18} className={loading ? "animate-spin text-primary" : ""} />
             </Button>
           </div>

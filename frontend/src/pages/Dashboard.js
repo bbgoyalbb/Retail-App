@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDashboard } from "@/api";
+import { getDashboard, invalidateDashboardCache } from "@/api";
 import { fmt } from "@/lib/fmt";
 import { dataEvents } from "@/lib/dataEvents";
 import { 
@@ -154,7 +154,7 @@ export default function Dashboard() {
           <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Dashboard</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Strategic business intelligence overview</p>
         </div>
-        <Button variant="outline" size="icon" onClick={() => fetchData(true)} disabled={refreshing} className="rounded-full shadow-sm">
+        <Button variant="outline" size="icon" onClick={() => { invalidateDashboardCache(); fetchData(true); }} disabled={refreshing} className="rounded-full shadow-sm">
           <ArrowsClockwise size={20} className={refreshing ? "animate-spin text-primary" : ""} />
         </Button>
       </div>
