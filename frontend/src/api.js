@@ -101,7 +101,7 @@ export const getItems = (params) => {
     return res;
   });
 };
-export const invalidateItemsCache = () => { _itemsCache = null; };
+export const invalidateItemsCache = () => { _itemsCache = null; _itemsCacheKey = ""; _itemsCacheTime = 0; };
 export const getItem = (id) => api.get(`/items/${id}`);
 export const getRefs = (name) => api.get("/refs", { params: { name } });
 export const getOrders = () => api.get("/orders");
@@ -226,7 +226,7 @@ export const getAdvances = (params) => {
   }
   return api.get("/advances", { params: normalized });
 };
-export const invalidateAdvancesCache = () => { _advancesCache = null; };
+export const invalidateAdvancesCache = () => { _advancesCache = null; _advancesCacheTime = 0; };
 export const createAdvance = (data) => api.post("/advances", data);
 export const updateAdvance = (id, data) => api.put(`/advances/${id}`, data);
 export const deleteAdvance = (id) => api.delete(`/advances/${id}`);
