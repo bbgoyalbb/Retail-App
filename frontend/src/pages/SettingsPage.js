@@ -4,7 +4,7 @@ import { getSettings, updateSettings, uploadLogo, invalidatePublicSettingsCache,
 import { 
   FloppyDisk, Plus, Trash, CheckCircle, Warning, Keyboard, 
   Storefront, CreditCard, Tag, FileText, Image, Palette, 
-  ArrowRight, ArrowsClockwise, Info, X, CaretDown
+  ArrowRight, ArrowsClockwise, Info, X, CaretDown, User
 } from "@phosphor-icons/react";
 import { DEFAULT_NUM_SHORTCUTS, DEFAULT_LETTER_SHORTCUTS, loadLetterShortcuts } from "@/components/KeyboardShortcuts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,7 @@ export default function SettingsPage() {
   const [newArticle, setNewArticle] = useState("");
   const [newMode, setNewMode] = useState("");
   const [newAddon, setNewAddon] = useState("");
+  const [newKarigar, setNewKarigar] = useState("");
   const [logoPreview, setLogoPreview] = useState(null);
 
   // Keyboard shortcuts (stored in localStorage only, not backend)
@@ -159,6 +160,9 @@ export default function SettingsPage() {
 
   const addAddonItem = () => { if (!newAddon.trim()) return; if ((prev => (prev.addon_items || []).map(a => a.toLowerCase()).includes(newAddon.trim().toLowerCase()))(settings)) return; setSettings(prev => ({ ...prev, addon_items: [...(prev.addon_items || []), newAddon.trim()] })); setNewAddon(""); };
   const removeAddon = (a) => setSettings(prev => ({ ...prev, addon_items: prev.addon_items.filter(x => x !== a) }));
+
+  const addKarigar = () => { if (!newKarigar.trim()) return; if ((prev => (prev.karigars || []).map(k => k.toLowerCase()).includes(newKarigar.trim().toLowerCase()))(settings)) return; setSettings(prev => ({ ...prev, karigars: [...(prev.karigars || []), newKarigar.trim()] })); setNewKarigar(""); };
+  const removeKarigar = (k) => setSettings(prev => ({ ...prev, karigars: prev.karigars.filter(x => x !== k) }));
 
   if (!settings) {
     if (loadError) {
@@ -397,6 +401,52 @@ export default function SettingsPage() {
                 />
                 <Button onClick={addAddonItem} variant="secondary" className="h-10 px-4 font-black uppercase tracking-widest text-[10px] shadow-sm">
                   <Plus size={14} weight="bold" /> Add Item
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Karigars */}
+          <Card className="bg-card border-none shadow-xl shadow-black/5 overflow-hidden">
+            <CardHeader className="pb-4 pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-info/10 text-info">
+                  <User size={22} weight="duotone" />
+                </div>
+                <div className="flex flex-col">
+                  <CardTitle className="text-lg font-black uppercase tracking-tight">Karigar Directory</CardTitle>
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Embroidery Workforce Registry</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="flex flex-wrap gap-2">
+                {settings.karigars?.map(k => (
+                  <Badge 
+                    key={k} 
+                    variant="secondary" 
+                    className="group px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl bg-muted/50 text-foreground border border-border/50 hover:border-primary/30 transition-all"
+                  >
+                    {k}
+                    <button 
+                      onClick={() => removeKarigar(k)} 
+                      className="ml-2 p-0.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors"
+                    >
+                      <X size={10} weight="bold" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex gap-3">
+                <input 
+                  value={newKarigar} 
+                  onChange={e => setNewKarigar(e.target.value)} 
+                  placeholder="New karigar name" 
+                  onKeyDown={e => e.key === "Enter" && addKarigar()} 
+                  className="flex-1 h-10 px-4 text-xs font-bold border border-border/50 rounded-xl bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
+                />
+                <Button onClick={addKarigar} variant="secondary" className="h-10 px-4 font-black uppercase tracking-widest text-[10px] shadow-sm">
+                  <Plus size={14} weight="bold" /> Add Karigar
                 </Button>
               </div>
             </CardContent>

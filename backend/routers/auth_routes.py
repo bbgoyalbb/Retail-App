@@ -91,7 +91,7 @@ async def update_settings(data: dict, db = Depends(get_db), current_user: dict =
         if color and not re.fullmatch(r'#[0-9a-fA-F]{3,6}', color):
             raise HTTPException(status_code=400, detail="Invalid color format. Use hex like #C86B4D or #fff")
     # Deduplicate list fields before saving
-    for list_key in ("payment_modes", "addon_items", "article_types"):
+    for list_key in ("payment_modes", "addon_items", "article_types", "karigars"):
         if isinstance(data.get(list_key), list):
             seen = set()
             data[list_key] = [x for x in data[list_key] if not (x.lower() in seen or seen.add(x.lower()))]
