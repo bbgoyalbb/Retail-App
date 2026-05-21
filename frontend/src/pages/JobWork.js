@@ -75,6 +75,10 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
 
   const toggleSelect = (id) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
+  const selectAll = () => setSelected(items.map(i => i.id));
+
+  const clearSelection = () => setSelected([]);
+
   const handleMove = () => {
     if (selected.length === 0) return;
     onMove(selected);
@@ -111,7 +115,19 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
               <span className="text-[9px] font-black text-muted-foreground uppercase opacity-60 tracking-widest">{items.length} Workloads</span>
             </div>
           </div>
-          <Badge variant="outline" className="font-mono text-[10px] font-black">{sortKey === "order_no" ? "ORD" : sortKey === "date" ? "DATE" : "DEL"}</Badge>
+          <div className="flex items-center gap-2">
+            {selected.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearSelection} className="h-7 text-[9px] font-black uppercase tracking-widest text-destructive hover:bg-destructive/10">
+                Clear ({selected.length})
+              </Button>
+            )}
+            {items.length > 0 && selected.length !== items.length && (
+              <Button variant="ghost" size="sm" onClick={selectAll} className="h-7 text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/10">
+                Select All
+              </Button>
+            )}
+            <Badge variant="outline" className="font-mono text-[10px] font-black">{sortKey === "order_no" ? "ORD" : sortKey === "date" ? "DATE" : "DEL"}</Badge>
+          </div>
         </div>
         <div className="flex gap-1.5">
           {["order_no", "date", "delivery_date"].map(k => (
