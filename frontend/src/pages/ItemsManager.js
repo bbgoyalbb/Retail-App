@@ -493,6 +493,7 @@ export default function ItemsManager() {
 
   const saveEdits = async () => {
     setSaving(true);
+    const affectedRefs = new Set(editItems.map(i => i.ref).filter(Boolean));
     // Advances
     if (selectedSection === "advances") {
       let ok=0, fail=0;
@@ -508,7 +509,17 @@ export default function ItemsManager() {
       setSaving(false); setSelectedSection(null);
       setAdvanceData({}); setOrigAdvData({}); setNewAdvances([]); setDeletedAdvances([]); setEditItems([]);
       toast({ title: fail===0?"Success":"Partial Success", description: fail===0?`Advances saved`:`${fail} operations failed`, variant: fail===0?"default":"destructive" });
-      invalidateItemsCache(); invalidateAdvancesCache(); loadData(1);
+      invalidateItemsCache(); invalidateAdvancesCache();
+      // Refresh advances for affected refs to update OrderDetailPane instantly
+      if (affectedRefs.size > 0) {
+        const advRes = await getAdvances({ refs: Array.from(affectedRefs) });
+        setAdvances(prev => {
+          const existingMap = new Map(prev.map(a => [a.id, a]));
+          (advRes.data || []).forEach(a => existingMap.set(a.id, a));
+          return Array.from(existingMap.values());
+        });
+      }
+      loadData(1);
       return;
     }
     // Items
@@ -530,7 +541,18 @@ export default function ItemsManager() {
       else if (reRef) { setReSettlePrompt({ ref:reRef,customer:reCust,sections:reSecs }); toast({ title:"Success", description:`${ok} items saved` }); }
       else { toast({ title:"Success", description:`${ok} items saved` }); }
     } else { toast({ title:"Partial Success", description:`${fail} failed, ${ok} saved`, variant: "destructive" }); }
-    invalidateItemsCache(); loadData(1);
+    invalidateItemsCache();
+    // Refresh items for affected refs to update OrderDetailPane instantly
+    if (affectedRefs.size > 0) {
+      const itemsRes = await getItems({ refs: Array.from(affectedRefs) });
+      const freshItems = itemsRes.data.items || [];
+      setAllItems(prev => {
+        const existingMap = new Map(prev.map(i => [i.id, i]));
+        freshItems.forEach(i => existingMap.set(i.id, i));
+        return Array.from(existingMap.values());
+      });
+    }
+    loadData(1);
   };
 
   const cancelEdit = () => {
