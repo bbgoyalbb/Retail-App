@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { getLabourItems, getKarigars, payLabour, deleteLabourPayment, getSettings } from "@/api";
+import { getLabourItems, payLabour, deleteLabourPayment, getSettings } from "@/api";
 import { dataEvents } from "@/lib/dataEvents";
 import { fmt } from "@/lib/fmt";
 import { 
@@ -43,15 +43,13 @@ export default function LabourPayments() {
   }, [filterType, filterKarigar, viewMode, toast]);
 
   useEffect(() => {
-    getKarigars().then(res => setKarigars(Array.isArray(res.data) ? res.data : [])).catch((err) => {
-      toast({ title: "Error", description: err.message || "Failed to load karigars", variant: "destructive" });
-      setKarigars([]);
-    });
     getSettings().then(res => {
       const s = res.data || {};
+      if (Array.isArray(s.karigars) && s.karigars.length > 0) setKarigars(s.karigars);
       if (Array.isArray(s.payment_modes) && s.payment_modes.length > 0) setPaymentModes(s.payment_modes);
     }).catch((err) => {
-      toast({ title: "Error", description: err.message || "Failed to load payment modes", variant: "destructive" });
+      toast({ title: "Error", description: err.message || "Failed to load settings", variant: "destructive" });
+      setKarigars([]);
     });
   }, [toast]);
 

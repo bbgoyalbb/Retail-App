@@ -123,7 +123,6 @@ const renderFieldInput = (field, itemId, value, onChange, settings) => {
           <>
             <option value="">Select...</option>
             {options.map(o => <option key={o} value={o}>{o}</option>)}
-            <option value="custom">Custom (enter manually)</option>
           </>
         ) : (
           options.map(o => <option key={o} value={o}>{o}</option>)

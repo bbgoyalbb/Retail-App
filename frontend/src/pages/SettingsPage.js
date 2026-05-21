@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSettings, updateSettings, uploadLogo, invalidatePublicSettingsCache, invalidateSettingsCache, BACKEND_URL } from "@/api";
+import { getSettings, updateSettings, uploadLogo, invalidatePublicSettingsCache, invalidateSettingsCache, invalidateKarigarsCache, BACKEND_URL } from "@/api";
 import { 
   FloppyDisk, Plus, Trash, CheckCircle, Warning, Keyboard, 
   Storefront, CreditCard, Tag, FileText, Image, Palette, 
@@ -161,8 +161,8 @@ export default function SettingsPage() {
   const addAddonItem = () => { if (!newAddon.trim()) return; if ((prev => (prev.addon_items || []).map(a => a.toLowerCase()).includes(newAddon.trim().toLowerCase()))(settings)) return; setSettings(prev => ({ ...prev, addon_items: [...(prev.addon_items || []), newAddon.trim()] })); setNewAddon(""); };
   const removeAddon = (a) => setSettings(prev => ({ ...prev, addon_items: prev.addon_items.filter(x => x !== a) }));
 
-  const addKarigar = () => { if (!newKarigar.trim()) return; if ((prev => (prev.karigars || []).map(k => k.toLowerCase()).includes(newKarigar.trim().toLowerCase()))(settings)) return; setSettings(prev => ({ ...prev, karigars: [...(prev.karigars || []), newKarigar.trim()] })); setNewKarigar(""); };
-  const removeKarigar = (k) => setSettings(prev => ({ ...prev, karigars: prev.karigars.filter(x => x !== k) }));
+  const addKarigar = () => { if (!newKarigar.trim()) return; if ((prev => (prev.karigars || []).map(k => k.toLowerCase()).includes(newKarigar.trim().toLowerCase()))(settings)) return; setSettings(prev => ({ ...prev, karigars: [...(prev.karigars || []), newKarigar.trim()] })); setNewKarigar(""); invalidateKarigarsCache(); };
+  const removeKarigar = (k) => { setSettings(prev => ({ ...prev, karigars: prev.karigars.filter(x => x !== k) })); invalidateKarigarsCache(); };
 
   if (!settings) {
     if (loadError) {

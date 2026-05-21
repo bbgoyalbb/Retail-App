@@ -85,8 +85,17 @@ async def get_labour_items(db = Depends(get_db), filter_type: str = "All", filte
 
 @router.get("/labour/karigars")
 async def get_karigars(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
-    karigars = await db.items.distinct("karigar", {"karigar": {"$nin": ["N/A", "", None]}})
-    return sorted(karigars)
+    # Get karigars from settings first, then merge with distinct karigars from items for completeness
+    settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0, "karigars": 1})
+    settings_karigars = settings.get("karigars", []) if settings else []
+    
+    # Also get distinct karigars from items for backward compatibility and to catch any karigars not in settings
+    items_karigars = await db.items.distinct("karigar", {"karigar": {"$nin": ["N/A", "", None]}})
+    
+    # Merge and deduplicate, prioritizing settings order
+    all_karigars = list(dict.fromkeys(settings_karigars + [k for k in items_karigars if k not in settings_karigars]))
+    
+    return all_karigars
 
 @router.post("/labour/pay")
 async def pay_labour(req: LabourPaymentRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
