@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { getJobwork, moveJobwork, moveJobworkBack, moveJobworkEmb, editJobworkEmb, getJobworkFilters } from "@/api";
+import { getJobwork, moveJobwork, moveJobworkBack, moveJobworkEmb, editJobworkEmb, getJobworkFilters, getSettings } from "@/api";
 import { 
   ArrowRight, ArrowLeft, Funnel, X, PencilSimple, 
   CheckSquare, ArrowsClockwise, Scissors, ChartBar, 
@@ -13,9 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmt } from "@/lib/fmt";
 
-function MoveDialog({ title, onConfirm, onCancel, fields }) {
+function MoveDialog({ title, onConfirm, onCancel, fields, karigars }) {
   const [values, setValues] = useState({});
   const [skips, setSkips] = useState({});
+  const [customKarigar, setCustomKarigar] = useState(false);
 
   useEffect(() => {
     const handler = (e) => { if (e.key === "Escape") onCancel(); };
@@ -45,17 +46,37 @@ function MoveDialog({ title, onConfirm, onCancel, fields }) {
                     </label>
                   )}
                 </div>
-                <Input
-                  data-testid={`dialog-${f.key}`}
-                  type={f.type || "text"}
-                  value={values[f.key] || ""}
-                  onChange={e => setValues(p => ({ ...p, [f.key]: e.target.value }))}
-                  disabled={skips[f.key]}
-                  placeholder={f.placeholder}
-                  className="h-12 text-base font-bold focus:border-primary border-2"
-                  autoFocus={fields.indexOf(f) === 0}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); onConfirm(values, skips); } }}
-                />
+                {f.key === "karigar" && karigars && karigars.length > 0 && !customKarigar ? (
+                  <select
+                    data-testid={`dialog-${f.key}`}
+                    value={values[f.key] || ""}
+                    onChange={e => { setValues(p => ({ ...p, [f.key]: e.target.value })); if (e.target.value === "custom") setCustomKarigar(true); }}
+                    disabled={skips[f.key]}
+                    className="w-full h-12 px-4 text-base font-bold bg-background focus:border-primary border-2 rounded-xl outline-none cursor-pointer"
+                    autoFocus={fields.indexOf(f) === 0}
+                  >
+                    <option value="">Select karigar...</option>
+                    {karigars.map(k => <option key={k} value={k}>{k}</option>)}
+                    <option value="custom">Custom (enter manually)</option>
+                  </select>
+                ) : (
+                  <Input
+                    data-testid={`dialog-${f.key}`}
+                    type={f.type || "text"}
+                    value={f.key === "karigar" && customKarigar ? values[f.key] || "" : values[f.key] || ""}
+                    onChange={e => setValues(p => ({ ...p, [f.key]: e.target.value }))}
+                    disabled={skips[f.key]}
+                    placeholder={f.key === "karigar" && customKarigar ? "Enter custom karigar name" : f.placeholder}
+                    className="h-12 text-base font-bold focus:border-primary border-2"
+                    autoFocus={fields.indexOf(f) === 0}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); onConfirm(values, skips); } }}
+                  />
+                )}
+                {f.key === "karigar" && customKarigar && (
+                  <Button variant="ghost" size="sm" onClick={() => { setCustomKarigar(false); setValues(p => ({ ...p, karigar: "" })); }} className="text-[10px] font-black uppercase tracking-widest text-primary">
+                    Use dropdown instead
+                  </Button>
+                )}
               </div>
             ))}
           </div>
@@ -267,6 +288,7 @@ export default function JobWork() {
   const [sortKey, setSortKey] = useState("order_no");
   const [sortDir, setSortDir] = useState("asc");
   const [dialog, setDialog] = useState(null);
+  const [settings, setSettings] = useState(null);
 
   const loadData = useCallback(() => {
     const params = { tab };
@@ -287,6 +309,9 @@ export default function JobWork() {
       });
   }, [toast]);
   useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    getSettings().then(res => setSettings(res.data)).catch(() => setSettings({ karigars: [] }));
+  }, []);
 
   const sortItems = (items) => {
     if (!items) return [];
@@ -529,7 +554,7 @@ export default function JobWork() {
         </CardContent>
       </Card>
 
-      {dialog && <MoveDialog title={dialog.title} fields={dialog.fields} onConfirm={dialog.onConfirm} onCancel={closeDialog} />}
+      {dialog && <MoveDialog title={dialog.title} fields={dialog.fields} onConfirm={dialog.onConfirm} onCancel={closeDialog} karigars={settings?.karigars || []} />}
 
       {tab === "tailoring" ? (
         <div className="space-y-6">
