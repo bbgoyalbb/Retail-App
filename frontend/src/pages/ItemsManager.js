@@ -512,7 +512,7 @@ export default function ItemsManager() {
       invalidateItemsCache(); invalidateAdvancesCache();
       // Refresh advances for affected refs to update OrderDetailPane instantly
       if (affectedRefs.size > 0) {
-        const advRes = await getAdvances({ refs: Array.from(affectedRefs) });
+        const advRes = await getAdvances({ refs: Array.from(affectedRefs).join(",") });
         setAdvances(prev => {
           const existingMap = new Map(prev.map(a => [a.id, a]));
           (advRes.data || []).forEach(a => existingMap.set(a.id, a));
@@ -544,7 +544,8 @@ export default function ItemsManager() {
     invalidateItemsCache();
     // Refresh items for affected refs to update OrderDetailPane instantly
     if (affectedRefs.size > 0) {
-      const itemsRes = await getItems({ refs: Array.from(affectedRefs) });
+      const refArray = Array.from(affectedRefs);
+      const itemsRes = await getItems({ ref: refArray[0] });
       const freshItems = itemsRes.data.items || [];
       setAllItems(prev => {
         const existingMap = new Map(prev.map(i => [i.id, i]));
