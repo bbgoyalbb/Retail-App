@@ -413,20 +413,6 @@ export default function ItemsManager() {
     setSelectedRefs(prev => {
       if (multi) {
         const next = new Set(prev);
-        const group = grouped[ref] || searchGrouped[ref];
-
-        // Check if selecting from different customer (case-insensitive, trimmed)
-        if (!next.has(ref) && group) {
-          const existingCustomers = new Set(
-            Array.from(next).map(r => (grouped[r] || searchGrouped[r])?.name?.trim()?.toLowerCase()).filter(Boolean)
-          );
-          const currentCustomer = group.name?.trim()?.toLowerCase();
-          if (existingCustomers.size > 0 && !existingCustomers.has(currentCustomer)) {
-            alert("Cannot select orders from different customers. Please clear selection first.");
-            return prev;
-          }
-        }
-
         next.has(ref) ? next.delete(ref) : next.add(ref);
         return next;
       }

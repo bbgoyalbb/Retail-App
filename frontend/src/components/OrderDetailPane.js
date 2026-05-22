@@ -448,18 +448,13 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
   // Get all items from selected groups
   const allItems = selectedGroups.flatMap(g => g.items);
 
+  // Check if all selected orders belong to the same customer
+  const isSameCustomer = selectedGroups.length > 0 && new Set(selectedGroups.map(g => g.name?.trim()?.toLowerCase()).filter(Boolean)).size <= 1;
+
   const handleCreateGroup = () => {
     // Since we don't have item selection in OrderDetailPane, show all items for grouping
     if (allItems.length === 0) {
       alert("No articles available to group");
-      return;
-    }
-
-    // Validate all items belong to same customer before opening dialog
-    const customers = new Set(allItems.map(i => i.name?.trim()?.toLowerCase()).filter(Boolean));
-    if (customers.size > 1) {
-      const actualNames = [...new Set(allItems.map(i => i.name))];
-      alert(`Cannot group items from different customers: ${actualNames.join(", ")}`);
       return;
     }
 
@@ -560,15 +555,17 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
               </button>
             ))}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-[10px] font-bold uppercase tracking-wider gap-1.5"
-            onClick={handleCreateGroup}
-          >
-            <Users size={12} weight="bold" />
-            Group Articles
-          </Button>
+          {isSameCustomer && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-[10px] font-bold uppercase tracking-wider gap-1.5"
+              onClick={handleCreateGroup}
+            >
+              <Users size={12} weight="bold" />
+              Group Articles
+            </Button>
+          )}
         </div>
       </div>
 
