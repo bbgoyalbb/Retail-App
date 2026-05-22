@@ -26,6 +26,33 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 # ==========================================
+# LOGGING
+# ==========================================
+log_file = ROOT_DIR / "server.log"
+error_log_file = ROOT_DIR / "errors.log"
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"),
+    ],
+)
+logger = logging.getLogger(__name__)
+
+# Separate error logger for stack traces
+error_logger = logging.getLogger("error_logger")
+error_logger.setLevel(logging.ERROR)
+error_handler = RotatingFileHandler(error_log_file, maxBytes=50 * 1024 * 1024, backupCount=10, encoding="utf-8")
+error_handler.setFormatter(logging.Formatter(
+    "%(asctime)s - %(levelname)s\n%(message)s\n{'='*80}\n"
+))
+error_logger.addHandler(error_handler)
+
+# Suppress WinError 10054 noise (browser forcibly closes SSL on Windows)
+logging.getLogger("asyncio").setLevel(logging.CRITICAL)
+
+# ==========================================
 # DATABASE
 # ==========================================
 mongo_url = os.environ.get("MONGO_URL")
@@ -145,33 +172,6 @@ app.state.db = db
 
 # Max upload size: 50 MB
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024
-
-# ==========================================
-# LOGGING
-# ==========================================
-log_file = ROOT_DIR / "server.log"
-error_log_file = ROOT_DIR / "errors.log"
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"),
-    ],
-)
-logger = logging.getLogger(__name__)
-
-# Separate error logger for stack traces
-error_logger = logging.getLogger("error_logger")
-error_logger.setLevel(logging.ERROR)
-error_handler = RotatingFileHandler(error_log_file, maxBytes=50 * 1024 * 1024, backupCount=10, encoding="utf-8")
-error_handler.setFormatter(logging.Formatter(
-    "%(asctime)s - %(levelname)s\n%(message)s\n{'='*80}\n"
-))
-error_logger.addHandler(error_handler)
-
-# Suppress WinError 10054 noise (browser forcibly closes SSL on Windows)
-logging.getLogger("asyncio").setLevel(logging.CRITICAL)
 
 # ==========================================
 # ROUTERS
