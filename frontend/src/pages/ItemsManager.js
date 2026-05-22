@@ -238,6 +238,7 @@ export default function ItemsManager() {
   // Overlays
   const [settlementOrders, setSettlementOrders] = useState(null);
   const [invoiceRef, setInvoiceRef]             = useState(null);
+  const [invoiceRefs, setInvoiceRefs]           = useState(null);
   const [invoiceFormat, setInvoiceFormat]       = useState("standard");
   const [showFormatDialog, setShowFormatDialog] = useState(null);
   const [tailoringGroup, setTailoringGroup]     = useState(null);
@@ -412,6 +413,19 @@ export default function ItemsManager() {
     setSelectedRefs(prev => {
       if (multi) {
         const next = new Set(prev);
+        const group = grouped[ref] || searchGrouped[ref];
+
+        // Check if selecting from different customer
+        if (!next.has(ref) && group) {
+          const existingCustomers = new Set(
+            Array.from(next).map(r => (grouped[r] || searchGrouped[r])?.name).filter(Boolean)
+          );
+          if (existingCustomers.size > 0 && !existingCustomers.has(group.name)) {
+            alert("Cannot select orders from different customers. Please clear selection first.");
+            return prev;
+          }
+        }
+
         next.has(ref) ? next.delete(ref) : next.add(ref);
         return next;
       }
@@ -677,14 +691,27 @@ export default function ItemsManager() {
             <div className="flex-1"/>
             
             {selectedRefs.size > 0 && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setSelectedRefs(new Set())}
-                className="h-7 text-[10px] font-bold text-primary hover:bg-primary/5 px-2"
-              >
-                {selectedRefs.size} selected · clear
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowFormatDialog(Array.from(selectedRefs));
+                  }}
+                  className="h-7 text-[10px] font-bold uppercase tracking-wider gap-1.5"
+                >
+                  <Printer size={12} weight="bold" />
+                  Combined Invoice
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedRefs(new Set())}
+                  className="h-7 text-[10px] font-bold text-primary hover:bg-primary/5 px-2"
+                >
+                  {selectedRefs.size} selected · clear
+                </Button>
+              </div>
             )}
             
             <div className="flex items-center gap-1">
@@ -1193,7 +1220,7 @@ export default function ItemsManager() {
       )}
 
       {/* ════ INVOICE ════ */}
-      {invoiceRef && <InvoiceModal billRef={invoiceRef} format={invoiceFormat} onClose={() => { setInvoiceRef(null); setInvoiceFormat("standard"); }}/>}
+      {invoiceRef && <InvoiceModal billRef={invoiceRef} format={invoiceFormat} billRefs={invoiceRefs} onClose={() => { setInvoiceRef(null); setInvoiceRefs(null); setInvoiceFormat("standard"); }}/>}
 
       {/* ════ FORMAT DIALOG ════ */}
       {showFormatDialog && (
@@ -1202,7 +1229,15 @@ export default function ItemsManager() {
           onClose={() => setShowFormatDialog(null)}
           onSelect={(format) => {
             setInvoiceFormat(format);
-            setInvoiceRef(showFormatDialog);
+            if (Array.isArray(showFormatDialog)) {
+              // Combined invoice - multiple refs
+              setInvoiceRefs(showFormatDialog);
+              setInvoiceRef(showFormatDialog[0]); // Use first ref as primary
+            } else {
+              // Single invoice
+              setInvoiceRefs(null);
+              setInvoiceRef(showFormatDialog);
+            }
             setShowFormatDialog(null);
           }}
         />

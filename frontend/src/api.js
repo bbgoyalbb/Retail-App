@@ -244,7 +244,14 @@ export const searchItems = (params) => api.get("/search", { params });
 const _authToken = () => { try { return sessionStorage.getItem("token") || ""; } catch { return ""; } };
 
 // Invoice (HTML only) — include token so iframe/direct links authenticate
-export const getInvoiceUrl = (ref, format = "standard") => { const t = _authToken(); return `${BACKEND_URL}/api/invoice?ref=${encodeURIComponent(ref)}&format=${encodeURIComponent(format)}${t ? `&token=${encodeURIComponent(t)}` : ''}`; };
+export const getInvoiceUrl = (ref, format = "standard", refs = null) => {
+  const t = _authToken();
+  if (refs && refs.length > 0) {
+    const refsParam = refs.map(r => encodeURIComponent(r)).join("&refs=");
+    return `${BACKEND_URL}/api/invoice?refs=${refsParam}&format=${encodeURIComponent(format)}${t ? `&token=${encodeURIComponent(t)}` : ''}`;
+  }
+  return `${BACKEND_URL}/api/invoice?ref=${encodeURIComponent(ref)}&format=${encodeURIComponent(format)}${t ? `&token=${encodeURIComponent(t)}` : ''}`;
+};
 
 // Reports — 30 s in-process cache per param set
 const _reportsCache = new Map();

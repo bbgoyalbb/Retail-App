@@ -33,6 +33,11 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
     }
   };
 
+  // Get item object by barcode
+  const getItemByBarcode = (barcode) => {
+    return allItems.find(i => i.barcode === barcode);
+  };
+
   const handleSave = async () => {
     if (!groupName.trim()) {
       alert("Group name is required");
@@ -116,7 +121,7 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
                   <div className="flex-1">
                     <div className="font-medium">{item.barcode}</div>
                     <div className="text-xs text-muted-foreground">
-                      {item.article_type || "—"} • {item.ref}
+                      {item.article_type || "—"} • <span className="font-mono">{item.ref}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
