@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Printer, FileText, ListDashes, X } from "@phosphor-icons/react";
+import { Printer, FileText, ListDashes, X, Rows } from "@phosphor-icons/react";
 import { useEffect } from "react";
 
 export default function InvoiceFormatDialog({ open, onClose, onSelect }) {
@@ -44,9 +44,22 @@ export default function InvoiceFormatDialog({ open, onClose, onSelect }) {
           >
             <FileText size={32} />
             <div className="text-left">
-              <div className="font-semibold">Article-wise Format</div>
+              <div className="font-semibold">Article-wise (Detailed)</div>
               <div className="text-xs text-muted-foreground">
-                Per-article breakdown with totals
+                Per-article breakdown with section totals
+              </div>
+            </div>
+          </Button>
+          <Button
+            onClick={() => onSelect("article-summary")}
+            className="w-full h-auto py-4 flex-col gap-2"
+            variant="outline"
+          >
+            <Rows size={32} />
+            <div className="text-left">
+              <div className="font-semibold">Article-wise (Summary)</div>
+              <div className="text-xs text-muted-foreground">
+                Just barcode, article type, and total
               </div>
             </div>
           </Button>
