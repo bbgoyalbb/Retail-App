@@ -26,11 +26,11 @@ export default function InvoiceFormatDialog({ open, onClose, onSelect }) {
         <CardContent className="space-y-3">
           <Button
             onClick={() => onSelect("standard")}
-            className="w-full h-auto py-4 flex-col gap-2"
+            className="w-full h-auto py-4 px-4 flex-row gap-3 items-start"
             variant="outline"
           >
-            <ListDashes size={32} />
-            <div className="text-left">
+            <ListDashes size={32} className="flex-shrink-0 mt-1" />
+            <div className="text-left flex-1">
               <div className="font-semibold">Section-wise Format</div>
               <div className="text-xs text-muted-foreground">
                 Fabric, Tailoring, Embroidery, Add-on sections
@@ -39,11 +39,11 @@ export default function InvoiceFormatDialog({ open, onClose, onSelect }) {
           </Button>
           <Button
             onClick={() => onSelect("article-wise")}
-            className="w-full h-auto py-4 flex-col gap-2"
+            className="w-full h-auto py-4 px-4 flex-row gap-3 items-start"
             variant="outline"
           >
-            <FileText size={32} />
-            <div className="text-left">
+            <FileText size={32} className="flex-shrink-0 mt-1" />
+            <div className="text-left flex-1">
               <div className="font-semibold">Article-wise (Detailed)</div>
               <div className="text-xs text-muted-foreground">
                 Per-article breakdown with section totals
@@ -52,11 +52,11 @@ export default function InvoiceFormatDialog({ open, onClose, onSelect }) {
           </Button>
           <Button
             onClick={() => onSelect("article-summary")}
-            className="w-full h-auto py-4 flex-col gap-2"
+            className="w-full h-auto py-4 px-4 flex-row gap-3 items-start"
             variant="outline"
           >
-            <Rows size={32} />
-            <div className="text-left">
+            <Rows size={32} className="flex-shrink-0 mt-1" />
+            <div className="text-left flex-1">
               <div className="font-semibold">Article-wise (Summary)</div>
               <div className="text-xs text-muted-foreground">
                 Just barcode, article type, and total
