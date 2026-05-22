@@ -449,12 +449,12 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
   const allItems = selectedGroups.flatMap(g => g.items);
 
   const handleCreateGroup = () => {
-    const selectedItems = allItems.filter(item => item.selected);
-    if (selectedItems.length === 0) {
-      alert("Please select at least one article to group");
+    // Since we don't have item selection in OrderDetailPane, show all items for grouping
+    if (allItems.length === 0) {
+      alert("No articles available to group");
       return;
     }
-    setSelectedItemIds(selectedItems.map(i => i.barcode));
+    setSelectedItemIds(allItems.map(i => i.barcode));
     setGroupDialogMode("create");
     setEditingGroupId(null);
     setShowGroupDialog(true);
@@ -558,7 +558,7 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
             onClick={handleCreateGroup}
           >
             <Users size={12} weight="bold" />
-            Group Selected
+            Group Articles
           </Button>
         </div>
       </div>
