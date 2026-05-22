@@ -263,11 +263,25 @@ async def create_group(
     if not group_name or not group_name.strip():
         raise HTTPException(status_code=400, detail="Group name is required")
 
+    # Debug logging
+    print(f"[DEBUG] create_group: Received item_ids={item_ids}")
+
     # Use _id instead of barcode for unique identification
     items = await db.items.find({"_id": {"$in": item_ids}}).to_list(1000)
+    print(f"[DEBUG] create_group: Found {len(items)} items with _id")
 
     if len(items) != len(item_ids):
-        raise HTTPException(status_code=404, detail="Some items not found")
+        # Try with id field as fallback
+        print(f"[DEBUG] create_group: Not found with _id, trying with id field")
+        items = await db.items.find({"id": {"$in": item_ids}}).to_list(1000)
+        print(f"[DEBUG] create_group: Found {len(items)} items with id field")
+
+        if len(items) != len(item_ids):
+            print(f"[DEBUG] create_group: Still not found. Looking for any items with these IDs in database...")
+            # Log sample items to see what fields they have
+            sample = await db.items.find().to_list(5)
+            print(f"[DEBUG] create_group: Sample item fields: {sample[0].keys() if sample else 'None'}")
+            raise HTTPException(status_code=404, detail="Some items not found")
 
     # Normalize customer names (case-insensitive, trimmed) for comparison
     customers = set(str(item.get("name", "")).strip().lower() for item in items if item.get("name"))
