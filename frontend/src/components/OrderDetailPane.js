@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { fmt } from "@/lib/fmt";
-import { 
-  PencilSimple, Trash, X, CaretDown, CaretRight, 
-  CheckCircle, CurrencyDollar, Package, Scissors, 
-  Tag, Wallet, Info, Receipt, User
+import {
+  PencilSimple, Trash, X, CaretDown, CaretRight,
+  CheckCircle, CurrencyDollar, Package, Scissors,
+  Tag, Wallet, Info, Receipt, User, Users
 } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import GroupDialog from "./GroupDialog";
 
 export const SectionAccordion = ({ icon: Icon, label, amount, children, onEdit, defaultOpen = false }) => {
   const [open, setOpen] = useState(defaultOpen);
@@ -52,7 +53,7 @@ export const SectionAccordion = ({ icon: Icon, label, amount, children, onEdit, 
   );
 };
 
-function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDeleteItem }) {
+function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDeleteItem, onEditGroup }) {
   return (
     <div className="space-y-8 pb-4">
       {selectedGroups.map(group => {
@@ -98,6 +99,15 @@ function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDel
                             {item.barcode || "—"}
                           </p>
                           {item.cancelled && <Badge variant="destructive" className="h-4 text-[9px] px-1 uppercase tracking-tighter">Cancelled</Badge>}
+                          {item.group_name && (
+                            <Badge
+                              variant="outline"
+                              className="h-4.5 text-[9px] px-1.5 font-bold uppercase tracking-wider bg-primary/5 border-primary/20 text-primary cursor-pointer hover:bg-primary/10"
+                              onClick={() => onEditGroup && onEditGroup(item)}
+                            >
+                              {item.group_name}
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex flex-wrap gap-1.5 mt-1.5">
                           {item.article_type && item.article_type !== "N/A" && (
@@ -221,7 +231,7 @@ function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDel
   );
 }
 
-function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDeleteItem }) {
+function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDeleteItem, onEditGroup }) {
   return (
     <div className="space-y-6 pb-4">
       {selectedGroups.map(group => {
@@ -430,6 +440,37 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
 
 export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPay, onClose, onCancelItem, onDeleteItem }) {
   const [viewTab, setViewTab] = useState("order");
+  const [showGroupDialog, setShowGroupDialog] = useState(false);
+  const [groupDialogMode, setGroupDialogMode] = useState("create");
+  const [editingGroupId, setEditingGroupId] = useState(null);
+  const [selectedItemIds, setSelectedItemIds] = useState([]);
+
+  // Get all items from selected groups
+  const allItems = selectedGroups.flatMap(g => g.items);
+
+  const handleCreateGroup = () => {
+    const selectedItems = allItems.filter(item => item.selected);
+    if (selectedItems.length === 0) {
+      alert("Please select at least one article to group");
+      return;
+    }
+    setSelectedItemIds(selectedItems.map(i => i.barcode));
+    setGroupDialogMode("create");
+    setEditingGroupId(null);
+    setShowGroupDialog(true);
+  };
+
+  const handleEditGroup = (item) => {
+    setGroupDialogMode("edit");
+    setEditingGroupId(item.group_id);
+    setShowGroupDialog(true);
+  };
+
+  const handleGroupDialogClose = () => {
+    setShowGroupDialog(false);
+    setEditingGroupId(null);
+    setSelectedItemIds([]);
+  };
 
   if (!selectedGroups.length) return (
     <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center">
@@ -488,26 +529,37 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
 
       {/* View tabs */}
       <div className="flex-shrink-0 px-5 pt-1 bg-background/40 border-b border-border/40">
-        <div className="flex gap-6">
-          {[
-            { k: "order", l: "Order-wise", icon: Receipt },
-            { k: "article", l: "Article-wise", icon: Package }
-          ].map(t => (
-            <button 
-              key={t.k} 
-              onClick={() => setViewTab(t.k)}
-              className={cn(
-                "flex items-center gap-2 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 -mb-px relative",
-                viewTab === t.k 
-                  ? "border-primary text-primary" 
-                  : "border-transparent text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100"
-              )}
-            >
-              <t.icon size={14} weight={viewTab === t.k ? "bold" : "regular"} />
-              {t.l}
-              {viewTab === t.k && <div className="absolute inset-x-0 -bottom-px h-0.5 bg-primary blur-[2px] opacity-50" />}
-            </button>
-          ))}
+        <div className="flex items-center justify-between">
+          <div className="flex gap-6">
+            {[
+              { k: "order", l: "Order-wise", icon: Receipt },
+              { k: "article", l: "Article-wise", icon: Package }
+            ].map(t => (
+              <button
+                key={t.k}
+                onClick={() => setViewTab(t.k)}
+                className={cn(
+                  "flex items-center gap-2 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all border-b-2 -mb-px relative",
+                  viewTab === t.k
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100"
+                )}
+              >
+                <t.icon size={14} weight={viewTab === t.k ? "bold" : "regular"} />
+                {t.l}
+                {viewTab === t.k && <div className="absolute inset-x-0 -bottom-px h-0.5 bg-primary blur-[2px] opacity-50" />}
+              </button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[10px] font-bold uppercase tracking-wider gap-1.5"
+            onClick={handleCreateGroup}
+          >
+            <Users size={12} weight="bold" />
+            Group Selected
+          </Button>
         </div>
       </div>
 
@@ -515,11 +567,21 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
       <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain">
         <div className="p-5 min-h-full">
           {viewTab === "article"
-            ? <ArticleWiseView selectedGroups={selectedGroups} advances={advances} onEdit={onEdit} onCancelItem={onCancelItem} onDeleteItem={onDeleteItem} />
-            : <OrderWiseView selectedGroups={selectedGroups} advances={advances} onEdit={onEdit} onCancelItem={onCancelItem} onDeleteItem={onDeleteItem} />
+            ? <ArticleWiseView selectedGroups={selectedGroups} advances={advances} onEdit={onEdit} onCancelItem={onCancelItem} onDeleteItem={onDeleteItem} onEditGroup={handleEditGroup} />
+            : <OrderWiseView selectedGroups={selectedGroups} advances={advances} onEdit={onEdit} onCancelItem={onCancelItem} onDeleteItem={onDeleteItem} onEditGroup={handleEditGroup} />
           }
         </div>
       </div>
+
+      {/* Group Dialog */}
+      <GroupDialog
+        open={showGroupDialog}
+        onClose={handleGroupDialogClose}
+        mode={groupDialogMode}
+        groupId={editingGroupId}
+        initialItems={selectedItemIds.map(id => allItems.find(i => i.barcode === id)).filter(Boolean)}
+        allItems={allItems}
+      />
 
       {/* Pay button */}
       {selectedGroups.some(g => !g.items.every(i => i.cancelled)) && (
