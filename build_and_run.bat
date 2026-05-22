@@ -112,13 +112,45 @@ echo [2/4] Build is served directly from frontend\build (no copy needed)
 echo.
 
 :: ---- Step 3: Kill any existing backend process on port ----
-echo [3/4] Checking for existing process on port %BACKEND_PORT%...
+echo [3/5] Checking for existing process on port %BACKEND_PORT%...
 powershell -Command "$p = (Get-NetTCPConnection -LocalPort %BACKEND_PORT% -ErrorAction SilentlyContinue).OwningProcess; if ($p) { Stop-Process -Id $p -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1 }"
 
-:: ---- Step 4: Regenerate SSL cert + Start backend ----
-echo [4/4] Regenerating SSL certificate for current IP...
+:: ---- Step 4: Check and start MongoDB ----
+echo [4/5] Checking MongoDB service status...
+sc query MongoDB >nul 2>&1
+if errorlevel 1 (
+    echo [WARN] MongoDB service not found. Attempting to start MongoDB directly...
+    start "" mongod --dbpath "C:\data\db" --logpath "C:\data\db\mongod.log" >nul 2>&1
+    if errorlevel 1 (
+        echo [ERROR] Could not start MongoDB. Please ensure MongoDB is installed and running.
+        echo        You can start it manually: net start MongoDB
+        pause
+        exit /b 1
+    )
+    echo [4/5] MongoDB started directly.
+) else (
+    for /f "tokens=3" %%a in ('sc query MongoDB ^| findstr /i "STATE"') do set "MONGO_STATE=%%a"
+    if "!MONGO_STATE!"=="RUNNING" (
+        echo [4/5] MongoDB service is already running. OK.
+    ) else (
+        echo [4/5] Starting MongoDB service...
+        net start MongoDB >nul 2>&1
+        if errorlevel 1 (
+            echo [ERROR] Failed to start MongoDB service. Please check MongoDB installation.
+            pause
+            exit /b 1
+        )
+        echo [4/5] MongoDB service started.
+    )
+)
+echo Waiting for MongoDB to be ready...
+timeout /t 3 /nobreak >nul
+echo.
+
+:: ---- Step 5: Regenerate SSL cert + Start backend ----
+echo [5/5] Regenerating SSL certificate for current IP...
 "%PYTHON%" "%ROOT%backend\gen_cert.py"
-echo [4/4] Starting FastAPI production server on 0.0.0.0:%BACKEND_PORT%...
+echo [5/5] Starting FastAPI production server on 0.0.0.0:%BACKEND_PORT%...
 echo.
 echo ==========================================
 echo  ACCESS URLs:
