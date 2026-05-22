@@ -459,9 +459,7 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
     const customers = new Set(allItems.map(i => i.name?.trim()?.toLowerCase()).filter(Boolean));
     if (customers.size > 1) {
       const actualNames = [...new Set(allItems.map(i => i.name))];
-      const itemDetails = allItems.map(i => ({ barcode: i.barcode, name: i.name, ref: i.ref }));
-      console.error("Items with different customers:", itemDetails);
-      alert(`Cannot group items from different customers: ${actualNames.join(", ")}\n\nCheck console for item details.`);
+      alert(`Cannot group items from different customers: ${actualNames.join(", ")}`);
       return;
     }
 

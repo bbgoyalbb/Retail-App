@@ -48,14 +48,6 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
       return;
     }
 
-    // Log the items being sent for debugging
-    const itemsBeingGrouped = allItems.filter(i => selectedItemIds.includes(i.barcode));
-    console.log("Items being grouped:", itemsBeingGrouped.map(i => ({ barcode: i.barcode, name: i.name, ref: i.ref })));
-    console.log("All items available:", allItems.map(i => ({ barcode: i.barcode, name: i.name, ref: i.ref })));
-    console.log("Selected item IDs:", selectedItemIds);
-    console.log("Customer names in all items:", [...new Set(allItems.map(i => i.name))]);
-    console.log("Customer names in selected items:", [...new Set(itemsBeingGrouped.map(i => i.name))]);
-
     try {
       setLoading(true);
       if (mode === "create") {
