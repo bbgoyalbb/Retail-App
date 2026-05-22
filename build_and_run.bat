@@ -129,18 +129,19 @@ if errorlevel 1 (
     )
     echo [4/5] MongoDB started directly.
 ) else (
-    for /f "tokens=3" %%a in ('sc query MongoDB ^| findstr /i "STATE"') do set "MONGO_STATE=%%a"
+    for /f "tokens=4" %%a in ('sc query MongoDB ^| findstr /i "STATE"') do set "MONGO_STATE=%%a"
     if "!MONGO_STATE!"=="RUNNING" (
         echo [4/5] MongoDB service is already running. OK.
     ) else (
+        echo [4/5] MongoDB service state: !MONGO_STATE!
         echo [4/5] Starting MongoDB service...
         net start MongoDB >nul 2>&1
         if errorlevel 1 (
-            echo [ERROR] Failed to start MongoDB service. Please check MongoDB installation.
-            pause
-            exit /b 1
+            echo [WARN] Failed to start MongoDB service. Attempting to continue anyway...
+            echo        If backend fails to connect, start MongoDB manually: net start MongoDB
+        ) else (
+            echo [4/5] MongoDB service started.
         )
-        echo [4/5] MongoDB service started.
     )
 )
 echo Waiting for MongoDB to be ready...
