@@ -20,15 +20,29 @@ import io
 router = APIRouter()
 
 @router.get("/invoice")
-async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str = Query(..., alias="ref"), format: str = Query(default="standard", alias="format"), current_user: dict = Depends(get_current_user_dep)):
-    # format options: standard (section-wise), thermal, article-wise
-    items, advances, stored_settings = await asyncio.gather(
-        db.items.find({"ref": ref_id, "cancelled": {"$ne": True}}, {"_id": 0}).to_list(1000),
-        db.advances.find({"ref": ref_id}, {"_id": 0}).to_list(50),
-        db.settings.find_one({"key": "app_settings"}, {"_id": 0}),
-    )
+async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optional[str] = Query(None, alias="ref"), ref_ids: Optional[List[str]] = Query(None, alias="refs"), format: str = Query(default="standard", alias="format"), current_user: dict = Depends(get_current_user_dep)):
+    # format options: standard (section-wise), thermal, article-wise, article-summary
+    # Support both single ref (ref_id) and multiple refs (ref_ids)
+    refs = ref_ids if ref_ids else ([ref_id] if ref_id else [])
+    if not refs:
+        raise HTTPException(status_code=400, detail="At least one reference is required")
+
+    # Fetch items and advances from all refs
+    items_query = {"ref": {"$in": refs}, "cancelled": {"$ne": True}}
+    items = await db.items.find(items_query, {"_id": 0}).to_list(1000)
+
     if not items:
-        raise HTTPException(status_code=404, detail="No items found for this reference")
+        raise HTTPException(status_code=404, detail="No items found for the provided references")
+
+    # Validate all items belong to same customer
+    customers = set(item.get("name") for item in items)
+    if len(customers) > 1:
+        raise HTTPException(status_code=400, detail="Cannot combine invoices from different customers")
+
+    # Fetch advances from all refs
+    advances = await db.advances.find({"ref": {"$in": refs}}, {"_id": 0}).to_list(50)
+    stored_settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
+
     s = merge_settings(stored_settings)
 
     GST_RATE = float(s.get("gst_rate", DEFAULT_SETTINGS["gst_rate"]))
@@ -40,6 +54,9 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
 
     customer_name = html_mod.escape(str(items[0].get("name", "N/A")))
     order_date     = html_mod.escape(str(items[0].get("date", "N/A")))
+
+    # For combined invoice, show list of refs
+    ref_display = ", ".join(refs) if len(refs) > 1 else refs[0]
     
     # Collect payment modes (deduplicated, strip "Settled - " prefix)
     all_modes = set()
@@ -583,7 +600,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
     </div>
     <div class="bt-col" style="text-align:center;">
       <div class="bt-label">Invoice No</div>
-      <div class="bt-value">{html_mod.escape(ref_id)}</div>
+      <div class="bt-value">{html_mod.escape(ref_display)}</div>
     </div>
     <div class="bt-col" style="text-align:right;">
       <div class="bt-label">Date</div>
@@ -647,14 +664,61 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
 </div>
 </body>
 </html>"""
-        await audit_log(db, "invoice", current_user, "bill", ref_id, {"format": format})
+        await audit_log(db, "invoice", current_user, "bill", ref_display, {"format": format, "refs": refs})
         return HTMLResponse(content=html, status_code=200)
 
     # ---- Article-summary format (just barcode, article type, and total) ----
     if is_article_summary:
-        # Group items by barcode/article and show only total per article
+        # Group items by group_id if present, otherwise show individually
         article_rows = ""
+
+        # Separate grouped and ungrouped items
+        grouped_items = {}
+        ungrouped_items = []
+
         for item in items:
+            group_id = item.get("group_id")
+            if group_id:
+                if group_id not in grouped_items:
+                    grouped_items[group_id] = {
+                        "group_name": item.get("group_name", "Unnamed Group"),
+                        "items": []
+                    }
+                grouped_items[group_id]["items"].append(item)
+            else:
+                ungrouped_items.append(item)
+
+        # Process grouped items first (sorted by group_name)
+        for group_id in sorted(grouped_items.keys(), key=lambda x: grouped_items[x]["group_name"]):
+            group = grouped_items[group_id]
+            group_items = group["items"]
+            group_name = html_mod.escape(group["group_name"])
+
+            # Calculate total for the group
+            group_total = 0.0
+            article_types = []
+            for item in group_items:
+                fab_amt = float(item.get("fabric_amount", 0))
+                tail_amt = float(item.get("tailoring_amount", 0))
+                emb_amt = float(item.get("embroidery_amount", 0))
+                ao_amt = float(item.get("addon_amount", 0))
+                group_total += fab_amt + tail_amt + emb_amt + ao_amt
+
+                art_type = item.get("article_type", "—") or "—"
+                if art_type and art_type != "—":
+                    article_types.append(html_mod.escape(str(art_type)))
+
+            article_types_str = ", ".join(sorted(set(article_types))) if article_types else "—"
+
+            article_rows += f"""
+            <tr>
+              <td><strong>{group_name}</strong></td>
+              <td>{article_types_str}</td>
+              <td class="r"><strong>₹{fmt(group_total)}</strong></td>
+            </tr>"""
+
+        # Process ungrouped items
+        for item in ungrouped_items:
             barcode = html_mod.escape(str(item.get("barcode", "N/A")))
             article_type = html_mod.escape(str(item.get("article_type", "—") or "—"))
             fab_amt = float(item.get("fabric_amount", 0))
@@ -898,7 +962,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
     </div>
     <div class="bt-col" style="text-align:center;">
       <div class="bt-label">Invoice No</div>
-      <div class="bt-value">{html_mod.escape(ref_id)}</div>
+      <div class="bt-value">{html_mod.escape(ref_display)}</div>
     </div>
     <div class="bt-col" style="text-align:right;">
       <div class="bt-label">Date</div>
@@ -958,7 +1022,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
 </div>
 </body>
 </html>"""
-        await audit_log(db, "invoice", current_user, "bill", ref_id, {"format": format})
+        await audit_log(db, "invoice", current_user, "bill", ref_display, {"format": format, "refs": refs})
         return HTMLResponse(content=html, status_code=200)
 
     # ---- Standard format (v4 redesign) ----
@@ -1349,7 +1413,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
     </div>
     <div class="bt-col" style="text-align:center;">
       <div class="bt-label">Invoice No</div>
-      <div class="bt-value">{html_mod.escape(ref_id)}</div>
+      <div class="bt-value">{html_mod.escape(ref_display)}</div>
     </div>
     <div class="bt-col" style="text-align:right;">
       <div class="bt-label">Date</div>

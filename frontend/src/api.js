@@ -347,6 +347,12 @@ export const updateUser = (username, data) => api.put(`/auth/users/${username}`,
 export const deleteUser = (username) => api.delete(`/auth/users/${username}`);
 export const listAuditLogs = (params) => api.get("/audit-logs", { params });
 
+// Group Management
+export const createGroup = (itemIds, groupName) => api.post("/items/group", { item_ids: itemIds, group_name: groupName }).then(r => r.data);
+export const updateGroup = (groupId, itemIds, groupName) => api.put(`/items/group/${groupId}`, { item_ids: itemIds, group_name: groupName }).then(r => r.data);
+export const deleteGroup = (groupId) => api.delete(`/items/group/${groupId}`).then(r => r.data);
+export const getGroup = (groupId) => api.get(`/items/group/${groupId}`).then(r => r.data);
+
 // Bug Reporting
 export const submitBugReport = (data) => api.post("/bug-report", data);
 

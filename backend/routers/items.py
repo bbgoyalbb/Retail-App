@@ -247,6 +247,153 @@ async def search_items(
     return {"items": items, "total": total}
 
 # ==========================================
+# Group Management Endpoints
+# ==========================================
+
+@router.post("/items/group")
+async def create_group(
+    item_ids: List[str] = Body(...),
+    group_name: str = Body(...),
+    db = Depends(get_db),
+    current_user: dict = Depends(get_current_user_dep)
+):
+    """Create a new group with the specified items."""
+    if not item_ids:
+        raise HTTPException(status_code=400, detail="No items provided")
+    if not group_name or not group_name.strip():
+        raise HTTPException(status_code=400, detail="Group name is required")
+
+    # Validate all items exist and belong to same customer
+    items = await db.items.find({"barcode": {"$in": item_ids}}).to_list(len(item_ids))
+    if len(items) != len(item_ids):
+        raise HTTPException(status_code=404, detail="Some items not found")
+
+    customers = set(item.get("name") for item in items)
+    if len(customers) > 1:
+        raise HTTPException(status_code=400, detail="Cannot group items from different customers")
+
+    # Generate unique group_id
+    group_id = str(uuid.uuid4())
+
+    # Update items with group_id and group_name
+    result = await db.items.update_many(
+        {"barcode": {"$in": item_ids}},
+        {"$set": {"group_id": group_id, "group_name": group_name.strip()}}
+    )
+
+    await audit_log(db, "group_create", current_user, "items", group_id, {
+        "group_name": group_name,
+        "item_count": result.modified_count,
+        "item_ids": item_ids
+    })
+
+    return {"group_id": group_id, "group_name": group_name, "item_count": result.modified_count}
+
+@router.put("/items/group/{group_id}")
+async def update_group(
+    group_id: str,
+    item_ids: Optional[List[str]] = Body(None),
+    group_name: Optional[str] = Body(None),
+    db = Depends(get_db),
+    current_user: dict = Depends(get_current_user_dep)
+):
+    """Update a group - rename or add/remove items."""
+    # Check if group exists
+    existing_group = await db.items.find_one({"group_id": group_id})
+    if not existing_group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    updates = {}
+    audit_data = {}
+
+    # Update group name if provided
+    if group_name is not None and group_name.strip():
+        updates["group_name"] = group_name.strip()
+        audit_data["group_name"] = group_name.strip()
+
+    # Update items if provided
+    if item_ids is not None:
+        # Validate all items exist and belong to same customer
+        items = await db.items.find({"barcode": {"$in": item_ids}}).to_list(len(item_ids))
+        if len(items) != len(item_ids):
+            raise HTTPException(status_code=404, detail="Some items not found")
+
+        customers = set(item.get("name") for item in items)
+        if len(customers) > 1:
+            raise HTTPException(status_code=400, detail="Cannot group items from different customers")
+
+        # Remove group_id from all items currently in this group
+        await db.items.update_many(
+            {"group_id": group_id},
+            {"$unset": {"group_id": "", "group_name": ""}}
+        )
+
+        # Add group_id to new set of items
+        if item_ids:
+            result = await db.items.update_many(
+                {"barcode": {"$in": item_ids}},
+                {"$set": {"group_id": group_id, "group_name": group_name.strip() if group_name else existing_group.get("group_name", "")}}
+            )
+            audit_data["item_count"] = result.modified_count
+            audit_data["item_ids"] = item_ids
+        else:
+            audit_data["item_count"] = 0
+            audit_data["item_ids"] = []
+
+    if updates:
+        await db.items.update_many(
+            {"group_id": group_id},
+            {"$set": updates}
+        )
+
+    await audit_log(db, "group_update", current_user, "items", group_id, audit_data)
+
+    return {"group_id": group_id, "updated": True}
+
+@router.delete("/items/group/{group_id}")
+async def delete_group(
+    group_id: str,
+    db = Depends(get_db),
+    current_user: dict = Depends(get_current_user_dep)
+):
+    """Delete a group (remove group_id from all items)."""
+    # Check if group exists
+    existing_group = await db.items.find_one({"group_id": group_id})
+    if not existing_group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    # Remove group_id from all items in this group
+    result = await db.items.update_many(
+        {"group_id": group_id},
+        {"$unset": {"group_id": "", "group_name": ""}}
+    )
+
+    await audit_log(db, "group_delete", current_user, "items", group_id, {
+        "item_count": result.modified_count
+    })
+
+    return {"group_id": group_id, "deleted": True, "item_count": result.modified_count}
+
+@router.get("/items/group/{group_id}")
+async def get_group(
+    group_id: str,
+    db = Depends(get_db),
+    current_user: dict = Depends(get_current_user_dep)
+):
+    """Get details of a group including all items."""
+    items = await db.items.find({"group_id": group_id}, {"_id": 0}).to_list(1000)
+    if not items:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    group_name = items[0].get("group_name", "")
+    return {
+        "group_id": group_id,
+        "group_name": group_name,
+        "items": items,
+        "item_count": len(items)
+    }
+
+# ==========================================
 # HTML INVOICE v3 (print-ready, screen-ready, WhatsApp-ready)
 # ==========================================
 
