@@ -1,11 +1,18 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { X, ArrowSquareOut, Printer } from "@phosphor-icons/react";
 import { getInvoiceUrl } from "@/api";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import InvoiceFormatDialog from "./InvoiceFormatDialog";
 
 export default function InvoiceModal({ billRef, onClose }) {
+  const [showFormatDialog, setShowFormatDialog] = useState(false);
   const url = getInvoiceUrl(billRef);
   const trapRef = useFocusTrap(true);
+
+  const handleFormatSelect = (format) => {
+    setShowFormatDialog(false);
+    window.open(getInvoiceUrl(billRef, format), '_blank');
+  };
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -32,29 +39,7 @@ export default function InvoiceModal({ billRef, onClose }) {
               <ArrowSquareOut size={16} />
             </a>
             <button
-              onClick={async () => {
-                // Mobile: try native share sheet first, then fallback to window.open
-                if (isMobile && navigator.share) {
-                  try {
-                    await navigator.share({ url, title: `Invoice ${billRef}` });
-                    return;
-                  } catch (e) {
-                    // User cancelled or share failed — fall through to window.open
-                  }
-                }
-                // Desktop: try iframe print, fallback to window.open
-                try {
-                  const iframe = document.getElementById("invoice-iframe");
-                  if (iframe?.contentWindow?.print) {
-                    iframe.contentWindow.print();
-                  } else {
-                    const w = window.open(url, "_blank");
-                    w?.addEventListener("load", () => w.print(), { once: true });
-                  }
-                } catch {
-                  window.open(url, "_blank");
-                }
-              }}
+              onClick={() => setShowFormatDialog(true)}
               title={isMobile ? "Share / Print" : "Print"}
               className="p-1.5 rounded-sm hover:bg-[var(--bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
@@ -77,6 +62,13 @@ export default function InvoiceModal({ billRef, onClose }) {
           className="flex-1 w-full border-0 rounded-b-sm"
         />
       </div>
+      {showFormatDialog && (
+        <InvoiceFormatDialog
+          open={showFormatDialog}
+          onClose={() => setShowFormatDialog(false)}
+          onSelect={handleFormatSelect}
+        />
+      )}
     </div>
   );
 }

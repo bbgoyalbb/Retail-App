@@ -21,6 +21,7 @@ router = APIRouter()
 
 @router.get("/invoice")
 async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str = Query(..., alias="ref"), format: str = Query(default="standard", alias="format"), current_user: dict = Depends(get_current_user_dep)):
+    # format options: standard (section-wise), thermal, article-wise
     items, advances, stored_settings = await asyncio.gather(
         db.items.find({"ref": ref_id, "cancelled": {"$ne": True}}, {"_id": 0}).to_list(1000),
         db.advances.find({"ref": ref_id}, {"_id": 0}).to_list(50),
@@ -148,6 +149,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
 
     # ---- Thermal format ----
     is_thermal = format == "thermal"
+    is_article_wise = format == "article-wise"
     max_width = "280px" if is_thermal else "600px"
     font_family = "'IBM Plex Mono', monospace" if is_thermal else "'IBM Plex Sans', sans-serif"
     font_size = "11px" if is_thermal else "12px"
@@ -238,6 +240,330 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
   <div class="footer">{order_date}<br/>Thank you!</div>
 </body>
 </html>"""
+        return HTMLResponse(content=html, status_code=200)
+
+    # ---- Article-wise format ----
+    if is_article_wise:
+        # Group items by barcode/article and calculate totals per article
+        article_rows = ""
+        for item in items:
+            barcode = html_mod.escape(str(item.get("barcode", "N/A")))
+            article_type = html_mod.escape(str(item.get("article_type", "—") or "—"))
+            fab_amt = float(item.get("fabric_amount", 0))
+            tail_amt = float(item.get("tailoring_amount", 0))
+            emb_amt = float(item.get("embroidery_amount", 0))
+            ao_amt = float(item.get("addon_amount", 0))
+            article_total = fab_amt + tail_amt + emb_amt + ao_amt
+            
+            # Only show non-zero amounts
+            fab_str = f"₹{fmt(fab_amt)}" if fab_amt > 0 else "—"
+            tail_str = f"₹{fmt(tail_amt)}" if tail_amt > 0 else "—"
+            emb_str = f"₹{fmt(emb_amt)}" if emb_amt > 0 else "—"
+            ao_str = f"₹{fmt(ao_amt)}" if ao_amt > 0 else "—"
+            
+            article_rows += f"""
+            <tr>
+              <td>{barcode}</td>
+              <td>{article_type}</td>
+              <td class="r">{fab_str}</td>
+              <td class="r">{tail_str}</td>
+              <td class="r">{emb_str}</td>
+              <td class="r">{ao_str}</td>
+              <td class="r"><strong>₹{fmt(article_total)}</strong></td>
+            </tr>"""
+        
+        # Calculate section totals for article-wise format
+        total_fabric = sum(float(i.get("fabric_amount", 0)) for i in items)
+        total_tailoring = sum(float(i.get("tailoring_amount", 0)) for i in items)
+        total_embroidery = sum(float(i.get("embroidery_amount", 0)) for i in items)
+        total_addon = sum(float(i.get("addon_amount", 0)) for i in items)
+        
+        logo_tag = ""
+        if firm_logo:
+            if firm_logo.startswith("http"):
+                logo_src = firm_logo
+            else:
+                base_url = str(request.base_url).rstrip("/")
+                logo_src = f"{base_url}{firm_logo}" if firm_logo.startswith("/") else firm_logo
+            logo_tag = f'<img src="{logo_src}" class="hdr-logo" alt="logo" />'
+        
+        html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Tax Invoice – {ref_id}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+
+  html {{
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }}
+
+  body {{
+    font-family: 'Manrope', sans-serif;
+    font-size: 11px;
+    color: #111;
+    background: #e8e8e8;
+    padding: 16px;
+  }}
+
+  .inv {{
+    background: #fff;
+    width: 148mm;
+    min-height: 210mm;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+  }}
+
+  @media print {{
+    body {{ background: none; padding: 0; }}
+    .inv {{ box-shadow: none; margin: 0; width: 100%; height: 100%; }}
+  }}
+
+  .inv::before {{ content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: #111; }}
+
+  .inv-header {{
+    padding: 24px 24px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1.5px solid #111;
+  }}
+  .hdr-left {{ display: flex; align-items: center; gap: 16px; flex: 1; }}
+  .hdr-logo {{ height: 90px; filter: grayscale(1); }}
+  .hdr-name {{ font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.02em; color: #111; margin-bottom: 2px; }}
+  .hdr-addr {{ font-size: 8.5px; color: #555; line-height: 1.5; }}
+
+  .hdr-right {{ text-align: right; }}
+  .hdr-label {{ font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: #111; margin-bottom: 8px; }}
+  .hdr-ref {{ font-size: 24px; font-weight: 800; font-family: 'IBM Plex Mono', monospace; color: #111; line-height: 1; }}
+  .hdr-date {{ font-size: 10px; font-weight: 600; color: #555; margin-top: 4px; }}
+
+  .inv-billto {{
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: #fcfcfc;
+    border-bottom: 1px solid #eee;
+  }}
+  .bt-col {{ flex: 1; }}
+  .bt-label {{ font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin-bottom: 3px; }}
+  .bt-name {{ font-size: 13px; font-weight: 700; color: #111; }}
+  .bt-value {{ font-size: 12px; font-weight: 600; color: #111; }}
+
+  .inv-body {{ padding: 16px 24px; }}
+  .inv-body table {{ width: 100%; border-collapse: collapse; }}
+  .inv-body th {{
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: #111;
+    padding: 10px 8px;
+    text-align: left;
+    border-bottom: 1.5px solid #111;
+  }}
+  .inv-body th:first-child {{ padding-left: 0; }}
+  .inv-body th:last-child {{ padding-right: 0; }}
+  .inv-body th.r {{ text-align: right; }}
+  
+  .inv-body td {{
+    font-size: 10px;
+    padding: 10px 8px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+    color: #111;
+  }}
+  .inv-body td:first-child {{ padding-left: 0; }}
+  .inv-body td:last-child {{ padding-right: 0; }}
+  .inv-body td.r {{ text-align: right; font-family: 'IBM Plex Mono', monospace; }}
+
+  .sub-row td {{ border-top: 1.5px solid #aaa; border-bottom: none; background: #f0f0f0 !important; font-weight: 600; }}
+  .sub-row .subtd {{ font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; }}
+  .sub-row .subtd.r {{ font-family: 'IBM Plex Mono', monospace; }}
+
+  .inv-grand {{
+    background: #444;
+    color: #fff;
+    padding: 8px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }}
+  .inv-grand .gt-label {{ font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.25em; color: #fff; }}
+  .inv-grand .gt-val {{ font-size: 14px; font-weight: 800; font-family: 'IBM Plex Mono', monospace; color: #fff; }}
+
+  .inv-pay-section {{
+    border-top: 2px solid #111;
+    margin-top: 6px;
+  }}
+  .inv-pay-section .sec-head {{
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: #111;
+    background: #fff;
+    padding: 6px 18px 4px;
+    border-left: 4px solid #111;
+    border-bottom: 1px solid #ccc;
+  }}
+  .inv-pay-section table {{
+    width: 100%;
+    border-collapse: collapse;
+  }}
+  .inv-pay-section th {{
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: #fff;
+    background: #444;
+    padding: 5px 8px;
+    text-align: left;
+    white-space: nowrap;
+  }}
+  .inv-pay-section th.r {{ text-align: right; }}
+  .inv-pay-section td {{
+    font-size: 10px;
+    padding: 5px 8px;
+    border-bottom: 1px solid #eee;
+    color: #111;
+  }}
+  .inv-pay-section td.r {{
+    text-align: right;
+    font-family: 'IBM Plex Mono', monospace;
+  }}
+  .inv-pay-section tr:last-child td {{ border-bottom: none; font-weight: 600; background: #f0f0f0; }}
+  .bal-due {{ color: #8b0000; }}
+  .bal-ok  {{ color: #1a5c2a; }}
+
+  .adv-pay-row td {{ background: #f7f7f0 !important; color: #444; }}
+  .adv-credit {{ color: #1a5c2a; font-family: 'IBM Plex Mono', monospace; }}
+
+  .inv-footer {{
+    margin-top: 12px;
+    border-top: 1.5px solid #111;
+    padding: 10px 18px 8px;
+  }}
+  .footer-bottom {{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+  }}
+  .footer-tnc {{
+    flex: 1;
+    font-size: 7.5px;
+    color: #555;
+    line-height: 1.6;
+  }}
+  .footer-tnc strong {{ color: #111; font-size: 8px; }}
+  .footer-sig {{
+    font-size: 9px;
+    font-weight: 700;
+    color: #111;
+    text-align: right;
+    min-width: 110px;
+    flex-shrink: 0;
+    align-self: flex-end;
+  }}
+</style>
+</head>
+<body>
+<div class="inv">
+  <div class="inv-header">
+    <div class="hdr-left">
+      {logo_tag}
+      <div>
+        <div class="hdr-name">{firm_name}</div>
+        <div class="hdr-addr">{firm_address}<br/>{firm_phones}<br/>GSTIN: {firm_gstin}</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+    </div>
+  </div>
+
+  <div class="inv-billto">
+    <div class="bt-col">
+      <div class="bt-label">Bill To</div>
+      <div class="bt-name">{customer_name}</div>
+    </div>
+    <div class="bt-col" style="text-align:center;">
+      <div class="bt-label">Invoice No</div>
+      <div class="bt-value">{html_mod.escape(ref_id)}</div>
+    </div>
+    <div class="bt-col" style="text-align:right;">
+      <div class="bt-label">Date</div>
+      <div class="bt-value">{order_date}</div>
+    </div>
+  </div>
+
+  <div class="inv-body">
+    <div class="sec-head" style="background: #f0f0f0; padding: 6px 0; border-bottom: 1.5px solid #111; margin-bottom: 12px;">Article-wise Details</div>
+    <table>
+      <thead><tr><th>Barcode</th><th>Article Type</th><th class="r">Fabric</th><th class="r">Tailoring</th><th class="r">Embroidery</th><th class="r">Add-on</th><th class="r">Total</th></tr></thead>
+      <tbody>
+        {article_rows}
+        <tr class="sub-row">
+          <td class="subtd" colspan="2">Subtotal ({len(items)} articles)</td>
+          <td class="subtd r">₹{fmt(total_fabric)}</td>
+          <td class="subtd r">₹{fmt(total_tailoring)}</td>
+          <td class="subtd r">₹{fmt(total_embroidery)}</td>
+          <td class="subtd r">₹{fmt(total_addon)}</td>
+          <td class="subtd r">₹{fmt(grand_total_calc)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="inv-grand">
+    <div class="gt-label">Grand Total</div>
+    <div class="gt-val">₹{fmt(grand_total_calc)}</div>
+  </div>
+
+  <div class="inv-pay-section">
+    <div class="sec-head">Payment Details</div>
+    <table>
+      <thead><tr><th>Category</th><th class="r">Amount</th><th class="r">Received</th><th class="r">Pay Date</th><th>Mode</th><th class="r">Balance</th></tr></thead>
+      <tbody>
+        {pay_rows_html}
+        {adv_pay_rows}
+        <tr>
+          <td colspan="5"><strong>Balance Due</strong></td>
+          <td class="r {grand_bal_cls}"><strong>{grand_bal_str}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="inv-footer">
+    <div class="footer-bottom">
+      <div class="footer-tnc">
+        <strong>Terms & Conditions:</strong><br/>
+        1. Goods once sold will not be taken back.<br/>
+        2. Subject to local jurisdiction.<br/>
+        3. Please bring this invoice for any delivery/adjustment.
+      </div>
+      <div class="footer-sig">
+        For {firm_name}<br/><br/><br/>
+        Authorized Signatory
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>"""
+        await audit_log(db, "invoice", current_user, "bill", ref_id, {"format": format})
         return HTMLResponse(content=html, status_code=200)
 
     # ---- Standard format (v4 redesign) ----

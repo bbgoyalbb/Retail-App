@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } fro
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { createBill, getCustomers, getInvoiceUrl, getSettings, invalidateCustomersCache, getNextBillRef } from "@/api";
+import InvoiceFormatDialog from "@/components/InvoiceFormatDialog";
 import { invalidate } from "@/lib/dataEvents";
 import { 
   Plus, FloppyDisk, CircleNotch as Spinner, WifiSlash, ArrowsSplit, User, 
@@ -90,6 +91,7 @@ export default function NewBill() {
     showSuggestions: false,
     lastBillRef: null,
     lastBillTotal: 0,
+    showFormatDialog: false,
   });
 
   // Convenience updaters to avoid spreading manually every time
@@ -101,7 +103,7 @@ export default function NewBill() {
   const { customers, articleTypes, addonItems, paymentModes, tailoringRates } = config;
   const { customerName, orderDate, payDate, amountPaid, selectedModes, isSettled, needsTailoring } = billForm;
   const { barcode, qty, price, discount, editingIndex } = itemForm;
-  const { saving, message, showScanner, showPostSave, showInvoice, showTailoringModal, showAddonModal, dupWarning, showSuggestions, lastBillRef, lastBillTotal } = ui;
+  const { saving, message, showScanner, showPostSave, showInvoice, showTailoringModal, showAddonModal, dupWarning, showSuggestions, lastBillRef, lastBillTotal, showFormatDialog } = ui;
 
   // Setters that match the old individual-useState API so the rest of the file needs no changes
   const setCustomerName    = useCallback((v) => updateBillForm("customerName", v), [updateBillForm]);
@@ -127,6 +129,15 @@ export default function NewBill() {
   const setShowSuggestions = useCallback((v) => updateUi("showSuggestions", v), [updateUi]);
   const setLastBillRef     = useCallback((v) => updateUi("lastBillRef", v), [updateUi]);
   const setLastBillTotal   = useCallback((v) => updateUi("lastBillTotal", v), [updateUi]);
+  const setShowFormatDialog = useCallback((v) => updateUi("showFormatDialog", v), [updateUi]);
+
+  const handleFormatSelect = useCallback((format) => {
+    setShowFormatDialog(false);
+    if (lastBillRef) {
+      window.open(getInvoiceUrl(lastBillRef, format), '_blank');
+    }
+  }, [lastBillRef]);
+
   const nameWrapRef = useRef(null);
 
   const nameSuggestions = useMemo(() => {
@@ -500,7 +511,7 @@ export default function NewBill() {
           billRef={lastBillRef}
           total={lastBillTotal}
           onViewInvoice={() => setShowInvoice(true)}
-          onPrint={() => window.open(getInvoiceUrl(lastBillRef), '_blank')}
+          onPrint={() => setShowFormatDialog(true)}
           onCreateAnother={createAnotherBill}
         />
       )}
@@ -734,6 +745,14 @@ export default function NewBill() {
 
       {showInvoice && lastBillRef && (
         <InvoiceModal billRef={lastBillRef} onClose={() => setShowInvoice(false)} />
+      )}
+
+      {showFormatDialog && (
+        <InvoiceFormatDialog
+          open={showFormatDialog}
+          onClose={() => setShowFormatDialog(false)}
+          onSelect={handleFormatSelect}
+        />
       )}
 
       {/* Add-on Modal */}
