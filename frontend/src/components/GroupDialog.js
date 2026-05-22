@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Plus, Trash, PencilSimple } from "@phosphor-icons/react";
 import { createGroup, updateGroup, deleteGroup, getGroup } from "@/api";
+import { useToast } from "@/hooks/use-toast";
 
 export default function GroupDialog({ open, onClose, mode = "create", groupId = null, initialItems = [], allItems = [] }) {
   const [groupName, setGroupName] = useState("");
   const [selectedItemIds, setSelectedItemIds] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
@@ -47,8 +49,16 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
       setLoading(true);
       if (mode === "create") {
         await createGroup(selectedItemIds, groupName);
+        toast({
+          title: "Group created successfully",
+          description: `"${groupName}" with ${selectedItemIds.length} article(s)`,
+        });
       } else if (mode === "edit") {
         await updateGroup(groupId, selectedItemIds, groupName);
+        toast({
+          title: "Group updated successfully",
+          description: `"${groupName}" with ${selectedItemIds.length} article(s)`,
+        });
       }
       onClose();
     } catch (error) {
@@ -64,6 +74,10 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
     try {
       setLoading(true);
       await deleteGroup(groupId);
+      toast({
+        title: "Group deleted",
+        description: `"${groupName}" has been removed`,
+      });
       onClose();
     } catch (error) {
       alert(error.response?.data?.detail || "Failed to delete group");
@@ -121,6 +135,11 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
                       <div className="text-xs text-muted-foreground">
                         {item.article_type || "—"} • <span className="font-mono">{item.ref}</span>
                       </div>
+                      {item.group_name && (
+                        <div className="text-xs text-primary font-medium mt-0.5">
+                          Group: {item.group_name}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="text-sm font-mono">
