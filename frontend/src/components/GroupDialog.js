@@ -48,6 +48,10 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
       return;
     }
 
+    // Log the items being sent for debugging
+    const itemsBeingGrouped = allItems.filter(i => selectedItemIds.includes(i.barcode));
+    console.log("Items being grouped:", itemsBeingGrouped.map(i => ({ barcode: i.barcode, name: i.name, ref: i.ref })));
+
     try {
       setLoading(true);
       if (mode === "create") {
@@ -57,6 +61,7 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
       }
       onClose();
     } catch (error) {
+      console.error("Group save error:", error);
       alert(error.response?.data?.detail || "Failed to save group");
     } finally {
       setLoading(false);
