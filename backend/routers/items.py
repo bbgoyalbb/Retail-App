@@ -263,8 +263,14 @@ async def create_group(
     if not group_name or not group_name.strip():
         raise HTTPException(status_code=400, detail="Group name is required")
 
+    # Debug logging
+    print(f"[DEBUG] create_group: Received item_ids={item_ids}")
+
     # Validate all items exist and belong to same customer
     items = await db.items.find({"barcode": {"$in": item_ids}}).to_list(1000)
+    print(f"[DEBUG] create_group: Found {len(items)} items in database")
+    for item in items:
+        print(f"[DEBUG] create_group: barcode={item.get('barcode')}, name={item.get('name')}, ref={item.get('ref')}")
 
     if len(items) != len(item_ids):
         # Some barcodes might be duplicated, check if we found at least the unique barcodes
@@ -278,6 +284,7 @@ async def create_group(
     if len(customers) > 1:
         # Log the actual customer names for debugging
         actual_names = [item.get("name") for item in items]
+        print(f"[DEBUG] create_group: Customer mismatch detected: {actual_names}")
         raise HTTPException(status_code=400, detail=f"Cannot group items from different customers: {actual_names}")
 
     # Generate unique group_id
