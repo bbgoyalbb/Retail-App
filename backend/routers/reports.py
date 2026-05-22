@@ -147,6 +147,86 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
     ao_amt_total = sum(float(i.get("addon_amount", 0)) for i in items)
     grand_total_calc = grand_total  # Use the already-calculated grand total
 
+    # ---- Payment details calculation (needed for all formats except thermal) ----
+    def pay_row(label, amt, rcvd, rcvd_date, mode, pay_mode_raw):
+        if amt <= 0:
+            return ""
+        is_settled_sec = str(pay_mode_raw).startswith("Settled")
+        clean_mode = mode.replace("Settled - ", "").replace("Settled", "").strip() if mode else ""
+        rcvd_str   = f"₹{fmt(rcvd)}" if rcvd > 0 else ""
+        date_str   = rcvd_date if (rcvd_date and rcvd_date != "N/A" and rcvd > 0) else ""
+        bal        = amt - rcvd
+        bal_str    = "✓ Settled" if is_settled_sec else (f"₹{fmt(bal)}" if bal > 0 else "")
+        mode_str   = clean_mode if rcvd > 0 else ""
+        bal_cls    = "bal-ok" if is_settled_sec else ("bal-due" if bal > 0 else "")
+        return f'<tr><td>{label}</td><td class="r">₹{fmt(amt)}</td><td class="r">{rcvd_str}</td><td class="r">{date_str}</td><td>{mode_str}</td><td class="r {bal_cls}">{bal_str}</td></tr>'
+
+    fabric_rcvd = sum(float(i.get("fabric_received", 0)) for i in items)
+    tail_rcvd   = sum(float(i.get("tailoring_received", 0)) for i in items)
+    emb_rcvd    = sum(float(i.get("embroidery_received", 0)) for i in items)
+    ao_rcvd     = sum(float(i.get("addon_received", 0)) for i in items)
+
+    # Use first settled item's pay mode/date for section-level display
+    def _first_settled(item_list, mode_field, date_field):
+        for it in item_list:
+            m = it.get(mode_field, "N/A") or "N/A"
+            if m.startswith("Settled"):
+                return m, it.get(date_field, "") or ""
+        # fallback: first item
+        if item_list:
+            return item_list[0].get(mode_field, "N/A") or "N/A", item_list[0].get(date_field, "") or ""
+        return "N/A", ""
+
+    fabric_pay_mode, fabric_pay_date = _first_settled(items, "fabric_pay_mode", "fabric_pay_date")
+    tail_pay_mode,   tail_pay_date   = _first_settled(items, "tailoring_pay_mode", "tailoring_pay_date")
+    emb_pay_mode,    emb_pay_date    = _first_settled(items, "embroidery_pay_mode", "embroidery_pay_date")
+    ao_pay_mode,     ao_pay_date     = _first_settled(items, "addon_pay_mode", "addon_pay_date")
+
+    fabric_pend  = sum(float(i.get("fabric_pending", 0)) for i in items)
+    tail_pend    = sum(float(i.get("tailoring_pending", 0)) for i in items)
+    emb_pend     = sum(float(i.get("embroidery_pending", 0)) for i in items)
+    ao_pend      = sum(float(i.get("addon_pending", 0)) for i in items)
+
+    fabric_amt_db = sum(float(i.get("fabric_amount", 0)) for i in items)
+
+    pay_rows_html = ""
+    pay_rows_html += pay_row("Fabric",     fabric_amt_db,  fabric_rcvd, fabric_pay_date, fabric_pay_mode, fabric_pay_mode)
+    pay_rows_html += pay_row("Tailoring",  tail_amt_total, tail_rcvd,   tail_pay_date,   tail_pay_mode,   tail_pay_mode)
+    pay_rows_html += pay_row("Embroidery", emb_amt_total,  emb_rcvd,    emb_pay_date,    emb_pay_mode,    emb_pay_mode)
+    pay_rows_html += pay_row("Add-on",     ao_amt_total,   ao_rcvd,     ao_pay_date,     ao_pay_mode,     ao_pay_mode)
+
+    # Advance rows inside Payment Details (negative = reduces balance due)
+    adv_pay_rows = ""
+    if advances:
+        for a in advances:
+            amt_a = float(a.get("amount", 0))
+            if amt_a == 0:
+                continue
+            adv_date = a.get("date", "—") or "—"
+            adv_mode = a.get("mode", "—") or "—"
+            sign = "-" if amt_a > 0 else "+"  # positive advance = credit, show as negative
+            adv_pay_rows += f'<tr class="adv-pay-row"><td>Advance ({adv_mode})</td><td class="r"></td><td class="r adv-credit">{sign}₹{fmt(abs(amt_a))}</td><td class="r">{adv_date}</td><td>{adv_mode}</td><td class="r adv-credit">{sign}₹{fmt(abs(amt_a))}</td></tr>'
+
+    total_rcvd_all = fabric_rcvd + tail_rcvd + emb_rcvd + ao_rcvd
+    # Subtotal balance: sum only unsettled sections, then subtract net advance credit
+    unsettled_pending = 0.0
+    all_settled = True
+    for _amt, _rcvd, _mode in [
+        (fabric_amt_db, fabric_rcvd, fabric_pay_mode),
+        (tail_amt_total, tail_rcvd, tail_pay_mode),
+        (emb_amt_total, emb_rcvd, emb_pay_mode),
+        (ao_amt_total, ao_rcvd, ao_pay_mode),
+    ]:
+        if _amt <= 0:
+            continue
+        if not str(_mode).startswith("Settled"):
+            all_settled = False
+            unsettled_pending += _amt - _rcvd
+    # Subtract advance credit from balance due
+    net_pending_after_adv = unsettled_pending - adv_total
+    grand_bal_cls = "bal-ok" if (all_settled or net_pending_after_adv <= 0) else "bal-due"
+    grand_bal_str = "✓ Settled" if (all_settled or net_pending_after_adv <= 0) else f"₹{fmt(net_pending_after_adv)}"
+
     # ---- Thermal format ----
     is_thermal = format == "thermal"
     is_article_wise = format == "article-wise"
@@ -698,84 +778,6 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
     # Grand total
     grand_total_calc = fabric_amt_db + tail_amt_total + emb_amt_total + ao_amt_total
     total_gst_calc   = fab_gst  # only fabric has GST
-
-    # ---- Payment details table (section-wise) ----
-    def pay_row(label, amt, rcvd, rcvd_date, mode, pay_mode_raw):
-        if amt <= 0:
-            return ""
-        is_settled_sec = str(pay_mode_raw).startswith("Settled")
-        clean_mode = mode.replace("Settled - ", "").replace("Settled", "").strip() if mode else ""
-        rcvd_str   = f"₹{fmt(rcvd)}" if rcvd > 0 else ""
-        date_str   = rcvd_date if (rcvd_date and rcvd_date != "N/A" and rcvd > 0) else ""
-        bal        = amt - rcvd
-        bal_str    = "✓ Settled" if is_settled_sec else (f"₹{fmt(bal)}" if bal > 0 else "")
-        mode_str   = clean_mode if rcvd > 0 else ""
-        bal_cls    = "bal-ok" if is_settled_sec else ("bal-due" if bal > 0 else "")
-        return f'<tr><td>{label}</td><td class="r">₹{fmt(amt)}</td><td class="r">{rcvd_str}</td><td class="r">{date_str}</td><td>{mode_str}</td><td class="r {bal_cls}">{bal_str}</td></tr>'
-
-    fabric_rcvd = sum(float(i.get("fabric_received", 0)) for i in items)
-    tail_rcvd   = sum(float(i.get("tailoring_received", 0)) for i in items)
-    emb_rcvd    = sum(float(i.get("embroidery_received", 0)) for i in items)
-    ao_rcvd     = sum(float(i.get("addon_received", 0)) for i in ao_items)
-
-    # Use first settled item's pay mode/date for section-level display
-    def _first_settled(item_list, mode_field, date_field):
-        for it in item_list:
-            m = it.get(mode_field, "N/A") or "N/A"
-            if m.startswith("Settled"):
-                return m, it.get(date_field, "") or ""
-        # fallback: first item
-        if item_list:
-            return item_list[0].get(mode_field, "N/A") or "N/A", item_list[0].get(date_field, "") or ""
-        return "N/A", ""
-
-    fabric_pay_mode, fabric_pay_date = _first_settled(items, "fabric_pay_mode", "fabric_pay_date")
-    tail_pay_mode,   tail_pay_date   = _first_settled(tail_items, "tailoring_pay_mode", "tailoring_pay_date")
-    emb_pay_mode,    emb_pay_date    = _first_settled(emb_items, "embroidery_pay_mode", "embroidery_pay_date")
-    ao_pay_mode,     ao_pay_date     = _first_settled(ao_items, "addon_pay_mode", "addon_pay_date")
-
-    fabric_pend  = sum(float(i.get("fabric_pending", 0)) for i in items)
-    tail_pend    = sum(float(i.get("tailoring_pending", 0)) for i in tail_items)
-    emb_pend     = sum(float(i.get("embroidery_pending", 0)) for i in emb_items)
-    ao_pend      = sum(float(i.get("addon_pending", 0)) for i in ao_items)
-
-    pay_rows_html = ""
-    pay_rows_html += pay_row("Fabric",     fabric_amt_db,  fabric_rcvd, fabric_pay_date, fabric_pay_mode, fabric_pay_mode)
-    pay_rows_html += pay_row("Tailoring",  tail_amt_total, tail_rcvd,   tail_pay_date,   tail_pay_mode,   tail_pay_mode)
-    pay_rows_html += pay_row("Embroidery", emb_amt_total,  emb_rcvd,    emb_pay_date,    emb_pay_mode,    emb_pay_mode)
-    pay_rows_html += pay_row("Add-on",     ao_amt_total,   ao_rcvd,     ao_pay_date,     ao_pay_mode,     ao_pay_mode)
-
-    # Advance rows inside Payment Details (negative = reduces balance due)
-    adv_pay_rows = ""
-    if advances:
-        for a in advances:
-            amt_a = float(a.get("amount", 0))
-            if amt_a == 0:
-                continue
-            adv_date = a.get("date", "—") or "—"
-            adv_mode = a.get("mode", "—") or "—"
-            sign = "-" if amt_a > 0 else "+"  # positive advance = credit, show as negative
-            adv_pay_rows += f'<tr class="adv-pay-row"><td>Advance ({adv_mode})</td><td class="r"></td><td class="r adv-credit">{sign}₹{fmt(abs(amt_a))}</td><td class="r">{adv_date}</td><td>{adv_mode}</td><td class="r adv-credit">{sign}₹{fmt(abs(amt_a))}</td></tr>'
-
-    total_rcvd_all = fabric_rcvd + tail_rcvd + emb_rcvd + ao_rcvd
-    # Subtotal balance: sum only unsettled sections, then subtract net advance credit
-    unsettled_pending = 0.0
-    all_settled = True
-    for _amt, _rcvd, _mode in [
-        (fabric_amt_db, fabric_rcvd, fabric_pay_mode),
-        (tail_amt_total, tail_rcvd, tail_pay_mode),
-        (emb_amt_total, emb_rcvd, emb_pay_mode),
-        (ao_amt_total, ao_rcvd, ao_pay_mode),
-    ]:
-        if _amt <= 0:
-            continue
-        if not str(_mode).startswith("Settled"):
-            all_settled = False
-            unsettled_pending += _amt - _rcvd
-    # Subtract advance credit from balance due
-    net_pending_after_adv = unsettled_pending - adv_total
-    grand_bal_cls = "bal-ok" if (all_settled or net_pending_after_adv <= 0) else "bal-due"
-    grand_bal_str = "✓ Settled" if (all_settled or net_pending_after_adv <= 0) else f"₹{fmt(net_pending_after_adv)}"
 
     logo_tag = ""
     if firm_logo:
