@@ -269,12 +269,14 @@ async def create_group(
     # Use _id instead of barcode for unique identification
     items = await db.items.find({"_id": {"$in": item_ids}}).to_list(1000)
     print(f"[DEBUG] create_group: Found {len(items)} items with _id")
+    id_field = "_id"
 
     if len(items) != len(item_ids):
         # Try with id field as fallback
         print(f"[DEBUG] create_group: Not found with _id, trying with id field")
         items = await db.items.find({"id": {"$in": item_ids}}).to_list(1000)
         print(f"[DEBUG] create_group: Found {len(items)} items with id field")
+        id_field = "id"
 
         if len(items) != len(item_ids):
             print(f"[DEBUG] create_group: Still not found. Looking for any items with these IDs in database...")
@@ -292,11 +294,12 @@ async def create_group(
     # Generate unique group_id
     group_id = str(uuid.uuid4())
 
-    # Update items with group_id and group_name
+    # Update items with group_id and group_name using the correct id field
     result = await db.items.update_many(
-        {"_id": {"$in": item_ids}},
+        {id_field: {"$in": item_ids}},
         {"$set": {"group_id": group_id, "group_name": group_name.strip()}}
     )
+    print(f"[DEBUG] create_group: Updated {result.modified_count} items with group_id={group_id}")
 
     await audit_log(db, "group_create", current_user, "items", group_id, {
         "group_name": group_name,
@@ -330,8 +333,12 @@ async def update_group(
 
     # Update items if provided
     if item_ids is not None:
-        # Validate all items exist and belong to same customer using _id
-        items = await db.items.find({"_id": {"$in": item_ids}}).to_list(len(item_ids))
+        # Determine which id field to use
+        test_items = await db.items.find({"_id": {"$in": item_ids}}).to_list(len(item_ids))
+        id_field = "_id" if len(test_items) == len(item_ids) else "id"
+
+        # Validate all items exist and belong to same customer using the correct id field
+        items = await db.items.find({id_field: {"$in": item_ids}}).to_list(len(item_ids))
         if len(items) != len(item_ids):
             raise HTTPException(status_code=404, detail="Some items not found")
 
@@ -347,10 +354,10 @@ async def update_group(
             {"$unset": {"group_id": "", "group_name": ""}}
         )
 
-        # Add group_id to new set of items
+        # Add group_id to new set of items using the correct id field
         if item_ids:
             result = await db.items.update_many(
-                {"_id": {"$in": item_ids}},
+                {id_field: {"$in": item_ids}},
                 {"$set": {"group_id": group_id, "group_name": group_name.strip() if group_name else existing_group.get("group_name", "")}}
             )
             audit_data["item_count"] = result.modified_count
