@@ -135,7 +135,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
         float(i.get("embroidery_received", 0)) + float(i.get("addon_received", 0))
         for i in items
     )
-    total_adv = sum(float(a.get("amount", 0)) for a in advances)
+    adv_total = sum(float(a.get("amount", 0)) for a in advances)
     
     balance_status = "Fully Paid ✓" if is_settled else f"Balance Due: ₹{fmt(total_pending)}"
     status_dot = "●" if is_settled else "○"
@@ -771,9 +771,6 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
     tail_block, tail_gst, tail_amt_total = make_section("Tailoring", tail_items, "tailoring_amount")
     emb_block, emb_gst, emb_amt_total = make_section("Embroidery", emb_items, "embroidery_amount")
     ao_block, ao_gst, ao_amt_total = make_section("Add-on", ao_items, "addon_amount")
-
-    # Advance net (positive = customer has credit)
-    adv_total = sum(float(a.get("amount", 0)) for a in advances)
 
     # Use raw DB fabric_amount for totals to avoid GST back-calc rounding drift
     fabric_amt_db = sum(float(i.get("fabric_amount", 0)) for i in items)
