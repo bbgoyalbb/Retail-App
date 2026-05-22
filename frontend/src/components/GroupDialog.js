@@ -15,7 +15,7 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
         loadGroupDetails();
       } else {
         setGroupName("");
-        setSelectedItemIds(initialItems.map(i => i.barcode));
+        setSelectedItemIds(initialItems.map(i => i._id || i.id));
       }
     }
   }, [open, mode, groupId, initialItems]);
@@ -25,17 +25,12 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
       setLoading(true);
       const groupData = await getGroup(groupId);
       setGroupName(groupData.group_name || "");
-      setSelectedItemIds(groupData.items.map(i => i.barcode));
+      setSelectedItemIds(groupData.items.map(i => i._id || i.id));
     } catch (error) {
       console.error("Failed to load group:", error);
     } finally {
       setLoading(false);
     }
-  };
-
-  // Get item object by barcode
-  const getItemByBarcode = (barcode) => {
-    return allItems.find(i => i.barcode === barcode);
   };
 
   const handleSave = async () => {
@@ -77,11 +72,11 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
     }
   };
 
-  const toggleItem = (barcode) => {
+  const toggleItem = (itemId) => {
     setSelectedItemIds(prev =>
-      prev.includes(barcode)
-        ? prev.filter(id => id !== barcode)
-        : [...prev, barcode]
+      prev.includes(itemId)
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
     );
   };
 
@@ -113,32 +108,35 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
           <div>
             <label className="text-sm font-semibold mb-2 block">Select Articles</label>
             <div className="border border-border rounded-md max-h-64 overflow-y-auto">
-              {allItems.map((item) => (
-                <div
-                  key={item.barcode}
-                  className="flex items-center justify-between p-3 border-b border-border last:border-b-0 hover:bg-muted/50 cursor-pointer"
-                  onClick={() => toggleItem(item.barcode)}
-                >
-                  <div className="flex-1">
-                    <div className="font-medium">{item.barcode}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {item.article_type || "—"} • <span className="font-mono">{item.ref}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-mono">
-                      ₹{((item.fabric_amount || 0) + (item.tailoring_amount || 0) + (item.embroidery_amount || 0) + (item.addon_amount || 0)).toFixed(0)}
-                    </div>
-                    {selectedItemIds.includes(item.barcode) ? (
-                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                        <Plus size={12} weight="bold" className="text-primary-foreground" />
+              {allItems.map((item) => {
+                const itemId = item._id || item.id;
+                return (
+                  <div
+                    key={itemId}
+                    className="flex items-center justify-between p-3 border-b border-border last:border-b-0 hover:bg-muted/50 cursor-pointer"
+                    onClick={() => toggleItem(itemId)}
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium">{item.barcode}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {item.article_type || "—"} • <span className="font-mono">{item.ref}</span>
                       </div>
-                    ) : (
-                      <div className="w-5 h-5 border-2 border-border rounded-full" />
-                    )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-mono">
+                        ₹{((item.fabric_amount || 0) + (item.tailoring_amount || 0) + (item.embroidery_amount || 0) + (item.addon_amount || 0)).toFixed(0)}
+                      </div>
+                      {selectedItemIds.includes(itemId) ? (
+                        <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                          <Plus size={12} weight="bold" className="text-primary-foreground" />
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 border-2 border-border rounded-full" />
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
               {selectedItemIds.length} item(s) selected

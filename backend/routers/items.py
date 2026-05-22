@@ -257,34 +257,22 @@ async def create_group(
     db = Depends(get_db),
     current_user: dict = Depends(get_current_user_dep)
 ):
-    """Create a new group with the specified items."""
+    """Create a new group with the specified items using unique _id."""
     if not item_ids:
         raise HTTPException(status_code=400, detail="No items provided")
     if not group_name or not group_name.strip():
         raise HTTPException(status_code=400, detail="Group name is required")
 
-    # Debug logging
-    print(f"[DEBUG] create_group: Received item_ids={item_ids}")
-
-    # Validate all items exist and belong to same customer
-    items = await db.items.find({"barcode": {"$in": item_ids}}).to_list(1000)
-    print(f"[DEBUG] create_group: Found {len(items)} items in database")
-    for item in items:
-        print(f"[DEBUG] create_group: barcode={item.get('barcode')}, name={item.get('name')}, ref={item.get('ref')}")
+    # Use _id instead of barcode for unique identification
+    items = await db.items.find({"_id": {"$in": item_ids}}).to_list(1000)
 
     if len(items) != len(item_ids):
-        # Some barcodes might be duplicated, check if we found at least the unique barcodes
-        unique_barcodes = set(item_ids)
-        found_barcodes = set(item.get("barcode") for item in items)
-        if not unique_barcodes.issubset(found_barcodes):
-            raise HTTPException(status_code=404, detail="Some items not found")
+        raise HTTPException(status_code=404, detail="Some items not found")
 
     # Normalize customer names (case-insensitive, trimmed) for comparison
     customers = set(str(item.get("name", "")).strip().lower() for item in items if item.get("name"))
     if len(customers) > 1:
-        # Log the actual customer names for debugging
         actual_names = [item.get("name") for item in items]
-        print(f"[DEBUG] create_group: Customer mismatch detected: {actual_names}")
         raise HTTPException(status_code=400, detail=f"Cannot group items from different customers: {actual_names}")
 
     # Generate unique group_id
@@ -292,7 +280,7 @@ async def create_group(
 
     # Update items with group_id and group_name
     result = await db.items.update_many(
-        {"barcode": {"$in": item_ids}},
+        {"_id": {"$in": item_ids}},
         {"$set": {"group_id": group_id, "group_name": group_name.strip()}}
     )
 
@@ -328,15 +316,14 @@ async def update_group(
 
     # Update items if provided
     if item_ids is not None:
-        # Validate all items exist and belong to same customer
-        items = await db.items.find({"barcode": {"$in": item_ids}}).to_list(len(item_ids))
+        # Validate all items exist and belong to same customer using _id
+        items = await db.items.find({"_id": {"$in": item_ids}}).to_list(len(item_ids))
         if len(items) != len(item_ids):
             raise HTTPException(status_code=404, detail="Some items not found")
 
         # Normalize customer names (case-insensitive, trimmed) for comparison
         customers = set(str(item.get("name", "")).strip().lower() for item in items if item.get("name"))
         if len(customers) > 1:
-            # Log the actual customer names for debugging
             actual_names = [item.get("name") for item in items]
             raise HTTPException(status_code=400, detail=f"Cannot group items from different customers: {actual_names}")
 
@@ -349,7 +336,7 @@ async def update_group(
         # Add group_id to new set of items
         if item_ids:
             result = await db.items.update_many(
-                {"barcode": {"$in": item_ids}},
+                {"_id": {"$in": item_ids}},
                 {"$set": {"group_id": group_id, "group_name": group_name.strip() if group_name else existing_group.get("group_name", "")}}
             )
             audit_data["item_count"] = result.modified_count

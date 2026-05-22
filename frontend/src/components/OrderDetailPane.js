@@ -463,7 +463,7 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
       return;
     }
 
-    setSelectedItemIds(allItems.map(i => i.barcode));
+    setSelectedItemIds(allItems.map(i => i._id || i.id));
     setGroupDialogMode("create");
     setEditingGroupId(null);
     setShowGroupDialog(true);
