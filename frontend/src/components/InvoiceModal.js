@@ -4,14 +4,14 @@ import { getInvoiceUrl } from "@/api";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import InvoiceFormatDialog from "./InvoiceFormatDialog";
 
-export default function InvoiceModal({ billRef, onClose }) {
+export default function InvoiceModal({ billRef, format = "standard", onClose }) {
   const [showFormatDialog, setShowFormatDialog] = useState(false);
-  const url = getInvoiceUrl(billRef);
+  const url = getInvoiceUrl(billRef, format);
   const trapRef = useFocusTrap(true);
 
-  const handleFormatSelect = (format) => {
+  const handleFormatSelect = (selectedFormat) => {
     setShowFormatDialog(false);
-    window.open(getInvoiceUrl(billRef, format), '_blank');
+    window.open(getInvoiceUrl(billRef, selectedFormat), '_blank');
   };
 
   useEffect(() => {

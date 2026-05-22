@@ -4,6 +4,7 @@ import {
   getItems, getItem, getAdvances, updateItem, deleteItem, createItem,
   updateAdvance, createAdvance, deleteAdvance, invalidateItemsCache,
   invalidateAdvancesCache, invalidateCustomersCache, getSettings, searchItems, getCustomers, getPublicSettings,
+  getInvoiceUrl,
 } from "@/api";
 import { fmt } from "@/lib/fmt";
 import { DatePickerInput } from "@/components/DatePickerInput";
@@ -13,6 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import InvoiceModal from "@/components/InvoiceModal";
+import InvoiceFormatDialog from "@/components/InvoiceFormatDialog";
 import SettlementPanel from "@/components/SettlementPanel";
 import OrderDetailPane from "@/components/OrderDetailPane";
 import { TailoringOverlay, AddOnOverlay } from "@/components/OrderOverlays";
@@ -236,6 +238,8 @@ export default function ItemsManager() {
   // Overlays
   const [settlementOrders, setSettlementOrders] = useState(null);
   const [invoiceRef, setInvoiceRef]             = useState(null);
+  const [invoiceFormat, setInvoiceFormat]       = useState("standard");
+  const [showFormatDialog, setShowFormatDialog] = useState(null);
   const [tailoringGroup, setTailoringGroup]     = useState(null);
   const [addonGroup, setAddonGroup]             = useState(null);
 
@@ -819,7 +823,7 @@ export default function ItemsManager() {
                         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover/row:opacity-100 transition-all sm:translate-x-2 group-hover/row:translate-x-0" onClick={e => e.stopPropagation()}>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; savedPage.current = itemsPage; setTailoringGroup(group); }} title="Tailoring"><Scissors size={14} weight="bold"/></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; savedPage.current = itemsPage; setAddonGroup(group); }} title="Add-on"><Tag size={14} weight="bold"/></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => setInvoiceRef(group.ref)} title="Invoice"><Printer size={14} weight="bold"/></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => { setInvoiceRef(group.ref); setShowFormatDialog(group.ref); }} title="Invoice"><Printer size={14} weight="bold"/></Button>
                         </div>
                       </div>
                     </div>
@@ -1189,7 +1193,19 @@ export default function ItemsManager() {
       )}
 
       {/* ════ INVOICE ════ */}
-      {invoiceRef && <InvoiceModal billRef={invoiceRef} onClose={() => setInvoiceRef(null)}/>}
+      {invoiceRef && <InvoiceModal billRef={invoiceRef} format={invoiceFormat} onClose={() => { setInvoiceRef(null); setInvoiceFormat("standard"); }}/>}
+
+      {/* ════ FORMAT DIALOG ════ */}
+      {showFormatDialog && (
+        <InvoiceFormatDialog
+          open={!!showFormatDialog}
+          onClose={() => setShowFormatDialog(null)}
+          onSelect={(format) => {
+            setInvoiceFormat(format);
+            setShowFormatDialog(null);
+          }}
+        />
+      )}
 
       {/* ════ SETTLEMENT ════ */}
       {settlementOrders && (
