@@ -268,9 +268,12 @@ async def create_group(
     if len(items) != len(item_ids):
         raise HTTPException(status_code=404, detail="Some items not found")
 
-    customers = set(item.get("name") for item in items)
+    # Normalize customer names (case-insensitive, trimmed) for comparison
+    customers = set(str(item.get("name", "")).strip().lower() for item in items if item.get("name"))
     if len(customers) > 1:
-        raise HTTPException(status_code=400, detail="Cannot group items from different customers")
+        # Log the actual customer names for debugging
+        actual_names = [item.get("name") for item in items]
+        raise HTTPException(status_code=400, detail=f"Cannot group items from different customers: {actual_names}")
 
     # Generate unique group_id
     group_id = str(uuid.uuid4())
@@ -318,9 +321,12 @@ async def update_group(
         if len(items) != len(item_ids):
             raise HTTPException(status_code=404, detail="Some items not found")
 
-        customers = set(item.get("name") for item in items)
+        # Normalize customer names (case-insensitive, trimmed) for comparison
+        customers = set(str(item.get("name", "")).strip().lower() for item in items if item.get("name"))
         if len(customers) > 1:
-            raise HTTPException(status_code=400, detail="Cannot group items from different customers")
+            # Log the actual customer names for debugging
+            actual_names = [item.get("name") for item in items]
+            raise HTTPException(status_code=400, detail=f"Cannot group items from different customers: {actual_names}")
 
         # Remove group_id from all items currently in this group
         await db.items.update_many(
