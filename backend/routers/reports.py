@@ -334,13 +334,13 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
             emb_amt = float(item.get("embroidery_amount", 0))
             ao_amt = float(item.get("addon_amount", 0))
             article_total = fab_amt + tail_amt + emb_amt + ao_amt
-            
+
             # Only show non-zero amounts
             fab_str = f"₹{fmt(fab_amt)}" if fab_amt > 0 else "—"
             tail_str = f"₹{fmt(tail_amt)}" if tail_amt > 0 else "—"
             emb_str = f"₹{fmt(emb_amt)}" if emb_amt > 0 else "—"
             ao_str = f"₹{fmt(ao_amt)}" if ao_amt > 0 else "—"
-            
+
             article_rows += f"""
             <tr>
               <td>{barcode}</td>
@@ -351,13 +351,16 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: str =
               <td class="r">{ao_str}</td>
               <td class="r"><strong>₹{fmt(article_total)}</strong></td>
             </tr>"""
-        
+
         # Calculate section totals for article-wise format
         total_fabric = sum(float(i.get("fabric_amount", 0)) for i in items)
         total_tailoring = sum(float(i.get("tailoring_amount", 0)) for i in items)
         total_embroidery = sum(float(i.get("embroidery_amount", 0)) for i in items)
         total_addon = sum(float(i.get("addon_amount", 0)) for i in items)
-        
+
+        # Recalculate grand total for article-wise format
+        grand_total_calc = total_fabric + total_tailoring + total_embroidery + total_addon
+
         logo_tag = ""
         if firm_logo:
             if firm_logo.startswith("http"):
