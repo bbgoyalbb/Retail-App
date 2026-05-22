@@ -51,6 +51,8 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
     // Log the items being sent for debugging
     const itemsBeingGrouped = allItems.filter(i => selectedItemIds.includes(i.barcode));
     console.log("Items being grouped:", itemsBeingGrouped.map(i => ({ barcode: i.barcode, name: i.name, ref: i.ref })));
+    console.log("All items available:", allItems.map(i => ({ barcode: i.barcode, name: i.name, ref: i.ref })));
+    console.log("Selected item IDs:", selectedItemIds);
 
     try {
       setLoading(true);
