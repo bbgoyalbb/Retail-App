@@ -1,15 +1,29 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, FileText, ListDashes } from "@phosphor-icons/react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Printer, FileText, ListDashes, X } from "@phosphor-icons/react";
+import { useEffect } from "react";
 
 export default function InvoiceFormatDialog({ open, onClose, onSelect }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    if (open) {
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
+    }
+  }, [open, onClose]);
+
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Select Invoice Format</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3 py-4">
+    <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <Card className="max-w-md w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Select Invoice Format</CardTitle>
+          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+            <X size={20} weight="bold" />
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
           <Button
             onClick={() => onSelect("standard")}
             className="w-full h-auto py-4 flex-col gap-2"
@@ -36,8 +50,8 @@ export default function InvoiceFormatDialog({ open, onClose, onSelect }) {
               </div>
             </div>
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
