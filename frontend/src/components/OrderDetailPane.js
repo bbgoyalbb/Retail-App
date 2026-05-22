@@ -454,6 +454,15 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
       alert("No articles available to group");
       return;
     }
+
+    // Validate all items belong to same customer before opening dialog
+    const customers = new Set(allItems.map(i => i.name?.trim()?.toLowerCase()).filter(Boolean));
+    if (customers.size > 1) {
+      const actualNames = [...new Set(allItems.map(i => i.name))];
+      alert(`Cannot group items from different customers: ${actualNames.join(", ")}`);
+      return;
+    }
+
     setSelectedItemIds(allItems.map(i => i.barcode));
     setGroupDialogMode("create");
     setEditingGroupId(null);
