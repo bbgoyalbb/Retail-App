@@ -696,6 +696,19 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
                 ungrouped_by_customer[customer] = []
             ungrouped_by_customer[customer].append(item)
 
+        # Calculate customer totals for subtotals
+        customer_totals = {}
+        for item in items:
+            customer = item.get("name", "N/A")
+            fab_amt = float(item.get("fabric_amount", 0))
+            tail_amt = float(item.get("tailoring_amount", 0))
+            emb_amt = float(item.get("embroidery_amount", 0))
+            ao_amt = float(item.get("addon_amount", 0))
+            item_total = fab_amt + tail_amt + emb_amt + ao_amt
+            if customer not in customer_totals:
+                customer_totals[customer] = 0.0
+            customer_totals[customer] += item_total
+
         # Track customers already shown in grouped items to avoid duplication
         customers_shown_in_groups = set()
 
@@ -782,6 +795,33 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
               <td>{barcode}</td>
               <td>{article_type}{addons_display}</td>
               <td class="r"><strong>₹{fmt(article_total)}</strong></td>
+            </tr>"""
+
+            # Add customer subtotal after all items for this customer
+            customer_total = customer_totals.get(customer, 0.0)
+            article_rows += f"""
+            <tr style="background: #f0f0f0; border-top: 2px solid #ccc;">
+              <td colspan="2" style="padding: 8px; font-size: 9px; font-weight: 700; color: #333;">
+                Subtotal for {customer_name}
+              </td>
+              <td class="r" style="padding: 8px; font-size: 10px; font-weight: 700; color: #333;">
+                ₹{fmt(customer_total)}
+              </td>
+            </tr>"""
+
+        # Add subtotals for customers who only had grouped items (no ungrouped items)
+        for customer in sorted(customers_shown_in_groups):
+            if customer not in ungrouped_by_customer:
+                customer_name = html_mod.escape(str(customer))
+                customer_total = customer_totals.get(customer, 0.0)
+                article_rows += f"""
+            <tr style="background: #f0f0f0; border-top: 2px solid #ccc;">
+              <td colspan="2" style="padding: 8px; font-size: 9px; font-weight: 700; color: #333;">
+                Subtotal for {customer_name}
+              </td>
+              <td class="r" style="padding: 8px; font-size: 10px; font-weight: 700; color: #333;">
+                ₹{fmt(customer_total)}
+              </td>
             </tr>"""
 
         # Calculate grand total
