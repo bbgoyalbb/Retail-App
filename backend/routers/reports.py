@@ -688,6 +688,14 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
             else:
                 ungrouped_items.append(item)
 
+        # Group ungrouped items by customer name
+        ungrouped_by_customer = {}
+        for item in ungrouped_items:
+            customer = item.get("name", "N/A")
+            if customer not in ungrouped_by_customer:
+                ungrouped_by_customer[customer] = []
+            ungrouped_by_customer[customer].append(item)
+
         # Process grouped items first (sorted by group_name)
         for group_id in sorted(grouped_items.keys(), key=lambda x: grouped_items[x]["group_name"]):
             group = grouped_items[group_id]
@@ -734,29 +742,35 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
               <td class="r"><strong>₹{fmt(group_total)}</strong></td>
             </tr>"""
 
-        # Process ungrouped items
-        for item in ungrouped_items:
-            barcode = html_mod.escape(str(item.get("barcode", "N/A")))
-            customer_name_item = html_mod.escape(str(item.get("name", "N/A")))
-            article_type = html_mod.escape(str(item.get("article_type", "—") or "—"))
-            addon_desc = item.get("addon_desc", "")
-            fab_amt = float(item.get("fabric_amount", 0))
-            tail_amt = float(item.get("tailoring_amount", 0))
-            emb_amt = float(item.get("embroidery_amount", 0))
-            ao_amt = float(item.get("addon_amount", 0))
-            article_total = fab_amt + tail_amt + emb_amt + ao_amt
+        # Process ungrouped items grouped by customer
+        for customer in sorted(ungrouped_by_customer.keys()):
+            customer_items = ungrouped_by_customer[customer]
+            customer_name = html_mod.escape(str(customer))
 
-            addons_display = ""
-            if addon_desc and addon_desc != "N/A":
-                addons_display = f" ({html_mod.escape(str(addon_desc))})"
-
-            # Add customer header row before the item
+            # Add customer header row once for all items of this customer
             article_rows += f"""
             <tr style="background: #f8f8f8;">
               <td colspan="3" style="padding: 6px 8px; font-size: 9px; font-weight: 700; color: #555; border-bottom: 1px solid #ddd;">
-                Customer: {customer_name_item}
+                Customer: {customer_name}
               </td>
-            </tr>
+            </tr>"""
+
+            # Add all items for this customer
+            for item in customer_items:
+                barcode = html_mod.escape(str(item.get("barcode", "N/A")))
+                article_type = html_mod.escape(str(item.get("article_type", "—") or "—"))
+                addon_desc = item.get("addon_desc", "")
+                fab_amt = float(item.get("fabric_amount", 0))
+                tail_amt = float(item.get("tailoring_amount", 0))
+                emb_amt = float(item.get("embroidery_amount", 0))
+                ao_amt = float(item.get("addon_amount", 0))
+                article_total = fab_amt + tail_amt + emb_amt + ao_amt
+
+                addons_display = ""
+                if addon_desc and addon_desc != "N/A":
+                    addons_display = f" ({html_mod.escape(str(addon_desc))})"
+
+                article_rows += f"""
             <tr>
               <td>{barcode}</td>
               <td>{article_type}{addons_display}</td>
