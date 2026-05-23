@@ -694,10 +694,11 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
             group_items = group["items"]
             group_name = html_mod.escape(group["group_name"])
 
-            # Calculate total for the group
+            # Calculate total for the group and collect customer names
             group_total = 0.0
             article_types = []
             addons = []
+            customers_in_group = set()
             for item in group_items:
                 fab_amt = float(item.get("fabric_amount", 0))
                 tail_amt = float(item.get("tailoring_amount", 0))
@@ -713,13 +714,17 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
                 if addon_desc and addon_desc != "N/A":
                     addons.append(html_mod.escape(str(addon_desc)))
 
+                customers_in_group.add(item.get("name", "N/A"))
+
             article_types_str = ", ".join(sorted(set(article_types))) if article_types else "—"
             addons_str = ", ".join(sorted(set(addons))) if addons else ""
             addons_display = f" ({addons_str})" if addons_str else ""
+            customers_str = html_mod.escape(", ".join(sorted(customers_in_group)))
 
             article_rows += f"""
             <tr>
               <td><strong>{group_name}</strong></td>
+              <td>{customers_str}</td>
               <td>{article_types_str}{addons_display}</td>
               <td class="r"><strong>₹{fmt(group_total)}</strong></td>
             </tr>"""
@@ -727,6 +732,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
         # Process ungrouped items
         for item in ungrouped_items:
             barcode = html_mod.escape(str(item.get("barcode", "N/A")))
+            customer_name_item = html_mod.escape(str(item.get("name", "N/A")))
             article_type = html_mod.escape(str(item.get("article_type", "—") or "—"))
             addon_desc = item.get("addon_desc", "")
             fab_amt = float(item.get("fabric_amount", 0))
@@ -742,6 +748,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
             article_rows += f"""
             <tr>
               <td>{barcode}</td>
+              <td>{customer_name_item}</td>
               <td>{article_type}{addons_display}</td>
               <td class="r"><strong>₹{fmt(article_total)}</strong></td>
             </tr>"""
@@ -985,11 +992,11 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
   <div class="inv-body">
     <div class="sec-head" style="background: #f0f0f0; padding: 6px 0; border-bottom: 1.5px solid #111; margin-bottom: 12px;">Article Summary</div>
     <table>
-      <thead><tr><th style="width: 20%;">Barcode</th><th style="width: 60%;">Article Type</th><th class="r" style="width: 20%;">Total</th></tr></thead>
+      <thead><tr><th style="width: 15%;">Barcode</th><th style="width: 25%;">Customer</th><th style="width: 40%;">Article Type</th><th class="r" style="width: 20%;">Total</th></tr></thead>
       <tbody>
         {article_rows}
         <tr class="sub-row">
-          <td class="subtd" colspan="2">Subtotal ({len(items)} articles)</td>
+          <td class="subtd" colspan="3">Subtotal ({len(items)} articles)</td>
           <td class="subtd r">₹{fmt(grand_total_calc)}</td>
         </tr>
       </tbody>
