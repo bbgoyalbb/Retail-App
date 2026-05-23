@@ -669,100 +669,31 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
 
     # ---- Article-summary format (just barcode, article type, and total) ----
     if is_article_summary:
-        # Group items by group_id if present, otherwise show individually
+        # Show all items individually (grouped items expanded to show each item)
         article_rows = ""
 
-        # Separate grouped and ungrouped items
-        grouped_items = {}
-        ungrouped_items = []
-
+        # Group all items by customer name (both grouped and ungrouped)
+        all_items_by_customer = {}
         for item in items:
-            group_id = item.get("group_id")
-            if group_id:
-                if group_id not in grouped_items:
-                    grouped_items[group_id] = {
-                        "group_name": item.get("group_name", "Unnamed Group"),
-                        "items": []
-                    }
-                grouped_items[group_id]["items"].append(item)
-            else:
-                ungrouped_items.append(item)
-
-        # Group ungrouped items by customer name
-        ungrouped_by_customer = {}
-        for item in ungrouped_items:
             customer = item.get("name", "N/A")
-            if customer not in ungrouped_by_customer:
-                ungrouped_by_customer[customer] = []
-            ungrouped_by_customer[customer].append(item)
+            if customer not in all_items_by_customer:
+                all_items_by_customer[customer] = []
+            all_items_by_customer[customer].append(item)
 
-        # Track customers already shown in grouped items to avoid duplication
-        customers_shown_in_groups = set()
-
-        # Process grouped items first (sorted by group_name)
-        for group_id in sorted(grouped_items.keys(), key=lambda x: grouped_items[x]["group_name"]):
-            group = grouped_items[group_id]
-            group_items = group["items"]
-            group_name = html_mod.escape(group["group_name"])
-
-            # Calculate total for the group and collect customer names
-            group_total = 0.0
-            article_types = []
-            addons = []
-            customers_in_group = set()
-            for item in group_items:
-                fab_amt = float(item.get("fabric_amount", 0))
-                tail_amt = float(item.get("tailoring_amount", 0))
-                emb_amt = float(item.get("embroidery_amount", 0))
-                ao_amt = float(item.get("addon_amount", 0))
-                group_total += fab_amt + tail_amt + emb_amt + ao_amt
-
-                art_type = item.get("article_type", "—") or "—"
-                if art_type and art_type != "—":
-                    article_types.append(html_mod.escape(str(art_type)))
-
-                addon_desc = item.get("addon_desc", "")
-                if addon_desc and addon_desc != "N/A":
-                    addons.append(html_mod.escape(str(addon_desc)))
-
-                customers_in_group.add(item.get("name", "N/A"))
-
-            article_types_str = ", ".join(sorted(set(article_types))) if article_types else "—"
-            addons_str = ", ".join(sorted(set(addons))) if addons else ""
-            addons_display = f" ({addons_str})" if addons_str else ""
-            customers_str = html_mod.escape(", ".join(sorted(customers_in_group)))
-
-            # Track these customers as shown
-            customers_shown_in_groups.update(customers_in_group)
-
-            # Add customer header row before the group
-            article_rows += f"""
-            <tr style="background: #f8f8f8;">
-              <td colspan="3" style="padding: 6px 8px; font-size: 9px; font-weight: 700; color: #555; border-bottom: 1px solid #ddd;">
-                Customer: {customers_str}
-              </td>
-            </tr>
-            <tr>
-              <td><strong>{group_name}</strong></td>
-              <td>{article_types_str}{addons_display}</td>
-              <td class="r"><strong>₹{fmt(group_total)}</strong></td>
-            </tr>"""
-
-        # Process ungrouped items grouped by customer
-        for customer in sorted(ungrouped_by_customer.keys()):
-            customer_items = ungrouped_by_customer[customer]
+        # Process items grouped by customer
+        for customer in sorted(all_items_by_customer.keys()):
+            customer_items = all_items_by_customer[customer]
             customer_name = html_mod.escape(str(customer))
 
-            # Skip customer header if already shown in grouped items
-            if customer not in customers_shown_in_groups:
-                article_rows += f"""
+            # Add customer header row
+            article_rows += f"""
             <tr style="background: #f8f8f8;">
               <td colspan="3" style="padding: 6px 8px; font-size: 9px; font-weight: 700; color: #555; border-bottom: 1px solid #ddd;">
                 Customer: {customer_name}
               </td>
             </tr>"""
 
-            # Add all items for this customer
+            # Add all items for this customer (show each item individually)
             for item in customer_items:
                 barcode = html_mod.escape(str(item.get("barcode", "N/A")))
                 article_type = html_mod.escape(str(item.get("article_type", "—") or "—"))
