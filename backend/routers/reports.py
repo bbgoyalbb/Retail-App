@@ -1046,7 +1046,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
     </div>
     <div class="bt-col" style="text-align:center;">
       <div class="bt-label">Invoice No</div>
-      <div class="bt-value">{html_mod.escape(ref_display)}</div>
+      <div class="bt-value">{ref_display}</div>
     </div>
     <div class="bt-col" style="text-align:right;">
       <div class="bt-label">Date</div>
