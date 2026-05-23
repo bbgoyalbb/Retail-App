@@ -845,7 +845,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
     vertical-align: top;
     color: #111;
   }}
-  .inv-body td:first-child {{ padding-left: 0; }}
+  .inv-body td:first-child {{ padding-left: 0; width: 45%; min-width: 140px; }}
   .inv-body td:last-child {{ padding-right: 0; }}
   .inv-body td.r {{ text-align: right; font-family: 'IBM Plex Mono', monospace; }}
 
