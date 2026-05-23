@@ -721,10 +721,15 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
             addons_display = f" ({addons_str})" if addons_str else ""
             customers_str = html_mod.escape(", ".join(sorted(customers_in_group)))
 
+            # Add customer header row before the group
             article_rows += f"""
+            <tr style="background: #f8f8f8;">
+              <td colspan="3" style="padding: 6px 8px; font-size: 9px; font-weight: 700; color: #555; border-bottom: 1px solid #ddd;">
+                Customer: {customers_str}
+              </td>
+            </tr>
             <tr>
               <td><strong>{group_name}</strong></td>
-              <td>{customers_str}</td>
               <td>{article_types_str}{addons_display}</td>
               <td class="r"><strong>₹{fmt(group_total)}</strong></td>
             </tr>"""
@@ -745,10 +750,15 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
             if addon_desc and addon_desc != "N/A":
                 addons_display = f" ({html_mod.escape(str(addon_desc))})"
 
+            # Add customer header row before the item
             article_rows += f"""
+            <tr style="background: #f8f8f8;">
+              <td colspan="3" style="padding: 6px 8px; font-size: 9px; font-weight: 700; color: #555; border-bottom: 1px solid #ddd;">
+                Customer: {customer_name_item}
+              </td>
+            </tr>
             <tr>
               <td>{barcode}</td>
-              <td>{customer_name_item}</td>
               <td>{article_type}{addons_display}</td>
               <td class="r"><strong>₹{fmt(article_total)}</strong></td>
             </tr>"""
@@ -992,11 +1002,11 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
   <div class="inv-body">
     <div class="sec-head" style="background: #f0f0f0; padding: 6px 0; border-bottom: 1.5px solid #111; margin-bottom: 12px;">Article Summary</div>
     <table>
-      <thead><tr><th style="width: 15%;">Barcode</th><th style="width: 25%;">Customer</th><th style="width: 40%;">Article Type</th><th class="r" style="width: 20%;">Total</th></tr></thead>
+      <thead><tr><th style="width: 20%;">Barcode</th><th style="width: 60%;">Article Type</th><th class="r" style="width: 20%;">Total</th></tr></thead>
       <tbody>
         {article_rows}
         <tr class="sub-row">
-          <td class="subtd" colspan="3">Subtotal ({len(items)} articles)</td>
+          <td class="subtd" colspan="2">Subtotal ({len(items)} articles)</td>
           <td class="subtd r">₹{fmt(grand_total_calc)}</td>
         </tr>
       </tbody>
