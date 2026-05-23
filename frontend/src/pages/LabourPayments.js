@@ -38,9 +38,9 @@ export default function LabourPayments() {
     };
     getLabourItems(params)
       .then(res => setItems(res.data))
-      .catch(err => toast({ title: "Error", description: err.message || "Failed to load labour items", variant: "destructive" }))
+      .catch(err => console.error("Failed to load labour items", err))
       .finally(() => setLoading(false));
-  }, [filterType, filterKarigar, viewMode, toast]);
+  }, [filterType, filterKarigar, viewMode]); // Remove toast dependency
 
   useEffect(() => {
     getSettings().then(res => {
@@ -48,10 +48,10 @@ export default function LabourPayments() {
       if (Array.isArray(s.karigars) && s.karigars.length > 0) setKarigars(s.karigars);
       if (Array.isArray(s.payment_modes) && s.payment_modes.length > 0) setPaymentModes(s.payment_modes);
     }).catch((err) => {
-      toast({ title: "Error", description: err.message || "Failed to load settings", variant: "destructive" });
+      console.error("Failed to load settings", err);
       setKarigars([]);
     });
-  }, [toast]);
+  }, []); // Remove toast dependency
 
   useEffect(() => { loadData(); setSelected([]); }, [loadData]);
 

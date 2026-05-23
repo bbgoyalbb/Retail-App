@@ -89,20 +89,20 @@ export default function OrderStatus() {
       setRows(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       setRows([]);
-      toast({ title: "Error", description: err.response?.data?.detail || err.message || "Failed to load orders", variant: "destructive" });
+      console.error("Failed to load orders", err);
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []); // Remove toast dependency
 
   useEffect(() => {
     getCustomers()
       .then((res) => setCustomers(Array.isArray(res.data) ? res.data : []))
       .catch((err) => {
         setCustomers([]);
-        toast({ title: "Error", description: err.message || "Failed to load customers", variant: "destructive" });
+        console.error("Failed to load customers", err);
       });
-  }, [toast]);
+  }, []); // Remove toast dependency
 
   // Handle filter changes and trigger load
   useEffect(() => {

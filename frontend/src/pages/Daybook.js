@@ -524,11 +524,11 @@ export default function Daybook() {
     getDaybook({ date_filter: dateFilter === "All" ? undefined : dateFilter })
       .then(res => setEntries(res.data.entries || []))
       .catch((err) => {
-        toast({ title: "Error", description: err.message || "Failed to load daybook", variant: "destructive" });
+        console.error("Failed to load daybook", err);
         setEntries([]);
       })
       .finally(() => setLoading(false));
-  }, [dateFilter, toast]);
+  }, [dateFilter]); // Remove toast dependency
 
   const initialLoadDone = useRef(false);
   useEffect(() => {

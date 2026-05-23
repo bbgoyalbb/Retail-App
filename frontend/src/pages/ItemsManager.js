@@ -364,11 +364,12 @@ export default function ItemsManager() {
         setAdvances(advRes.data || []);
       }
     } catch {
-      toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
+      // Use a local error handler instead of toast dependency
+      console.error("Failed to load data");
     } finally {
       setLoading(false); setLoadingMore(false);
     }
-  }, [toast]);
+  }, []); // Remove toast dependency to prevent infinite re-renders
 
   useEffect(() => { loadData(1); }, [loadData]);
 

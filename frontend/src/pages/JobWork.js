@@ -296,18 +296,18 @@ export default function JobWork() {
     if (dateFilter !== "All") params.date_filter = dateFilter;
     if (deliveryFilter !== "All") params.delivery_filter = deliveryFilter;
     getJobwork(params).then(res => setData(res.data)).catch(err => {
-      toast({ title: "Error", description: err.message || "Failed to load job work data", variant: "destructive" });
+      console.error("Failed to load job work data", err);
     });
-  }, [tab, orderFilter, dateFilter, deliveryFilter, toast]);
+  }, [tab, orderFilter, dateFilter, deliveryFilter]); // Remove toast dependency
 
   useEffect(() => {
     getJobworkFilters()
       .then(res => setFilters(res.data))
       .catch((err) => {
-        toast({ title: "Error", description: err.message || "Failed to load jobwork filters", variant: "destructive" });
+        console.error("Failed to load jobwork filters", err);
         setFilters({ order_nos: [], dates: [], delivery_dates: [] });
       });
-  }, [toast]);
+  }, []); // Remove toast dependency
   useEffect(() => { loadData(); }, [loadData]);
   useEffect(() => {
     getSettings().then(res => setSettings(res.data)).catch(() => setSettings({ karigars: [] }));

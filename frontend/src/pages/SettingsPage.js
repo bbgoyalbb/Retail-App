@@ -107,9 +107,9 @@ export default function SettingsPage() {
       .catch((err) => {
         const msg = err?.message || "Failed to load settings";
         setLoadError(msg);
-        toast({ title: "Error", description: msg, variant: "destructive" });
+        console.error("Failed to load settings", err);
       });
-  }, [toast]);
+  }, []); // Remove toast dependency
 
   useEffect(() => { loadSettings(); }, [loadSettings]);
 

@@ -80,11 +80,11 @@ export default function UsersPage() {
       const data = await listUsers();
       setUsers(data);
     } catch (err) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      console.error("Failed to fetch users", err);
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []); // Remove toast dependency
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 

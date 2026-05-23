@@ -81,11 +81,11 @@ export default function AuditLogPage() {
       setTotalLogs(res.data.total || 0);
       setHasMore(items.length === PAGE_SIZE);
     } catch (err) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      console.error("Failed to fetch audit logs", err);
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []); // Remove toast dependency
 
   const clearFilters = () => {
     const cleared = { filterUser: "", filterAction: "", filterDateFrom: "", filterDateTo: "" };
