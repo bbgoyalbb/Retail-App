@@ -696,6 +696,9 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
                 ungrouped_by_customer[customer] = []
             ungrouped_by_customer[customer].append(item)
 
+        # Track customers already shown in grouped items to avoid duplication
+        customers_shown_in_groups = set()
+
         # Process grouped items first (sorted by group_name)
         for group_id in sorted(grouped_items.keys(), key=lambda x: grouped_items[x]["group_name"]):
             group = grouped_items[group_id]
@@ -729,6 +732,9 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
             addons_display = f" ({addons_str})" if addons_str else ""
             customers_str = html_mod.escape(", ".join(sorted(customers_in_group)))
 
+            # Track these customers as shown
+            customers_shown_in_groups.update(customers_in_group)
+
             # Add customer header row before the group
             article_rows += f"""
             <tr style="background: #f8f8f8;">
@@ -747,8 +753,9 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
             customer_items = ungrouped_by_customer[customer]
             customer_name = html_mod.escape(str(customer))
 
-            # Add customer header row once for all items of this customer
-            article_rows += f"""
+            # Skip customer header if already shown in grouped items
+            if customer not in customers_shown_in_groups:
+                article_rows += f"""
             <tr style="background: #f8f8f8;">
               <td colspan="3" style="padding: 6px 8px; font-size: 9px; font-weight: 700; color: #555; border-bottom: 1px solid #ddd;">
                 Customer: {customer_name}
