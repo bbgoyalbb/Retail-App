@@ -52,11 +52,24 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
 
     # For family-wise invoices, show all customer names
     customers = sorted(set(item.get("name", "N/A") for item in items))
-    customer_name = html_mod.escape(", ".join(customers)) if len(customers) > 1 else html_mod.escape(customers[0])
-    order_date     = html_mod.escape(str(items[0].get("date", "N/A")))
+    customer_name = html_mod.escape("<br>".join(customers)) if len(customers) > 1 else html_mod.escape(customers[0])
 
-    # For combined invoice, show list of refs
-    ref_display = ", ".join(refs) if len(refs) > 1 else refs[0]
+    # For combined invoice, show list of refs with their respective dates
+    # Collect unique ref-date pairs
+    ref_date_pairs = {}
+    for item in items:
+        ref = item.get("ref", "N/A")
+        date = item.get("date", "N/A")
+        if ref not in ref_date_pairs:
+            ref_date_pairs[ref] = date
+
+    # Display refs and dates on separate lines
+    if len(refs) > 1:
+        ref_display = "<br>".join(refs)
+        order_date = "<br>".join([ref_date_pairs.get(ref, "N/A") for ref in refs])
+    else:
+        ref_display = refs[0]
+        order_date = html_mod.escape(str(ref_date_pairs.get(refs[0], items[0].get("date", "N/A"))))
     
     # Collect payment modes (deduplicated, strip "Settled - " prefix)
     all_modes = set()
@@ -669,7 +682,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
 
     # ---- Article-summary format (just barcode, article type, and total) ----
     if is_article_summary:
-        # Group items by group_id if present, otherwise show individually
+        # Group all items by customer name (both grouped and ungrouped)
         article_rows = ""
 
         # Separate grouped and ungrouped items
@@ -688,13 +701,16 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
             else:
                 ungrouped_items.append(item)
 
-        # Group ungrouped items by customer name
-        ungrouped_by_customer = {}
-        for item in ungrouped_items:
+        # Group all items by customer name
+        all_items_by_customer = {}
+        for item in items:
             customer = item.get("name", "N/A")
-            if customer not in ungrouped_by_customer:
-                ungrouped_by_customer[customer] = []
-            ungrouped_by_customer[customer].append(item)
+            if customer not in all_items_by_customer:
+                all_items_by_customer[customer] = {"grouped": [], "ungrouped": []}
+            if item.get("group_id"):
+                all_items_by_customer[customer]["grouped"].append(item)
+            else:
+                all_items_by_customer[customer]["ungrouped"].append(item)
 
         # Calculate customer totals for subtotals
         customer_totals = {}
@@ -709,74 +725,67 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
                 customer_totals[customer] = 0.0
             customer_totals[customer] += item_total
 
-        # Track customers already shown in grouped items to avoid duplication
-        customers_shown_in_groups = set()
-
-        # Process grouped items first (sorted by group_name)
-        for group_id in sorted(grouped_items.keys(), key=lambda x: grouped_items[x]["group_name"]):
-            group = grouped_items[group_id]
-            group_items = group["items"]
-            group_name = html_mod.escape(group["group_name"])
-
-            # Calculate total for the group and collect customer names
-            group_total = 0.0
-            article_types = []
-            addons = []
-            customers_in_group = set()
-            for item in group_items:
-                fab_amt = float(item.get("fabric_amount", 0))
-                tail_amt = float(item.get("tailoring_amount", 0))
-                emb_amt = float(item.get("embroidery_amount", 0))
-                ao_amt = float(item.get("addon_amount", 0))
-                group_total += fab_amt + tail_amt + emb_amt + ao_amt
-
-                art_type = item.get("article_type", "—") or "—"
-                if art_type and art_type != "—":
-                    article_types.append(html_mod.escape(str(art_type)))
-
-                addon_desc = item.get("addon_desc", "")
-                if addon_desc and addon_desc != "N/A":
-                    addons.append(html_mod.escape(str(addon_desc)))
-
-                customers_in_group.add(item.get("name", "N/A"))
-
-            article_types_str = ", ".join(sorted(set(article_types))) if article_types else "—"
-            addons_str = ", ".join(sorted(set(addons))) if addons else ""
-            addons_display = f" ({addons_str})" if addons_str else ""
-            customers_str = html_mod.escape(", ".join(sorted(customers_in_group)))
-
-            # Track these customers as shown
-            customers_shown_in_groups.update(customers_in_group)
-
-            # Add customer header row before the group
-            article_rows += f"""
-            <tr style="background: #f8f8f8;">
-              <td colspan="3" style="padding: 6px 8px; font-size: 9px; font-weight: 700; color: #555; border-bottom: 1px solid #ddd;">
-                Customer: {customers_str}
-              </td>
-            </tr>
-            <tr>
-              <td>{group_name}</td>
-              <td>{article_types_str}{addons_display}</td>
-              <td class="r"><strong>₹{fmt(group_total)}</strong></td>
-            </tr>"""
-
-        # Process ungrouped items grouped by customer
-        for customer in sorted(ungrouped_by_customer.keys()):
-            customer_items = ungrouped_by_customer[customer]
+        # Process items grouped by customer
+        for customer in sorted(all_items_by_customer.keys()):
+            customer_data = all_items_by_customer[customer]
             customer_name = html_mod.escape(str(customer))
 
-            # Skip customer header if already shown in grouped items
-            if customer not in customers_shown_in_groups:
-                article_rows += f"""
+            # Add customer header row once per customer
+            article_rows += f"""
             <tr style="background: #f8f8f8;">
               <td colspan="3" style="padding: 6px 8px; font-size: 9px; font-weight: 700; color: #555; border-bottom: 1px solid #ddd;">
                 Customer: {customer_name}
               </td>
             </tr>"""
 
-            # Add all items for this customer
-            for item in customer_items:
+            # Process grouped items for this customer
+            customer_grouped = {}
+            for item in customer_data["grouped"]:
+                group_id = item.get("group_id")
+                if group_id not in customer_grouped:
+                    customer_grouped[group_id] = {
+                        "group_name": item.get("group_name", "Unnamed Group"),
+                        "items": []
+                    }
+                customer_grouped[group_id]["items"].append(item)
+
+            for group_id in sorted(customer_grouped.keys(), key=lambda x: customer_grouped[x]["group_name"]):
+                group = customer_grouped[group_id]
+                group_items = group["items"]
+                group_name = html_mod.escape(group["group_name"])
+
+                # Calculate total for the group
+                group_total = 0.0
+                article_types = []
+                addons = []
+                for item in group_items:
+                    fab_amt = float(item.get("fabric_amount", 0))
+                    tail_amt = float(item.get("tailoring_amount", 0))
+                    emb_amt = float(item.get("embroidery_amount", 0))
+                    ao_amt = float(item.get("addon_amount", 0))
+                    group_total += fab_amt + tail_amt + emb_amt + ao_amt
+
+                    art_type = item.get("article_type", "—") or "—"
+                    if art_type and art_type != "—":
+                        article_types.append(html_mod.escape(str(art_type)))
+
+                    addon_desc = item.get("addon_desc", "")
+                    if addon_desc and addon_desc != "N/A":
+                        addons.append(html_mod.escape(str(addon_desc)))
+
+                article_types_str = ", ".join(sorted(set(article_types))) if article_types else "—"
+                addons_str = ", ".join(sorted(set(addons))) if addons else ""
+                addons_display = f" ({addons_str})" if addons_str else ""
+
+                article_rows += f"""
+            <tr>
+              <td>{group_name}</td>
+              <td>{article_types_str}{addons_display}</td>
+              <td class="r"><strong>₹{fmt(group_total)}</strong></td>
+            </tr>"""
+
+            # Process ungrouped items for this customer
+            for item in customer_data["ungrouped"]:
                 barcode = html_mod.escape(str(item.get("barcode", "N/A")))
                 article_type = html_mod.escape(str(item.get("article_type", "—") or "—"))
                 addon_desc = item.get("addon_desc", "")
@@ -800,21 +809,6 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
             # Add customer subtotal after all items for this customer
             customer_total = customer_totals.get(customer, 0.0)
             article_rows += f"""
-            <tr style="background: #f0f0f0; border-top: 2px solid #ccc;">
-              <td colspan="2" style="padding: 8px; font-size: 9px; font-weight: 700; color: #333;">
-                Subtotal for {customer_name}
-              </td>
-              <td class="r" style="padding: 8px; font-size: 10px; font-weight: 700; color: #333;">
-                ₹{fmt(customer_total)}
-              </td>
-            </tr>"""
-
-        # Add subtotals for customers who only had grouped items (no ungrouped items)
-        for customer in sorted(customers_shown_in_groups):
-            if customer not in ungrouped_by_customer:
-                customer_name = html_mod.escape(str(customer))
-                customer_total = customer_totals.get(customer, 0.0)
-                article_rows += f"""
             <tr style="background: #f0f0f0; border-top: 2px solid #ccc;">
               <td colspan="2" style="padding: 8px; font-size: 9px; font-weight: 700; color: #333;">
                 Subtotal for {customer_name}
