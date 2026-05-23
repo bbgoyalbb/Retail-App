@@ -697,6 +697,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
             # Calculate total for the group
             group_total = 0.0
             article_types = []
+            addons = []
             for item in group_items:
                 fab_amt = float(item.get("fabric_amount", 0))
                 tail_amt = float(item.get("tailoring_amount", 0))
@@ -708,12 +709,18 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
                 if art_type and art_type != "—":
                     article_types.append(html_mod.escape(str(art_type)))
 
+                addon_desc = item.get("addon_desc", "")
+                if addon_desc and addon_desc != "N/A":
+                    addons.append(html_mod.escape(str(addon_desc)))
+
             article_types_str = ", ".join(sorted(set(article_types))) if article_types else "—"
+            addons_str = ", ".join(sorted(set(addons))) if addons else ""
+            addons_display = f" ({addons_str})" if addons_str else ""
 
             article_rows += f"""
             <tr>
               <td><strong>{group_name}</strong></td>
-              <td>{article_types_str}</td>
+              <td>{article_types_str}{addons_display}</td>
               <td class="r"><strong>₹{fmt(group_total)}</strong></td>
             </tr>"""
 
@@ -721,16 +728,21 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
         for item in ungrouped_items:
             barcode = html_mod.escape(str(item.get("barcode", "N/A")))
             article_type = html_mod.escape(str(item.get("article_type", "—") or "—"))
+            addon_desc = item.get("addon_desc", "")
             fab_amt = float(item.get("fabric_amount", 0))
             tail_amt = float(item.get("tailoring_amount", 0))
             emb_amt = float(item.get("embroidery_amount", 0))
             ao_amt = float(item.get("addon_amount", 0))
             article_total = fab_amt + tail_amt + emb_amt + ao_amt
 
+            addons_display = ""
+            if addon_desc and addon_desc != "N/A":
+                addons_display = f" ({html_mod.escape(str(addon_desc))})"
+
             article_rows += f"""
             <tr>
               <td>{barcode}</td>
-              <td>{article_type}</td>
+              <td>{article_type}{addons_display}</td>
               <td class="r"><strong>₹{fmt(article_total)}</strong></td>
             </tr>"""
 
