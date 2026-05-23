@@ -743,7 +743,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
               </td>
             </tr>
             <tr>
-              <td><strong>{group_name}</strong></td>
+              <td>{group_name}</td>
               <td>{article_types_str}{addons_display}</td>
               <td class="r"><strong>₹{fmt(group_total)}</strong></td>
             </tr>"""
