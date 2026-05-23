@@ -603,13 +603,18 @@ export default function ItemsManager() {
 
   const handleCancelItem = async (item) => {
     const zero = { ...CANCEL_ZERO_PAYLOAD, cancelled: true, cancelled_at: new Date().toISOString(), cancelled_ref: item.ref };
-    try { 
-      await updateItem(item.id, zero); 
-      toast({ title: "Article Cancelled", description: `Article ${item.barcode} cancelled` }); 
-    } catch { 
-      toast({ title: "Error", description: "Failed to cancel article", variant: "destructive" }); 
+    try {
+      await updateItem(item.id, zero);
+      toast({ title: "Article Cancelled", description: `Article ${item.barcode} cancelled` });
+    } catch {
+      toast({ title: "Error", description: "Failed to cancel article", variant: "destructive" });
     }
     invalidateItemsCache(); loadData(1);
+  };
+
+  const handleGroupChanged = () => {
+    // Refresh items data when groups are changed
+    loadData(1);
   };
 
   const _sf = selectedSection ? (
@@ -878,6 +883,7 @@ export default function ItemsManager() {
             onClose={() => setDetailOpen(false)}
             onCancelItem={(item) => handleCancelItem(item)}
             onDeleteItem={(item) => { setDelConfirm(item); setDelMode("item"); }}
+            onGroupChanged={handleGroupChanged}
           />
         </div>
       </div>

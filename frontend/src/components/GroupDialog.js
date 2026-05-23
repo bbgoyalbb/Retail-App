@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Plus, Trash, PencilSimple } from "@phosphor-icons/react";
-import { createGroup, updateGroup, deleteGroup, getGroup } from "@/api";
+import { createGroup, updateGroup, deleteGroup, getGroup, invalidateItemsCache } from "@/api";
 import { useToast } from "@/hooks/use-toast";
+import { invalidate } from "@/lib/dataEvents";
 
 export default function GroupDialog({ open, onClose, mode = "create", groupId = null, initialItems = [], allItems = [] }) {
   const [groupName, setGroupName] = useState("");
@@ -60,6 +61,9 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
           description: `"${groupName}" with ${selectedItemIds.length} article(s)`,
         });
       }
+      // Invalidate cache to trigger UI refresh
+      invalidateItemsCache();
+      invalidate("items");
       onClose();
     } catch (error) {
       console.error("Group save error:", error);
@@ -78,6 +82,9 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
         title: "Group deleted",
         description: `"${groupName}" has been removed`,
       });
+      // Invalidate cache to trigger UI refresh
+      invalidateItemsCache();
+      invalidate("items");
       onClose();
     } catch (error) {
       alert(error.response?.data?.detail || "Failed to delete group");

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import GroupDialog from "./GroupDialog";
+import { invalidate } from "@/lib/dataEvents";
 
 export const SectionAccordion = ({ icon: Icon, label, amount, children, onEdit, defaultOpen = false }) => {
   const [open, setOpen] = useState(defaultOpen);
@@ -438,7 +439,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
   );
 }
 
-export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPay, onClose, onCancelItem, onDeleteItem }) {
+export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPay, onClose, onCancelItem, onDeleteItem, onGroupChanged }) {
   const [viewTab, setViewTab] = useState("order");
   const [showGroupDialog, setShowGroupDialog] = useState(false);
   const [groupDialogMode, setGroupDialogMode] = useState("create");
@@ -474,6 +475,10 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
     setShowGroupDialog(false);
     setEditingGroupId(null);
     setSelectedItemIds([]);
+    // Trigger refresh to update group names in the UI
+    invalidate("items");
+    // Notify parent to refresh data
+    onGroupChanged?.();
   };
 
   if (!selectedGroups.length) return (
