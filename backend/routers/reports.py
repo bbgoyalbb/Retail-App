@@ -34,10 +34,8 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
     if not items:
         raise HTTPException(status_code=404, detail="No items found for the provided references")
 
-    # Validate all items belong to same customer
-    customers = set(item.get("name") for item in items)
-    if len(customers) > 1:
-        raise HTTPException(status_code=400, detail="Cannot combine invoices from different customers")
+    # Allow combining invoices from different customers (family-wise invoices)
+    # No longer validate that all items belong to same customer
 
     # Fetch advances from all refs
     advances = await db.advances.find({"ref": {"$in": refs}}, {"_id": 0}).to_list(50)
@@ -52,7 +50,9 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
     firm_gstin   = html_mod.escape(str(s.get("firm_gstin",   DEFAULT_SETTINGS["firm_gstin"])))
     firm_logo = s.get("firm_logo", DEFAULT_SETTINGS.get("firm_logo", None))
 
-    customer_name = html_mod.escape(str(items[0].get("name", "N/A")))
+    # For family-wise invoices, show all customer names
+    customers = sorted(set(item.get("name", "N/A") for item in items))
+    customer_name = html_mod.escape(", ".join(customers)) if len(customers) > 1 else html_mod.escape(customers[0])
     order_date     = html_mod.escape(str(items[0].get("date", "N/A")))
 
     # For combined invoice, show list of refs
