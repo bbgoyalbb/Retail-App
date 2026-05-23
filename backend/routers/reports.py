@@ -52,7 +52,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
 
     # For family-wise invoices, show all customer names
     customers = sorted(set(item.get("name", "N/A") for item in items))
-    customer_name = html_mod.escape("<br>".join(customers)) if len(customers) > 1 else html_mod.escape(customers[0])
+    customer_name = "<br>".join(html_mod.escape(c) for c in customers) if len(customers) > 1 else html_mod.escape(customers[0])
 
     # For combined invoice, show list of refs with their respective dates
     # Collect unique ref-date pairs
@@ -65,10 +65,10 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
 
     # Display refs and dates on separate lines
     if len(refs) > 1:
-        ref_display = "<br>".join(refs)
-        order_date = "<br>".join([ref_date_pairs.get(ref, "N/A") for ref in refs])
+        ref_display = "<br>".join(html_mod.escape(ref) for ref in refs)
+        order_date = "<br>".join(html_mod.escape(ref_date_pairs.get(ref, "N/A")) for ref in refs)
     else:
-        ref_display = refs[0]
+        ref_display = html_mod.escape(refs[0])
         order_date = html_mod.escape(str(ref_date_pairs.get(refs[0], items[0].get("date", "N/A"))))
     
     # Collect payment modes (deduplicated, strip "Settled - " prefix)
