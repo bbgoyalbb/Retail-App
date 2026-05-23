@@ -32,19 +32,40 @@ export function AddOnConfigurator({
       }
     }).catch(() => setAddonOptions(["Buttons", "Tie", "Bow"]));
 
-    const normalized = items.map(item => ({
-      item_id: item.id || item._id || `temp_${Date.now()}_${Math.random()}`,
-      barcode: item.barcode,
-      qty: item.qty,
-      // addon items array: [{ name, price }, ...]
-      addons: (item.addon?.items || item.addons || []).map(a => ({
-        name: a.name || a.addon_name || addonOptions[0] || "Buttons",
-        price: a.price || a.amount || ""
-      })),
-      addon_amount: item.addon_amount || item.addon?.addon_amount || 0,
-      _original: item,
-      _original_item_id: item.id || item._id
-    }));
+    const normalized = items.map(item => {
+      // Parse addon_desc string to extract individual addons
+      // Format: "Buttons(100) + Tie(50)" or "Buttons(100), Tie(50)"
+      let parsedAddons = [];
+      const addonDesc = item.addon_desc || "";
+      if (addonDesc && addonDesc !== "N/A") {
+        // Split by " + " or ", " to get individual addon entries
+        const parts = addonDesc.split(/\s*\+\s*|\s*,\s*/);
+        parsedAddons = parts.map(part => {
+          // Match pattern like "Buttons(100)" or "Buttons"
+          const match = part.match(/^(.+?)\((\d+(?:\.\d+)?)\)$/);
+          if (match) {
+            return { name: match[1].trim(), price: match[2] };
+          }
+          // If no price in parentheses, try to extract just the name
+          return { name: part.trim(), price: "" };
+        }).filter(a => a.name); // Filter out empty names
+      }
+
+      return {
+        item_id: item.id || item._id || `temp_${Date.now()}_${Math.random()}`,
+        barcode: item.barcode,
+        qty: item.qty,
+        // addon items array: [{ name, price }, ...]
+        // Use parsed addons from addon_desc, or fallback to item.addon?.items or item.addons
+        addons: parsedAddons.length > 0 ? parsedAddons : (item.addon?.items || item.addons || []).map(a => ({
+          name: a.name || a.addon_name || addonOptions[0] || "Buttons",
+          price: a.price || a.amount || ""
+        })),
+        addon_amount: item.addon_amount || item.addon?.addon_amount || 0,
+        _original: item,
+        _original_item_id: item.id || item._id
+      };
+    });
     setAssignments(normalized);
   }, [items, addonOptions]); // include addonOptions since we use addonOptions[0]
 
