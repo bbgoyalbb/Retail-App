@@ -85,6 +85,9 @@ export default function LabourPayments() {
   const handlePay = async () => {
     if (selected.length === 0) { toast({ title: "Nothing selected", description: "Select at least one item", variant: "destructive" }); return; }
 
+    // Prevent double-clicks
+    if (saving) return;
+
     const tailoringIds = items.filter(i => selectedSet.has(i.id) && i.labour_type === "Tailoring").map(i => i.id);
     const embroideryIds = items.filter(i => selectedSet.has(i.id) && i.labour_type === "Embroidery").map(i => i.id);
 
@@ -92,15 +95,24 @@ export default function LabourPayments() {
     const paymentId = `PAY-${Date.now().toString(36).slice(-6)}`;
 
     setSaving(true);
+    // Safety timeout: reset stuck state after 30 seconds
+    const saveTimeout = setTimeout(() => {
+      console.warn("Labour payment timeout - resetting button state");
+      setSaving(false);
+      toast({ title: "Timeout", description: "Payment is taking too long. Check connection and retry.", variant: "destructive" });
+    }, 30000);
+
     try {
       await Promise.all([
         tailoringIds.length > 0 && payLabour({ item_ids: tailoringIds, labour_type: "tailoring", payment_date: payDate, payment_modes: selectedModes, payment_id: paymentId }),
         embroideryIds.length > 0 && payLabour({ item_ids: embroideryIds, labour_type: "embroidery", payment_date: payDate, payment_modes: selectedModes, payment_id: paymentId }),
       ].filter(Boolean));
+      clearTimeout(saveTimeout);
       toast({ title: "Payment recorded", description: `${selected.length} items marked as paid` });
       setSelected([]);
       loadData();
     } catch (err) {
+      clearTimeout(saveTimeout);
       toast({ title: "Error", description: err.response?.data?.detail || err.message || "Failed to process payment", variant: "destructive" });
     } finally {
       setSaving(false);

@@ -114,9 +114,20 @@ export default function SettingsPage() {
   useEffect(() => { loadSettings(); }, [loadSettings]);
 
   const save = async () => {
+    // Prevent double-clicks
+    if (saving) return;
+
     setSaving(true);
+    // Safety timeout: reset stuck state after 30 seconds
+    const saveTimeout = setTimeout(() => {
+      console.warn("Settings save timeout - resetting button state");
+      setSaving(false);
+      toast({ title: "Timeout", description: "Save is taking too long. Check connection and retry.", variant: "destructive" });
+    }, 30000);
+
     try {
       const res = await updateSettings(settings);
+      clearTimeout(saveTimeout);
       setSettings(res.data);
       setSavedSettings(res.data);
       invalidatePublicSettingsCache();
@@ -124,6 +135,7 @@ export default function SettingsPage() {
       window.dispatchEvent(new CustomEvent("settings:updated"));
       toast({ title: "Settings Saved", description: "Global application configuration has been updated." });
     } catch (err) {
+      clearTimeout(saveTimeout);
       toast({ title: "Error", description: err.message || "Failed to save settings", variant: "destructive" });
     } finally {
       setSaving(false);

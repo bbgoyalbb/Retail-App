@@ -91,14 +91,18 @@ export default function UsersPage() {
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.username || !form.password || !form.full_name) return;
+    if (busy) return; // Prevent double-clicks
     setBusy(true);
+    const busyTimeout = setTimeout(() => { setBusy(false); }, 30000); // Safety timeout
     try {
       await registerUser(form);
+      clearTimeout(busyTimeout);
       toast({ title: "User created", description: `${form.full_name} (${form.username}) added.` });
       setShowAdd(false);
       setForm(EMPTY_FORM);
       fetchUsers();
     } catch (err) {
+      clearTimeout(busyTimeout);
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setBusy(false);
@@ -107,13 +111,17 @@ export default function UsersPage() {
 
   const handleEdit = async (e) => {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
+    const busyTimeout = setTimeout(() => { setBusy(false); }, 30000);
     try {
       await updateUser(editUser.username, { full_name: editUser.full_name, role: editUser.role });
+      clearTimeout(busyTimeout);
       toast({ title: "User updated" });
       setEditUser(null);
       fetchUsers();
     } catch (err) {
+      clearTimeout(busyTimeout);
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setBusy(false);
@@ -140,15 +148,19 @@ export default function UsersPage() {
   };
 
   const handleSavePages = async () => {
+    if (busy) return;
     setBusy(true);
+    const busyTimeout = setTimeout(() => { setBusy(false); }, 30000);
     try {
       const allPaths = ALL_PAGES.flatMap(g => g.pages.map(p => p.path));
       const isAll = allPaths.every(p => pagesSelection.includes(p));
       await updateUser(pagesUser.username, { allowed_pages: isAll ? [] : pagesSelection });
+      clearTimeout(busyTimeout);
       toast({ title: "Page permissions saved" });
       setPagesUser(null);
       fetchUsers();
     } catch (err) {
+      clearTimeout(busyTimeout);
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setBusy(false);
@@ -158,13 +170,17 @@ export default function UsersPage() {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (!newPassword) return;
+    if (busy) return;
     setBusy(true);
+    const busyTimeout = setTimeout(() => { setBusy(false); }, 30000);
     try {
       await updateUser(resetUser.username, { password: newPassword });
+      clearTimeout(busyTimeout);
       toast({ title: "Password reset", description: `Password updated for ${resetUser.username}.` });
       setResetUser(null);
       setNewPassword("");
     } catch (err) {
+      clearTimeout(busyTimeout);
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setBusy(false);

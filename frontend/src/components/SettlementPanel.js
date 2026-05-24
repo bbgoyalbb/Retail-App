@@ -189,6 +189,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
       setSaving(false);
     } else {
       setMessage({ type: "success", text: `${eligible.length} settlement(s) processed!` });
+      setSaving(false); // Critical: Reset before closing
       onSuccess?.();
       setTimeout(() => onClose(), 1400);
     }
