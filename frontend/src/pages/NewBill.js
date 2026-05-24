@@ -140,6 +140,16 @@ export default function NewBill() {
 
   const nameWrapRef = useRef(null);
 
+  // Safety effect: Reset stuck saving state after 30 seconds (mobile fix)
+  useEffect(() => {
+    if (!saving) return;
+    const timeout = setTimeout(() => {
+      console.warn("Global safety timeout: Resetting stuck saving state");
+      setSaving(false);
+    }, 30000);
+    return () => clearTimeout(timeout);
+  }, [saving, setSaving]);
+
   const nameSuggestions = useMemo(() => {
     const q = customerName.trim().toLowerCase();
     if (!customers || !Array.isArray(customers)) return [];
@@ -362,12 +372,16 @@ export default function NewBill() {
       return;
     }
 
-    // Prevent double-clicks on mobile
-    if (saving) return;
+    // If already saving, don't start another request
+    // Note: The 30s timeout below will reset stuck saving state
+    if (saving) {
+      console.warn("Save already in progress, skipping duplicate request");
+      return;
+    }
 
     setSaving(true);
+    // Safety net: if save takes >30s, reset button (mobile network issues)
     const saveTimeout = setTimeout(() => {
-      // Safety net: if save takes >30s, reset button (mobile network issues)
       console.warn("Save operation timeout - resetting button state");
       setSaving(false);
       toast({ title: "Timeout", description: "Save is taking too long. Please check your connection and try again.", variant: "destructive" });
@@ -475,6 +489,7 @@ export default function NewBill() {
     setShowPostSave(false);
     setLastBillRef(null);
     setLastBillTotal(0);
+    setSaving(false); // Critical: Reset saving state for next bill
     resetFormFields();
     setTimeout(() => nameRef.current?.focus(), 50);
   };
