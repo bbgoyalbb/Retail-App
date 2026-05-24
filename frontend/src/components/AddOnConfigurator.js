@@ -142,7 +142,7 @@ export function AddOnConfigurator({
             <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-success/10 text-success">
-                  <Tag size={20} weight="duotone" />
+                  <Tag size={20} weight="duotone" aria-hidden="true" />
                 </div>
                 <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">{title}</CardTitle>
               </div>
@@ -152,8 +152,8 @@ export function AddOnConfigurator({
                 </div>
               )}
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-10 w-10 rounded-full hover:bg-muted/50">
-              <X size={20}/>
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-10 w-10 rounded-full hover:bg-muted/50" aria-label="Close add-on configurator">
+              <X size={20} aria-hidden="true"/>
             </Button>
           </div>
         </CardHeader>
@@ -171,7 +171,7 @@ export function AddOnConfigurator({
 
           {assignments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
-              <Package size={48} weight="duotone" className="mb-4" />
+              <Package size={48} weight="duotone" className="mb-4" aria-hidden="true" />
               <p className="text-[11px] font-black uppercase tracking-[0.2em]">No Items Available</p>
             </div>
           ) : (
@@ -221,8 +221,9 @@ export function AddOnConfigurator({
                                 size="icon"
                                 onClick={() => removeAddonFromItem(i, idx)}
                                 className="h-8 w-8 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
+                                aria-label="Remove add-on"
                               >
-                                <Trash size={14} />
+                                <Trash size={14} aria-hidden="true" />
                               </Button>
                             </div>
                           ))}
@@ -243,7 +244,7 @@ export function AddOnConfigurator({
                           onClick={() => addAddonToItem(i)}
                           className="h-8 px-3 text-[10px] font-black uppercase tracking-widest border-dashed border-success/30 text-success hover:bg-success/5 hover:border-success"
                         >
-                          <Plus size={14} weight="bold" /> Add
+                          <Plus size={14} weight="bold" aria-hidden="true" /> Add
                         </Button>
                       </td>
                     </tr>

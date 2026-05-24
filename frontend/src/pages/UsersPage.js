@@ -209,7 +209,7 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Users</h1>
+          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-[var(--brand)] truncate">Users</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Manage user accounts, roles, and page access permissions</p>
         </div>
         <Button
@@ -224,7 +224,7 @@ export default function UsersPage() {
       <Card className="border-none shadow-xl shadow-black/5 overflow-hidden bg-background min-h-[400px]">
         <CardHeader className="px-6 py-4 border-b border-border/50 bg-background/50 backdrop-blur-md flex flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <div className="p-2 rounded-lg bg-[var(--brand)]/10 text-[var(--brand)]">
               <UsersThree size={18} weight="duotone" />
             </div>
             <div className="flex flex-col">

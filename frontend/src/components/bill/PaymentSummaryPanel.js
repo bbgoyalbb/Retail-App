@@ -56,7 +56,7 @@ export default function PaymentSummaryPanel({
         </div>
 
         {/* Payment Modes */}
-        <div className="space-y-2">
+        <div className="space-y-2" role="group" aria-label="Payment mode selection">
           <label className="text-[9px] uppercase tracking-[0.2em] font-black text-muted-foreground block">Accepting via</label>
           <div className="flex flex-wrap gap-1.5">
             {paymentModes.map((mode) => (
@@ -65,12 +65,14 @@ export default function PaymentSummaryPanel({
                 variant={selectedModes.includes(mode) ? "default" : "outline"}
                 size="sm"
                 onClick={() => onModeToggle(mode)}
+                aria-pressed={selectedModes.includes(mode)}
+                aria-label={`Select ${mode} payment mode`}
                 className={`h-7 px-2.5 font-bold uppercase tracking-widest text-[9px] transition-colors active:scale-95 ${
                   selectedModes.includes(mode) ? 'shadow-sm shadow-primary/20' : 'hover:border-primary/50'
                 }`}
                 type="button"
               >
-                {selectedModes.includes(mode) && <Check size={11} weight="bold" className="mr-1" />}
+                {selectedModes.includes(mode) && <Check size={11} weight="bold" className="mr-1" aria-hidden="true" />}
                 {mode}
               </Button>
             ))}
@@ -117,7 +119,7 @@ export default function PaymentSummaryPanel({
         <div className="space-y-2">
           <label className={`group flex items-center gap-3 px-3 py-2.5 border rounded-lg cursor-pointer transition-colors ${needsTailoring ? 'border-primary/40 bg-primary/[0.03]' : 'border-border hover:border-primary/30 hover:bg-muted/20'}`}>
             <div className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${needsTailoring ? 'bg-primary border-primary' : 'border-muted-foreground/30 bg-background'}`}>
-              {needsTailoring && <Check size={12} weight="bold" className="text-white" />}
+              {needsTailoring && <Check size={12} weight="bold" className="text-white" aria-hidden="true" />}
             </div>
             <input ref={refs.tailoringRef} data-testid="needs-tailoring-checkbox" type="checkbox" checked={!!needsTailoring} onChange={(e) => onNeedsTailoringChange(e.target.checked)} className="sr-only" />
             <div>
@@ -128,7 +130,7 @@ export default function PaymentSummaryPanel({
 
           <label className={`group flex items-center gap-3 px-3 py-2.5 border rounded-lg cursor-pointer transition-colors ${isSettled ? 'border-success/40 bg-success/[0.03]' : 'border-border hover:border-success/30 hover:bg-muted/20'}`}>
             <div className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${isSettled ? 'bg-success border-success' : 'border-muted-foreground/30 bg-background'}`}>
-              {isSettled && <Check size={12} weight="bold" className="text-white" />}
+              {isSettled && <Check size={12} weight="bold" className="text-white" aria-hidden="true" />}
             </div>
             <input ref={refs.settledRef} data-testid="settled-checkbox" type="checkbox" checked={isSettled} onChange={(e) => onSettledChange(e.target.checked)} className="sr-only" />
             <div>
@@ -152,7 +154,7 @@ export default function PaymentSummaryPanel({
               <span>Finalizing…</span>
             </div>
           ) : (
-            <><FloppyDisk size={18} weight="bold" className="mr-2" />Commit Invoice</>
+            <><FloppyDisk size={18} weight="bold" className="mr-2" aria-hidden="true" />Commit Invoice</>
           )}
         </Button>
         {!canSubmit && !saving && (

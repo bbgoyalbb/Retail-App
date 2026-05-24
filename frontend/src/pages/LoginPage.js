@@ -55,11 +55,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-background overflow-hidden selection:bg-primary/20">
+    <div className="min-h-screen flex bg-background overflow-hidden selection:bg-[var(--brand)]/20">
       {/* Theme toggle — fixed top right */}
       <button
         onClick={toggle}
-        className="fixed top-4 right-4 z-50 p-2.5 rounded-full bg-card border border-border/50 shadow-md text-muted-foreground hover:text-primary hover:border-primary/40 transition-all"
+        className="fixed top-4 right-4 z-50 p-2.5 rounded-full bg-card border border-border/50 shadow-md text-muted-foreground hover:text-[var(--brand)] hover:border-[var(--brand)]/40 transition-all"
+        aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
         title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
       >
         {theme === "light" ? <Moon size={18} weight="bold" /> : <Sun size={18} weight="bold" />}
@@ -69,18 +70,18 @@ export default function LoginPage() {
       <div className="relative flex-1 flex items-center justify-center p-6 lg:p-12 z-10">
         {/* Subtle background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl" />
-          <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl" />
+          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-[var(--brand)]/5 blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] rounded-full bg-[var(--brand)]/5 blur-3xl" />
         </div>
 
         <div className="relative w-full max-w-sm space-y-8">
           {/* Brand mark */}
           <div className="flex flex-col items-center text-center">
-            <div className="w-24 h-24 rounded-3xl bg-primary/5 p-1 mb-6 shadow-2xl shadow-primary/10 border border-primary/10 transition-transform hover:scale-105 duration-200 overflow-hidden flex items-center justify-center">
+            <div className="w-24 h-24 rounded-3xl bg-[var(--brand)]/5 p-1 mb-6 shadow-2xl shadow-[var(--brand)]/10 border border-[var(--brand)]/10 transition-transform hover:scale-105 duration-200 overflow-hidden flex items-center justify-center">
               {(() => { const src = theme === "dark" ? (firmLogoDark || firmLogo) : firmLogo; return src ? (
                 <img src={src} alt={firmName} className="w-full h-full object-contain p-2" />
               ) : (
-                <div className="w-full h-full bg-primary flex items-center justify-center">
+                <div className="w-full h-full bg-[var(--brand)] flex items-center justify-center">
                   <span className="text-white font-black text-4xl">{firmName.charAt(0).toUpperCase()}</span>
                 </div>
               ); })()}
@@ -94,7 +95,7 @@ export default function LoginPage() {
           </div>
 
           <Card className="border-none shadow-2xl shadow-black/10 bg-card/50 overflow-hidden relative">
-            <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
+            <div className="absolute top-0 left-0 w-full h-1 bg-[var(--brand)]" />
             <CardHeader className="pb-4 pt-8">
               {sessionExpired && (
                 <div className="mb-6 p-4 rounded-xl bg-warning/10 border border-warning/20 flex items-center gap-3">
@@ -121,7 +122,7 @@ export default function LoginPage() {
                     onChange={(e) => setUsername(e.target.value)}
                     autoComplete="username"
                     autoFocus
-                    className="w-full h-12 px-4 text-sm font-bold bg-muted/30 border border-border/50 rounded-2xl focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/30 text-foreground"
+                    className="w-full h-11 px-4 text-sm font-bold bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-[var(--brand)]/20 outline-none transition-all placeholder:text-muted-foreground/30 text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
@@ -136,12 +137,13 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       autoComplete="current-password"
-                      className="w-full h-12 px-4 pr-12 text-sm font-bold bg-muted/30 border border-border/50 rounded-2xl focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/30 text-foreground"
+                      className="w-full h-11 px-4 pr-12 text-sm font-bold bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-[var(--brand)]/20 outline-none transition-all placeholder:text-muted-foreground/30 text-foreground"
                     />
                     <button 
                       type="button" 
                       onClick={() => setShowPwd(p => !p)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-[var(--brand)] transition-colors"
+                      aria-label={showPwd ? "Hide password" : "Show password"}
                     >
                       {showPwd ? <EyeSlash size={18} weight="bold" /> : <Eye size={18} weight="bold" />}
                     </button>
@@ -150,7 +152,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={busy || !username || !password}
-                  className="w-full h-14 text-sm font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 gap-3 transition-all active:scale-[0.98] mt-4"
+                  className="w-full h-12 text-sm font-black uppercase tracking-[0.2em] shadow-xl shadow-[var(--brand)]/20 gap-3 transition-all active:scale-[0.98] mt-4"
                 >
                   {busy ? (
                     <div className="flex items-center gap-2">Authenticating <ArrowsClockwise size={20} className="animate-spin" /></div>

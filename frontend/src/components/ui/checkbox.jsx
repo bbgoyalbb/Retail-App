@@ -1,4 +1,5 @@
 import * as React from "react"
+import PropTypes from "prop-types";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
 import { Check } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
@@ -15,10 +16,11 @@ const Checkbox = React.forwardRef(({ className, ...props }, ref) => (
     <CheckboxPrimitive.Indicator
       className={cn("flex items-center justify-center text-current")}
     >
-      <Check size={14} weight="bold" />
+      <Check size={14} weight="bold" aria-hidden="true" />
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 ))
 Checkbox.displayName = CheckboxPrimitive.Root.displayName
+Checkbox.propTypes = { className: PropTypes.string };
 
 export { Checkbox }

@@ -15,34 +15,44 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
   useEffect(() => {
     if (open) {
       if (mode === "edit" && groupId) {
-        loadGroupDetails();
+        // Load group details inline to avoid dependency array issues
+        (async () => {
+          try {
+            setLoading(true);
+            const groupData = await getGroup(groupId);
+            setGroupName(groupData.group_name || "");
+            setSelectedItemIds(groupData.items.map(i => i._id || i.id));
+          } catch (error) {
+            console.error("Failed to load group:", error);
+          } finally {
+            setLoading(false);
+          }
+        })();
       } else {
         setGroupName("");
         setSelectedItemIds(initialItems.map(i => i._id || i.id));
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, groupId, initialItems]);
 
-  const loadGroupDetails = async () => {
-    try {
-      setLoading(true);
-      const groupData = await getGroup(groupId);
-      setGroupName(groupData.group_name || "");
-      setSelectedItemIds(groupData.items.map(i => i._id || i.id));
-    } catch (error) {
-      console.error("Failed to load group:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // loadGroupDetails is now inlined in the useEffect above
 
   const handleSave = async () => {
     if (!groupName.trim()) {
-      alert("Group name is required");
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Group name is required",
+      });
       return;
     }
     if (selectedItemIds.length === 0) {
-      alert("Please select at least one item");
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please select at least one item",
+      });
       return;
     }
 
@@ -67,7 +77,11 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
       onClose();
     } catch (error) {
       console.error("Group save error:", error);
-      alert(error.response?.data?.detail || "Failed to save group");
+      toast({
+        variant: "destructive",
+        title: "Failed to save group",
+        description: error.response?.data?.detail || error.message || "An unexpected error occurred",
+      });
     } finally {
       setLoading(false);
     }
@@ -87,7 +101,12 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
       invalidate("items");
       onClose();
     } catch (error) {
-      alert(error.response?.data?.detail || "Failed to delete group");
+      console.error("Group delete error:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to delete group",
+        description: error.response?.data?.detail || error.message || "An unexpected error occurred",
+      });
     } finally {
       setLoading(false);
     }

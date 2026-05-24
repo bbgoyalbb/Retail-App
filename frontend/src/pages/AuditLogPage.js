@@ -27,7 +27,7 @@ function ActionBadge({ action = "" }) {
     <Badge 
       variant="outline" 
       className={cn(
-        "px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest transition-all",
+        "px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest transition-all",
         ACTION_COLORS[key]
       )}
     >
@@ -63,6 +63,12 @@ export default function AuditLogPage() {
     listUsers().then(res => setUsers(res || [])).catch(() => setUsers([]));
   }, []);
 
+  /**
+   * Fetches audit logs from the API with pagination and filters.
+   * @param {number} pageNum - Page number to fetch (0-indexed)
+   * @param {Object|null} overrideFilters - Optional override for current filters
+   * @returns {Promise<void>}
+   */
   const fetchLogs = useCallback(async (pageNum = 0, overrideFilters = null) => {
     setLoading(true);
     try {
@@ -107,7 +113,7 @@ export default function AuditLogPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="min-w-0">
-          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Security Audit</h1>
+          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-[var(--brand)] truncate">Security Audit</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Comprehensive ledger of all system interactions and modifications</p>
         </div>
         <div className="flex items-center gap-3">
@@ -133,8 +139,9 @@ export default function AuditLogPage() {
             }}
             disabled={!logs.length}
             className="h-10 px-4 font-black uppercase tracking-widest text-[10px] rounded-xl gap-2"
+            aria-label="Export audit logs to CSV"
           >
-            <DownloadSimple size={16} weight="bold" /> Export CSV
+            <DownloadSimple size={16} weight="bold" aria-hidden="true" /> Export CSV
           </Button>
           <Button
             variant={showFilters ? "default" : "outline"}
@@ -144,7 +151,7 @@ export default function AuditLogPage() {
               showFilters && "shadow-lg shadow-primary/20"
             )}
           >
-            <Funnel size={16} weight="bold" className="mr-2" />
+            <Funnel size={16} weight="bold" className="mr-2" aria-hidden="true" />
             Filters {(filterUser || filterAction || filterDateFrom || filterDateTo) && <span className="ml-2 w-2 h-2 bg-warning rounded-full animate-pulse" />}
           </Button>
           <Button
@@ -152,8 +159,9 @@ export default function AuditLogPage() {
             size="icon"
             onClick={() => { setPage(0); fetchLogs(0); }}
             className="h-10 w-10 rounded-full shadow-sm hover:rotate-180 transition-transform duration-300"
+            aria-label="Refresh logs"
           >
-            <ArrowClockwise size={18} weight="bold" className={loading ? "animate-spin text-primary" : ""} />
+            <ArrowClockwise size={18} weight="bold" className={loading ? "animate-spin text-primary" : ""} aria-hidden="true" />
           </Button>
         </div>
       </div>
@@ -165,42 +173,42 @@ export default function AuditLogPage() {
           <CardContent className="p-6 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">User</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">User</label>
                 <div className="relative group">
                   <select 
                     value={filterUser} 
                     onChange={e => setFilterUser(e.target.value)}
-                    className="w-full h-11 pl-4 pr-10 text-xs font-bold bg-muted/30 border border-border/50 rounded-xl appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
+                    className="w-full h-10 pl-4 pr-10 text-xs font-bold bg-muted/30 border border-border/50 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
                   >
                     <option value="">All Users</option>
                     {users.map(u => <option key={u.username} value={u.username}>{u.full_name} ({u.username})</option>)}
                   </select>
-                  <CaretDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" />
+                  <CaretDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" aria-hidden="true" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Action Type</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Action Type</label>
                 <div className="relative group">
                   <select 
                     value={filterAction} 
                     onChange={e => setFilterAction(e.target.value)}
-                    className="w-full h-11 pl-4 pr-10 text-xs font-bold bg-muted/30 border border-border/50 rounded-xl appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
+                    className="w-full h-10 pl-4 pr-10 text-xs font-bold bg-muted/30 border border-border/50 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
                   >
                     <option value="">All Actions</option>
                     {ACTION_TYPES.map(a => <option key={a} value={a}>{a.charAt(0).toUpperCase() + a.slice(1)}</option>)}
                   </select>
-                  <CaretDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" />
+                  <CaretDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" aria-hidden="true" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">From Date</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">From Date</label>
                 <DatePickerInput value={filterDateFrom} onChange={setFilterDateFrom} placeholder="Start date" />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">To Date</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">To Date</label>
                 <DatePickerInput value={filterDateTo} onChange={setFilterDateTo} placeholder="End date" />
               </div>
             </div>
@@ -227,7 +235,7 @@ export default function AuditLogPage() {
       <Card className="border-none shadow-xl shadow-black/5 overflow-hidden bg-background min-h-[400px]">
         <CardHeader className="px-6 py-4 border-b border-border/50 bg-background/50 flex flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <div className="p-2 rounded-lg bg-[var(--brand)]/10 text-[var(--brand)]">
               <ShieldCheck size={18} weight="duotone" />
             </div>
             <div className="flex flex-col">

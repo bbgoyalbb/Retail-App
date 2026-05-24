@@ -17,11 +17,14 @@ export const SectionAccordion = ({ icon: Icon, label, amount, children, onEdit, 
   return (
     <Card className="overflow-hidden border-border/50 shadow-sm transition-all hover:shadow-md">
       <div 
-        className="flex items-center gap-3 px-4 py-3.5 bg-muted/30 cursor-pointer select-none group/acc" 
+        className="flex items-center gap-3 px-4 py-3.5 bg-muted/30 cursor-pointer select-none group/acc"
+        role="button"
+        aria-expanded={open}
+        aria-controls={`accordion-content-${label}`}
         onClick={() => setOpen(o => !o)}
       >
         <div className="p-2 rounded-lg bg-primary/10 text-primary transition-all group-hover/acc:bg-primary/20 group-hover/acc:scale-110">
-          <Icon size={16} weight="duotone" />
+          <Icon size={16} weight="duotone" aria-hidden="true" />
         </div>
         <span className="text-xs font-bold text-foreground flex-1 uppercase tracking-widest">{label}</span>
         {amount > 0 && (
@@ -36,17 +39,18 @@ export const SectionAccordion = ({ icon: Icon, label, amount, children, onEdit, 
               size="icon"
               className="h-7 w-7 text-primary hover:bg-primary/10"
               onClick={e => { e.stopPropagation(); onEdit(); }}
+              aria-label={`Edit ${label}`}
             >
-              <PencilSimple size={14} weight="bold" />
+              <PencilSimple size={14} weight="bold" aria-hidden="true" />
             </Button>
           )}
           <div className={cn("transition-transform duration-150", open ? "rotate-0" : "-rotate-90")}>
-            <CaretDown size={14} className="text-muted-foreground" />
+            <CaretDown size={14} className="text-muted-foreground" aria-hidden="true" />
           </div>
         </div>
       </div>
       {open && (
-        <CardContent className="p-4 space-y-3 border-t border-border/50 bg-background">
+        <CardContent id={`accordion-content-${label}`} className="p-4 space-y-3 border-t border-border/50 bg-background">
           {children}
         </CardContent>
       )}
@@ -162,24 +166,27 @@ function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDel
                             size="sm" 
                             className="flex-1 h-7 text-[10px] font-bold uppercase tracking-wider gap-1.5"
                             onClick={() => onEdit("items",[item],"item")}
+                            aria-label="Edit item"
                           >
-                            <PencilSimple size={12} weight="bold" /> Edit
+                            <PencilSimple size={12} weight="bold" aria-hidden="true" /> Edit
                           </Button>
                           <Button 
                             variant="outline" 
                             size="sm" 
                             className="flex-1 h-7 text-[10px] font-bold uppercase tracking-wider gap-1.5 border-warning/30 text-warning hover:bg-warning/10"
                             onClick={() => onCancelItem(item)}
+                            aria-label="Cancel item"
                           >
-                            <X size={12} weight="bold" /> Cancel
+                            <X size={12} weight="bold" aria-hidden="true" /> Cancel
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             className="h-7 w-7 text-destructive hover:bg-destructive/10"
                             onClick={() => onDeleteItem(item)}
+                            aria-label="Delete item"
                           >
-                            <Trash size={14} weight="bold" />
+                            <Trash size={14} weight="bold" aria-hidden="true" />
                           </Button>
                         </div>
                       )}
@@ -192,7 +199,7 @@ function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDel
             {/* Group Summary Card */}
             <Card className="bg-muted/10 border-border/50 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 opacity-[0.03] rotate-12 pointer-events-none">
-                <Receipt size={96} weight="duotone" />
+                <Receipt size={96} weight="duotone" aria-hidden="true" />
               </div>
               <CardContent className="p-4 space-y-2.5">
                 <div className="flex justify-between items-center">
@@ -213,7 +220,7 @@ function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDel
                   <span className="text-[10px] uppercase tracking-[0.3em] font-black text-foreground">{isSettled ? "Status" : "Outstanding"}</span>
                   {isSettled
                     ? <Badge variant="success" className="font-black uppercase tracking-tighter text-[11px] gap-1.5 py-1">
-                        <CheckCircle size={14} weight="fill"/> Settled
+                        <CheckCircle size={14} weight="fill" aria-hidden="true"/> Settled
                       </Badge>
                     : <span className={cn(
                         "font-mono font-black text-xl tracking-tighter",
@@ -281,9 +288,9 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
                       </div>
                       {!item.cancelled && (
                         <div className="flex items-center gap-1 mt-2 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/10" onClick={() => onEdit("items",[item],"item")}><PencilSimple size={12}/></Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-warning hover:bg-warning/10" onClick={() => onCancelItem(item)}><X size={12}/></Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10" onClick={() => onDeleteItem(item)}><Trash size={12}/></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/10" onClick={() => onEdit("items",[item],"item")} aria-label="Edit item"><PencilSimple size={12} aria-hidden="true"/></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-warning hover:bg-warning/10" onClick={() => onCancelItem(item)} aria-label="Cancel item"><X size={12} aria-hidden="true"/></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10" onClick={() => onDeleteItem(item)} aria-label="Delete item"><Trash size={12} aria-hidden="true"/></Button>
                         </div>
                       )}
                     </div>
@@ -317,7 +324,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
                           )}
                         </div>
                         {!item.cancelled && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1 opacity-0 group-hover/row:opacity-100" onClick={() => onEdit("tailoring",[item],"item")}><PencilSimple size={12}/></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1 opacity-0 group-hover/row:opacity-100" onClick={() => onEdit("tailoring",[item],"item")} aria-label="Edit tailoring"><PencilSimple size={12} aria-hidden="true"/></Button>
                         )}
                       </div>
                     </div>
@@ -350,7 +357,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
                           )}
                         </div>
                         {!item.cancelled && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1 opacity-0 group-hover/row:opacity-100" onClick={() => onEdit("embroidery",[item],"item")}><PencilSimple size={12}/></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1 opacity-0 group-hover/row:opacity-100" onClick={() => onEdit("embroidery",[item],"item")} aria-label="Edit embroidery"><PencilSimple size={12} aria-hidden="true"/></Button>
                         )}
                       </div>
                     </div>
@@ -378,7 +385,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
                           )}
                         </div>
                         {!item.cancelled && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1 opacity-0 group-hover/row:opacity-100" onClick={() => onEdit("addon",[item],"item")}><PencilSimple size={12}/></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1 opacity-0 group-hover/row:opacity-100" onClick={() => onEdit("addon",[item],"item")} aria-label="Edit add-on"><PencilSimple size={12} aria-hidden="true"/></Button>
                         )}
                       </div>
                     </div>

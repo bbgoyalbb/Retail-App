@@ -168,9 +168,9 @@ export default function DataManager() {
       </div>
 
       {/* DB Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="bg-card border-none shadow-lg shadow-black/5 overflow-hidden group hover:shadow-xl transition-all duration-150">
-          <CardContent className="p-5 flex items-center gap-4">
+          <CardContent className="p-6 flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-150">
               <Database size={24} weight="duotone" />
             </div>
@@ -181,7 +181,7 @@ export default function DataManager() {
           </CardContent>
         </Card>
         <Card className="bg-card border-none shadow-lg shadow-black/5 overflow-hidden group hover:shadow-xl transition-all duration-150">
-          <CardContent className="p-5 flex items-center gap-4">
+          <CardContent className="p-6 flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-success/10 text-success group-hover:scale-110 transition-transform duration-150">
               <ChartBar size={24} weight="duotone" />
             </div>

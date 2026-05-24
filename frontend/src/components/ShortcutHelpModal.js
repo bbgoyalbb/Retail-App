@@ -51,7 +51,7 @@ export default function ShortcutHelpModal() {
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[var(--border-subtle)]">
-          <Keyboard size={18} className="text-[var(--brand)]" />
+          <Keyboard size={18} className="text-[var(--brand)]" aria-hidden="true" />
           <h2 className="font-heading text-base font-medium flex-1">Keyboard Shortcuts</h2>
           <kbd className="px-1.5 py-0.5 text-[10px] border border-[var(--border-subtle)] rounded bg-[var(--bg)] font-mono text-[var(--text-secondary)]">?</kbd>
           <button
@@ -59,7 +59,7 @@ export default function ShortcutHelpModal() {
             className="ml-2 p-1 rounded-sm hover:bg-[var(--bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             aria-label="Close shortcuts panel"
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
 

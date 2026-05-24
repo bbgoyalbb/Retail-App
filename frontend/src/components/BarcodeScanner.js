@@ -176,8 +176,8 @@ export default function BarcodeScanner({ onScan, onClose }) {
               <Barcode size={20} weight="duotone" className="text-[var(--brand)]" />
               <h3 className="font-heading text-base font-medium">Scan Barcode</h3>
             </div>
-            <button data-testid="close-scanner-btn" onClick={stopAndClose} className="p-1.5 hover:bg-[var(--bg)] rounded-sm landscape:hidden">
-              <X size={20} />
+            <button data-testid="close-scanner-btn" onClick={stopAndClose} className="p-1.5 hover:bg-[var(--bg)] rounded-sm landscape:hidden" aria-label="Close scanner">
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
           <div className="p-4">

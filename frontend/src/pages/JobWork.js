@@ -29,8 +29,8 @@ function MoveDialog({ title, onConfirm, onCancel, fields, karigars }) {
       <Card className="max-w-md w-full shadow-2xl border-none animate-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
         <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
           <CardTitle className="text-xl font-black uppercase tracking-tight text-primary">{title}</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onCancel} className="rounded-full">
-            <X size={20} weight="bold" />
+          <Button variant="ghost" size="icon" onClick={onCancel} className="rounded-full" aria-label="Close dialog">
+            <X size={20} weight="bold" aria-hidden="true" />
           </Button>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
@@ -164,11 +164,13 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4 opacity-40">
             <div className="p-4 rounded-full bg-muted">
-              <CheckSquare size={40} className="text-muted-foreground" weight="duotone" />
+              <CheckSquare size={40} className="text-muted-foreground" weight="duotone" aria-hidden="true" />
             </div>
             <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground">Operational Void</p>
           </div>
-        ) : items.map(item => (
+        ) : (
+          <>
+            {items.map(item => (
           <div 
             key={item.id} 
             className={`px-5 py-4 cursor-pointer transition-all border-l-4 group relative ${selected.includes(item.id) ? 'bg-primary/[0.03] border-l-primary' : 'hover:bg-muted/[0.02] border-l-transparent'}`} 
@@ -180,12 +182,12 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
           >
             <div className="flex items-start gap-4">
               <div className={`mt-1 flex-shrink-0 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${selected.includes(item.id) ? 'bg-primary border-primary scale-110 shadow-md shadow-primary/20' : 'border-muted-foreground/20 bg-background group-hover:border-primary/50'}`}>
-                {selected.includes(item.id) && <CheckSquare size={14} weight="bold" className="text-white" />}
+                {selected.includes(item.id) && <CheckSquare size={14} weight="bold" className="text-white" aria-hidden="true" />}
               </div>
               <div className="flex-1 min-w-0">
                 {(() => { const today = new Date().toISOString().split("T")[0]; const isOverdue = item.delivery_date && item.delivery_date !== "N/A" && item.delivery_date < today; return isOverdue ? (
                   <div className="mb-1.5 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-destructive/10 border border-destructive/20 w-fit">
-                    <Warning size={10} weight="fill" className="text-destructive" />
+                    <Warning size={10} weight="fill" className="text-destructive" aria-hidden="true" />
                     <span className="text-[9px] font-black uppercase tracking-widest text-destructive">Overdue</span>
                   </div>
                 ) : null; })()
@@ -196,8 +198,8 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
                     <Badge variant="outline" className="font-mono text-[10px] font-black text-primary border-primary/20 bg-primary/5">#{item.order_no}</Badge>
                     {onItemDoubleClick && (
                       <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                        onClick={(e) => { e.stopPropagation(); handleDoubleClick(item); }}>
-                        <PencilSimple size={14} weight="bold" />
+                        onClick={(e) => { e.stopPropagation(); handleDoubleClick(item); }} aria-label="Edit item">
+                        <PencilSimple size={14} weight="bold" aria-hidden="true" />
                       </Button>
                     )}
                   </div>
@@ -208,14 +210,14 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
                   <div className="space-y-1">
                     <span className="text-[8px] uppercase font-black text-muted-foreground opacity-50 tracking-widest block">Booked</span>
                     <div className="flex items-center gap-1.5">
-                      <Calendar size={10} className="text-muted-foreground" />
+                      <Calendar size={10} className="text-muted-foreground" aria-hidden="true" />
                       <span className="font-mono text-[10px] font-black">{item.date}</span>
                     </div>
                   </div>
                   <div className="space-y-1 text-right sm:text-left">
                     <span className="text-[8px] uppercase font-black text-muted-foreground opacity-50 tracking-widest block">Due Date</span>
                     <div className="flex items-center gap-1.5 justify-end sm:justify-start">
-                      <Calendar size={10} className="text-info" />
+                      <Calendar size={10} className="text-info" aria-hidden="true" />
                       <span className="font-mono text-[10px] font-black text-info">{item.delivery_date}</span>
                     </div>
                   </div>
@@ -224,7 +226,7 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
                 <div className="flex flex-wrap gap-2 mt-4">
                   {item.barcode && item.barcode !== "N/A" && (
                     <Badge variant="outline" className="font-mono text-[9px] font-black gap-1 py-0.5 px-2">
-                      <Package size={10} /> {item.barcode}
+                      <Package size={10} aria-hidden="true" /> {item.barcode}
                     </Badge>
                   )}
                   {item.price > 0 && (
@@ -234,7 +236,7 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
                   )}
                   {item.karigar && item.karigar !== "N/A" && (
                     <Badge variant="info" className="text-[9px] font-black gap-1 py-0.5 px-2">
-                      <User size={10} weight="fill" /> {item.karigar}
+                      <User size={10} weight="fill" aria-hidden="true" /> {item.karigar}
                     </Badge>
                   )}
                   {item.emb_labour_amount > 0 && (
@@ -247,6 +249,8 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
             </div>
           </div>
         ))}
+          </>
+        )}
       </CardContent>
 
       <div className="p-4 border-t bg-muted/20 space-y-3">
@@ -257,7 +261,7 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
             disabled={selected.length === 0}
             className="w-full h-12 font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 active:scale-95 transition-all gap-2"
           >
-            Advance {selected.length > 0 ? selected.length : ''} <ArrowRight size={18} weight="bold" />
+            Advance {selected.length > 0 ? selected.length : ''} <ArrowRight size={18} weight="bold" aria-hidden="true" />
           </Button>
         )}
         {onMoveBack && moveBackLabel && (
@@ -268,7 +272,7 @@ function StatusColumn({ title, items, color, onMove, moveLabel, onMoveBack, move
             variant="outline"
             className="w-full h-10 font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary hover:border-primary active:scale-95 transition-all gap-2"
           >
-            <ArrowLeft size={16} weight="bold" /> Revert
+            <ArrowLeft size={16} weight="bold" aria-hidden="true" /> Revert
           </Button>
         )}
       </div>
@@ -313,6 +317,13 @@ export default function JobWork() {
     getSettings().then(res => setSettings(res.data)).catch(() => setSettings({ karigars: [] }));
   }, []);
 
+  /**
+   * Sorts items by the current sort key and direction.
+   * Handles date (YYYY-MM-DD), numeric, and string comparisons.
+   * Missing/undefined/N/A values are always pushed to the end.
+   * @param {Array} items - Array of items to sort
+   * @returns {Array} Sorted array
+   */
   const sortItems = (items) => {
     if (!items) return [];
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -482,11 +493,11 @@ export default function JobWork() {
     <div data-testid="jobwork-page" className="space-y-6 pb-12">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Production Pipeline</h1>
+          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-[var(--brand)] truncate">Production Pipeline</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Real-time tracking of tailoring and embroidery workflows</p>
         </div>
         <Button variant="outline" size="icon" onClick={() => { invalidateJobworkCache(); loadData(); }} className="rounded-full shadow-sm">
-          <ArrowsClockwise size={20} className="text-primary" />
+          <ArrowsClockwise size={20} className="text-[var(--brand)]" />
         </Button>
       </div>
 

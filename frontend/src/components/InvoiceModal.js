@@ -33,24 +33,24 @@ export default function InvoiceModal({ billRef, format = "standard", billRefs = 
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              title="Open in new tab"
+              aria-label="Open invoice in new tab"
               className="p-1.5 rounded-sm hover:bg-[var(--bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              <ArrowSquareOut size={16} />
+              <ArrowSquareOut size={16} aria-hidden="true" />
             </a>
             <button
               onClick={() => setShowFormatDialog(true)}
-              title={isMobile ? "Share / Print" : "Print"}
+              aria-label={isMobile ? "Share or print invoice" : "Print invoice"}
               className="p-1.5 rounded-sm hover:bg-[var(--bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              <Printer size={16} />
+              <Printer size={16} aria-hidden="true" />
             </button>
             <button
               onClick={onClose}
-              title="Close"
+              aria-label="Close invoice preview"
               className="p-1.5 rounded-sm hover:bg-[var(--bg)] text-[var(--text-secondary)] hover:text-red-500 transition-colors"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         </div>

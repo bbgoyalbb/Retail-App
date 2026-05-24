@@ -1,4 +1,6 @@
 import axios from "axios";
+import { CACHE_TTL, PAGINATION } from "@/lib/constants";
+import { getCsrfToken, isSessionValid, clearSession } from "@/lib/security";
 
 // In production (build_and_run.bat), React is served by FastAPI on the same port —
 // use current origin. In dev mode (any port except 8001), point to backend port 8001.
@@ -14,6 +16,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Add CSRF token to all non-GET requests
+    if (config.method && config.method.toLowerCase() !== 'get') {
+      config.headers['X-CSRF-Token'] = getCsrfToken();
+    }
     return config;
   },
   (err) => Promise.reject(err)
@@ -24,12 +30,26 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     const silent = !!err.config?.silent || err.config?.headers?.["X-Silent-Errors"] === "1";
+    
+    // Handle 401 unauthorized - check session validity
     if (err.response?.status === 401) {
       const hadToken = !!sessionStorage.getItem("token");
-      sessionStorage.removeItem("token");
-      if (hadToken) {
+      // Check if session is expired due to timeout
+      if (!isSessionValid()) {
+        clearSession();
+        window.dispatchEvent(new CustomEvent("auth:expired"));
+      } else if (hadToken) {
+        clearSession();
         window.dispatchEvent(new CustomEvent("auth:expired"));
       }
+    }
+    
+    // Handle rate limiting (429)
+    if (err.response?.status === 429) {
+      const retryAfter = err.response.headers['retry-after'] || 60;
+      err.message = `Rate limit exceeded. Please wait ${retryAfter} seconds before trying again.`;
+      window.dispatchEvent(new CustomEvent("api:error", { detail: err.message }));
+      return Promise.reject(err);
     }
     
     let message = err.message;
@@ -53,10 +73,9 @@ api.interceptors.response.use(
 let _dashboardCache = null;
 let _dashboardCacheTime = 0;
 let _dashboardPromise = null;
-const DASHBOARD_CACHE_TTL = 60000; // 1 min
 export const getDashboard = (force = false) => {
   const now = Date.now();
-  if (!force && _dashboardCache && now - _dashboardCacheTime < DASHBOARD_CACHE_TTL) {
+  if (!force && _dashboardCache && now - _dashboardCacheTime < CACHE_TTL.DASHBOARD) {
     return Promise.resolve(_dashboardCache);
   }
   if (_dashboardPromise) return _dashboardPromise;
@@ -71,10 +90,9 @@ export const getDashboard = (force = false) => {
 export const invalidateDashboardCache = () => { _dashboardCache = null; };
 let _customersCache = null;
 let _customersCacheTime = 0;
-const CUSTOMERS_CACHE_TTL = 60000;
 export const getCustomers = () => {
   const now = Date.now();
-  if (_customersCache && now - _customersCacheTime < CUSTOMERS_CACHE_TTL) {
+  if (_customersCache && now - _customersCacheTime < CACHE_TTL.CUSTOMERS) {
     return Promise.resolve(_customersCache);
   }
   return api.get("/customers").then(res => {
@@ -87,11 +105,10 @@ export const invalidateCustomersCache = () => { _customersCache = null; };
 let _itemsCache = null;
 let _itemsCacheTime = 0;
 let _itemsCacheKey = "";
-const ITEMS_CACHE_TTL = 30000; // 30 seconds
 export const getItems = (params) => {
   const key = JSON.stringify(params || {});
   const now = Date.now();
-  if (_itemsCache && key === _itemsCacheKey && now - _itemsCacheTime < ITEMS_CACHE_TTL) {
+  if (_itemsCache && key === _itemsCacheKey && now - _itemsCacheTime < CACHE_TTL.ITEMS) {
     return Promise.resolve(_itemsCache);
   }
   return api.get("/items", { params }).then(res => {
@@ -106,12 +123,11 @@ export const getItem = (id) => api.get(`/items/${id}`);
 export const getRefs = (name) => api.get("/refs", { params: { name } });
 export const getOrders = () => api.get("/orders");
 const _orderStatusCache = new Map();
-const ORDER_STATUS_TTL = 20000;
 export const getOrderStatus = (params) => {
   const key = JSON.stringify(params || {});
   const now = Date.now();
   const hit = _orderStatusCache.get(key);
-  if (hit && now - hit.ts < ORDER_STATUS_TTL) return Promise.resolve(hit.res);
+  if (hit && now - hit.ts < CACHE_TTL.ORDER_STATUS) return Promise.resolve(hit.res);
   return api.get("/orders/status", { params }).then(res => {
     _orderStatusCache.set(key, { res, ts: Date.now() });
     return res;
@@ -129,12 +145,11 @@ export const splitTailoring = (data) => api.post("/tailoring/split", data);
 export const addAddons = (data) => api.post("/addons", data);
 
 const _jobworkCache = new Map();
-const JOBWORK_CACHE_TTL = 15000;
 export const getJobwork = (params) => {
   const key = JSON.stringify(params || {});
   const now = Date.now();
   const hit = _jobworkCache.get(key);
-  if (hit && now - hit.ts < JOBWORK_CACHE_TTL) return Promise.resolve(hit.res);
+  if (hit && now - hit.ts < CACHE_TTL.JOBWORK) return Promise.resolve(hit.res);
   return api.get("/jobwork", { params }).then(res => {
     _jobworkCache.set(key, { res, ts: Date.now() });
     return res;
@@ -147,10 +162,9 @@ export const moveJobworkEmb = (data) => { _jobworkCache.clear(); return api.post
 export const editJobworkEmb = (data) => { _jobworkCache.clear(); return api.post("/jobwork/edit-emb", data); };
 let _jobworkFiltersCache = null;
 let _jobworkFiltersCacheTime = 0;
-const JOBWORK_FILTERS_TTL = 120000;
 export const getJobworkFilters = () => {
   const now = Date.now();
-  if (_jobworkFiltersCache && now - _jobworkFiltersCacheTime < JOBWORK_FILTERS_TTL) return Promise.resolve(_jobworkFiltersCache);
+  if (_jobworkFiltersCache && now - _jobworkFiltersCacheTime < CACHE_TTL.JOBWORK_FILTERS) return Promise.resolve(_jobworkFiltersCache);
   return api.get("/jobwork/filters").then(res => { _jobworkFiltersCache = res; _jobworkFiltersCacheTime = Date.now(); return res; });
 };
 
@@ -160,10 +174,9 @@ export const processSettlement = (data) => api.post("/settlements/pay", data);
 export const getDaybook = (params) => api.get("/daybook", { params });
 let _daybookDatesCache = null;
 let _daybookDatesCacheTime = 0;
-const DAYBOOK_DATES_TTL = 60000;
 export const getDaybookDates = () => {
   const now = Date.now();
-  if (_daybookDatesCache && now - _daybookDatesCacheTime < DAYBOOK_DATES_TTL) {
+  if (_daybookDatesCache && now - _daybookDatesCacheTime < CACHE_TTL.DAYBOOK_DATES) {
     return Promise.resolve(_daybookDatesCache);
   }
   return api.get("/daybook/dates").then(res => {
@@ -175,10 +188,9 @@ export const getDaybookDates = () => {
 export const invalidateDaybookDatesCache = () => { _daybookDatesCache = null; };
 let _daybookPendingCache = null;
 let _daybookPendingCacheTime = 0;
-const DAYBOOK_PENDING_TTL = 60000;
 export const getDaybookPendingCount = () => {
   const now = Date.now();
-  if (_daybookPendingCache && now - _daybookPendingCacheTime < DAYBOOK_PENDING_TTL) {
+  if (_daybookPendingCache && now - _daybookPendingCacheTime < CACHE_TTL.DAYBOOK_PENDING) {
     return Promise.resolve(_daybookPendingCache);
   }
   return api.get("/daybook/pending-count", { silent: true }).then(res => {
@@ -193,10 +205,9 @@ export const tallyEntries = (data) => api.post("/daybook/tally", data);
 export const getLabourItems = (params) => api.get("/labour", { params });
 let _karigarsCache = null;
 let _karigarsCacheTime = 0;
-const KARIGARS_CACHE_TTL = 300000; // 5 min — karigar list changes rarely
 export const getKarigars = () => {
   const now = Date.now();
-  if (_karigarsCache && now - _karigarsCacheTime < KARIGARS_CACHE_TTL) return Promise.resolve(_karigarsCache);
+  if (_karigarsCache && now - _karigarsCacheTime < CACHE_TTL.KARIGARS) return Promise.resolve(_karigarsCache);
   return api.get("/labour/karigars").then(res => { _karigarsCache = res; _karigarsCacheTime = Date.now(); return res; });
 };
 export const invalidateKarigarsCache = () => { _karigarsCache = null; };
@@ -205,7 +216,6 @@ export const deleteLabourPayment = (data) => api.post("/labour/delete-payment", 
 
 let _advancesCache = null;
 let _advancesCacheTime = 0;
-const ADVANCES_CACHE_TTL = 60000;
 export const getAdvances = (params) => {
   // Normalise refs array → comma string for the backend
   let normalized = params ? { ...params } : {};
@@ -215,7 +225,7 @@ export const getAdvances = (params) => {
   const isUnscoped = !normalized || Object.keys(normalized).length === 0;
   if (isUnscoped) {
     const now = Date.now();
-    if (_advancesCache && now - _advancesCacheTime < ADVANCES_CACHE_TTL) {
+    if (_advancesCache && now - _advancesCacheTime < CACHE_TTL.ADVANCES) {
       return Promise.resolve(_advancesCache);
     }
     return api.get("/advances").then(res => {
@@ -255,14 +265,12 @@ export const getInvoiceUrl = (ref, format = "standard", refs = null) => {
 
 // Reports — 30 s in-process cache per param set
 const _reportsCache = new Map();
-const REPORTS_CACHE_TTL = 30000;
-const REPORTS_CACHE_MAX = 50;
 const _cachedReport = (key, fetcher) => {
   const now = Date.now();
   const hit = _reportsCache.get(key);
-  if (hit && now - hit.ts < REPORTS_CACHE_TTL) return Promise.resolve(hit.res);
+  if (hit && now - hit.ts < CACHE_TTL.REPORTS) return Promise.resolve(hit.res);
   return fetcher().then(res => {
-    if (_reportsCache.size >= REPORTS_CACHE_MAX) {
+    if (_reportsCache.size >= PAGINATION.REPORTS_CACHE_MAX) {
       _reportsCache.delete(_reportsCache.keys().next().value);
     }
     _reportsCache.set(key, { res, ts: Date.now() });
@@ -288,10 +296,9 @@ export const repairDbData = (params) => api.post("/db/repair", null, { params })
 let _publicSettingsCache = null;
 let _publicSettingsCacheTime = 0;
 let _publicSettingsPromise = null;
-const PUBLIC_SETTINGS_TTL = 120000; // 2 minutes
 export const getPublicSettings = () => {
   const now = Date.now();
-  if (_publicSettingsCache && now - _publicSettingsCacheTime < PUBLIC_SETTINGS_TTL) {
+  if (_publicSettingsCache && now - _publicSettingsCacheTime < CACHE_TTL.PUBLIC_SETTINGS) {
     return Promise.resolve(_publicSettingsCache);
   }
   if (_publicSettingsPromise) return _publicSettingsPromise;
@@ -311,10 +318,9 @@ export const invalidatePublicSettingsCache = () => { _publicSettingsCache = null
 
 let _settingsCache = null;
 let _settingsCacheTime = 0;
-const SETTINGS_CACHE_TTL = 120000;
 export const getSettings = () => {
   const now = Date.now();
-  if (_settingsCache && now - _settingsCacheTime < SETTINGS_CACHE_TTL) {
+  if (_settingsCache && now - _settingsCacheTime < CACHE_TTL.SETTINGS) {
     return Promise.resolve(_settingsCache);
   }
   return api.get("/settings").then(res => {

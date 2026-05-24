@@ -32,7 +32,7 @@ export default function BillSuccessPanel({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <CheckCircle size={32} weight="fill" className="text-[var(--success)]" />
+          <CheckCircle size={32} weight="fill" className="text-[var(--success)]" aria-hidden="true" />
         </div>
       </div>
       
@@ -41,22 +41,25 @@ export default function BillSuccessPanel({
           onClick={onViewInvoice}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[var(--success)] text-white rounded-sm hover:bg-[#3d4d3f]"
           type="button"
+          aria-label="View invoice"
         >
-          <Printer size={16} /> View Invoice
+          <Printer size={16} aria-hidden="true" /> View Invoice
         </button>
         <button
           onClick={onPrint}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium border border-[var(--border-subtle)] rounded-sm hover:border-[var(--brand)]"
           type="button"
+          aria-label="Print invoice"
         >
-          <Printer size={16} weight="bold" /> Print
+          <Printer size={16} weight="bold" aria-hidden="true" /> Print
         </button>
         <button
           onClick={onCreateAnother}
           className="w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[var(--brand)] text-white rounded-sm hover:bg-[var(--brand-hover)]"
           type="button"
+          aria-label="Create another bill"
         >
-          <Plus size={16} weight="bold" /> Create Another Bill
+          <Plus size={16} weight="bold" aria-hidden="true" /> Create Another Bill
         </button>
       </div>
     </div>

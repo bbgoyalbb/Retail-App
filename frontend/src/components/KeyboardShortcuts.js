@@ -88,7 +88,7 @@ export function KeyboardShortcuts() {
       <div className="bg-[var(--surface)] border border-[var(--border-subtle)] rounded-sm shadow-xl max-w-sm w-full p-5" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-heading text-base font-medium">Keyboard Shortcuts</h2>
-          <button onClick={() => setOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-lg leading-none">✕</button>
+          <button onClick={() => setOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-lg leading-none" aria-label="Close keyboard shortcuts">✕</button>
         </div>
         <div className="space-y-1.5 max-h-80 overflow-y-auto">
           <p className="text-[9px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] pb-0.5">Letter shortcuts (Ctrl + key)</p>

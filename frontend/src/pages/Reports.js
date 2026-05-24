@@ -110,6 +110,12 @@ export default function Reports() {
     return () => ro.disconnect();
   }, []);
 
+  /**
+   * Calculates the tick interval for chart x-axis based on chart width and data length.
+   * Fewer ticks are shown on smaller screens to prevent overcrowding.
+   * @param {number} dataLength - Number of data points in the chart
+   * @returns {number} Interval between ticks (0 means show all ticks)
+   */
   const getTickInterval = (dataLength) => {
     if (chartWidth < 480) return Math.max(1, Math.floor(dataLength / 4));
     if (chartWidth < 640) return Math.max(1, Math.floor(dataLength / 6));
@@ -210,7 +216,7 @@ export default function Reports() {
                 data-testid="report-period" 
                 value={period} 
                 onChange={e => setPeriod(e.target.value)} 
-                className="h-10 pl-4 pr-10 text-[11px] font-black uppercase tracking-widest bg-background border border-border/50 rounded-xl appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
+                className="h-10 pl-4 pr-10 text-[11px] font-black uppercase tracking-[0.2em] bg-background border border-border/50 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer group-hover:border-primary/50"
               >
                 <option value="daily">Daily View</option>
                 <option value="weekly">Weekly View</option>

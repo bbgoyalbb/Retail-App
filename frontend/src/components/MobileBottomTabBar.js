@@ -73,10 +73,11 @@ export default function MobileBottomTabBar({ onOpenSidebar }) {
               {active && (
                 <div className="absolute top-1 w-8 h-1 bg-primary rounded-full" />
               )}
-              <Icon 
-                size={22} 
-                weight={active ? "duotone" : "bold"} 
+              <Icon
+                size={22}
+                weight={active ? "duotone" : "bold"}
                 className="flex-shrink-0"
+                aria-hidden="true"
               />
               <span className="text-[9px] font-black uppercase tracking-widest mt-1 truncate max-w-full px-1">
                 {tab.label}

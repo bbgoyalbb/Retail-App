@@ -20,14 +20,14 @@ function SortableHeader({ label, sortKey, currentKey, dir, onSort }) {
     <th 
       className={cn(
         "text-left px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] cursor-pointer select-none whitespace-nowrap transition-colors",
-        isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+        isActive ? "text-[var(--brand)]" : "text-muted-foreground hover:text-foreground"
       )} 
       onClick={() => onSort(sortKey)}
     >
       <div className="flex items-center gap-1">
         {label}
         {isActive && (
-          <span className="text-primary">
+          <span className="text-[var(--brand)]">
             {dir === "asc" ? "↑" : "↓"}
           </span>
         )}
@@ -45,7 +45,7 @@ function TallyIndicator({ isTallied }) {
         ? 'bg-success text-white shadow-lg shadow-success/20'
         : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
     )}>
-      {isTallied ? <Check size={16} weight="bold" /> : <Circle size={16} weight="duotone" />}
+      {isTallied ? <Check size={16} weight="bold" aria-hidden="true" /> : <Circle size={16} weight="duotone" aria-hidden="true" />}
     </div>
   );
 }
@@ -63,9 +63,9 @@ function TallyButton({ isTallied, onClick, hasAmount, label, loading }) {
           ? 'bg-success text-white hover:opacity-90 shadow-md shadow-success/20'
           : 'bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary'
       , loading && "opacity-50 cursor-not-allowed")}
-      title={isTallied ? `Un-tally ${label}` : `Tally ${label}`}
+      aria-label={isTallied ? `Un-tally ${label}` : `Tally ${label}`}
     >
-      {loading ? <Spinner size={16} className="animate-spin" /> : (isTallied ? <Check size={16} weight="bold" /> : <Circle size={16} weight="duotone" />)}
+      {loading ? <Spinner size={16} className="animate-spin" aria-hidden="true" /> : (isTallied ? <Check size={16} weight="bold" aria-hidden="true" /> : <Circle size={16} weight="duotone" aria-hidden="true" />)}
     </button>
   );
 }
@@ -149,6 +149,14 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
   // Row-level unique key: date + ref
   const rowKey = (entry) => `${entry.date}__${entry.ref}`;
 
+  /**
+   * Handles toggling tally status for a single category (fabric, tailoring, etc.)
+   * Performs optimistic update before API call, reverts on error.
+   * @param {Object} entry - The daybook entry
+   * @param {string} category - Category to tally (fabric, tailoring, embroidery, addon, advance)
+   * @param {boolean} isTallied - Current tally state
+   * @returns {Promise<void>}
+   */
   const handleCategoryTallyClick = async (entry, category, isTallied) => {
     const action = isTallied ? "untally" : "tally";
     const key = `${rowKey(entry)}:${category}`;
@@ -174,7 +182,13 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
     }
   };
 
-  // Tally-all handler: tally or untally all active categories at once
+  /**
+   * Toggles tally status for all active categories in an entry at once.
+   * Used for swipe gestures on mobile to quickly tally/untally entire rows.
+   * @param {Object} entry - The daybook entry
+   * @param {boolean} shouldTally - Whether to tally (true) or untally (false)
+   * @returns {Promise<void>}
+   */
   const handleTallyAll = async (entry, shouldTally) => {
     const cats = activeCats(entry);
     if (cats.length === 0) return;
@@ -562,7 +576,7 @@ export default function Daybook() {
     dataEvents.dispatchEvent(new Event("daybook"));
   };
 
-  const summaryStats = (() => {
+  const summaryStats = useMemo(() => {
     const visible = entries.filter(e => dateFilter === "All" || e.date === dateFilter);
     const total = visible.reduce((s, e) => s + (e.total || 0), 0);
     const byMode = {};
@@ -577,7 +591,7 @@ export default function Daybook() {
       });
     });
     return { total, byMode, count: visible.length };
-  })();
+  }, [entries, dateFilter]);
 
   return (
     <div data-testid="daybook-page" className="space-y-8 pb-12">

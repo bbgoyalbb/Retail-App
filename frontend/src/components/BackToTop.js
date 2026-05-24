@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { ArrowUp } from "@phosphor-icons/react";
 
-export default function BackToTop() {
+function BackToTop() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -23,9 +23,11 @@ export default function BackToTop() {
     <button
       onClick={handleClick}
       className="fixed bottom-6 right-6 z-50 p-2.5 bg-[var(--brand)] text-white rounded-full shadow-lg hover:bg-[var(--brand-hover)] transition-transform duration-150 hover:translate-y-[-2px]"
-      title="Back to top"
+      aria-label="Back to top"
     >
-      <ArrowUp size={18} weight="bold" />
+      <ArrowUp size={18} weight="bold" aria-hidden="true" />
     </button>
   );
 }
+
+export default memo(BackToTop);

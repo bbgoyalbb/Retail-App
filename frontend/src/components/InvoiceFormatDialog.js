@@ -19,8 +19,8 @@ export default function InvoiceFormatDialog({ open, onClose, onSelect }) {
       <Card className="max-w-md w-full shadow-2xl border-border/50 animate-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="text-lg font-black uppercase tracking-[0.2em]">Select Invoice Format</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-            <X size={20} weight="bold" />
+          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full" aria-label="Close dialog">
+            <X size={20} weight="bold" aria-hidden="true" />
           </Button>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -29,7 +29,7 @@ export default function InvoiceFormatDialog({ open, onClose, onSelect }) {
             className="w-full h-auto py-4 px-4 flex-row gap-3 items-start"
             variant="outline"
           >
-            <ListDashes size={32} className="flex-shrink-0 mt-1" />
+            <ListDashes size={32} className="flex-shrink-0 mt-1" aria-hidden="true" />
             <div className="text-left flex-1">
               <div className="font-semibold">Section-wise Format</div>
               <div className="text-xs text-muted-foreground">
@@ -42,7 +42,7 @@ export default function InvoiceFormatDialog({ open, onClose, onSelect }) {
             className="w-full h-auto py-4 px-4 flex-row gap-3 items-start"
             variant="outline"
           >
-            <FileText size={32} className="flex-shrink-0 mt-1" />
+            <FileText size={32} className="flex-shrink-0 mt-1" aria-hidden="true" />
             <div className="text-left flex-1">
               <div className="font-semibold">Article-wise (Detailed)</div>
               <div className="text-xs text-muted-foreground">
@@ -55,7 +55,7 @@ export default function InvoiceFormatDialog({ open, onClose, onSelect }) {
             className="w-full h-auto py-4 px-4 flex-row gap-3 items-start"
             variant="outline"
           >
-            <Rows size={32} className="flex-shrink-0 mt-1" />
+            <Rows size={32} className="flex-shrink-0 mt-1" aria-hidden="true" />
             <div className="text-left flex-1">
               <div className="font-semibold">Article-wise (Summary)</div>
               <div className="text-xs text-muted-foreground">

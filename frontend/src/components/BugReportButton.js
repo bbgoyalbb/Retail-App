@@ -59,13 +59,25 @@ export function BugReportButton() {
       setLogs(logsRef.current);
     };
 
+    const handleUnhandledRejection = (event) => {
+      const entry = {
+        type: "error",
+        message: `Unhandled Promise Rejection: ${event.reason}`,
+        timestamp: new Date().toISOString(),
+      };
+      logsRef.current = [...logsRef.current.slice(-49), entry];
+      setLogs(logsRef.current);
+    };
+
     window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
 
     return () => {
       console.log = originalLog;
       console.error = originalError;
       console.warn = originalWarn;
       window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
     };
   }, []);
 
@@ -147,7 +159,7 @@ export function BugReportButton() {
     return (
       <div className="fixed bottom-6 right-6 z-[200]">
         <div className="bg-success text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3">
-          <CheckCircle size={24} weight="bold" />
+          <CheckCircle size={24} weight="bold" aria-hidden="true" />
           <div>
             <p className="font-bold">Bug report sent!</p>
             <p className="text-sm opacity-90">Thank you for helping us improve.</p>
@@ -169,9 +181,9 @@ export function BugReportButton() {
           "transition-transform duration-150 hover:scale-110 hover:shadow-orange-500/30",
           "flex items-center justify-center"
         )}
-        title="Report a Bug"
+        aria-label="Report a bug"
       >
-        <Bug size={28} weight="bold" />
+        <Bug size={28} weight="bold" aria-hidden="true" />
       </Button>
 
       {/* Modal */}
@@ -188,7 +200,7 @@ export function BugReportButton() {
             <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 px-6 py-4 border-b border-border/50 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-orange-500/20 text-orange-600">
-                  <Bug size={24} weight="bold" />
+                  <Bug size={24} weight="bold" aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="font-bold text-lg">Report a Bug</h2>
@@ -200,8 +212,9 @@ export function BugReportButton() {
                 size="icon"
                 onClick={handleClose}
                 className="h-9 w-9 rounded-full hover:bg-muted"
+                aria-label="Close bug report dialog"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </Button>
             </div>
 
@@ -209,7 +222,7 @@ export function BugReportButton() {
             <div className="p-6 space-y-4">
               {/* Page Info */}
               <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg text-sm">
-                <ClipboardText size={18} className="text-muted-foreground shrink-0 mt-0.5" />
+                <ClipboardText size={18} className="text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
                 <div className="min-w-0">
                   <p className="font-medium text-muted-foreground">Current Page</p>
                   <p className="font-mono text-xs truncate">{window.location.pathname}</p>
@@ -244,7 +257,7 @@ export function BugReportButton() {
               {logsRef.current.filter(l => l.type === "error").length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
-                    <Warning size={16} className="text-destructive" />
+                    <Warning size={16} className="text-destructive" aria-hidden="true" />
                     <span className="font-medium text-destructive">
                       {logsRef.current.filter(l => l.type === "error").length} error(s) detected in this session
                     </span>
@@ -279,7 +292,7 @@ export function BugReportButton() {
                   </>
                 ) : (
                   <>
-                    <PaperPlaneRight size={18} weight="bold" />
+                    <PaperPlaneRight size={18} weight="bold" aria-hidden="true" />
                     Send Report
                   </>
                 )}

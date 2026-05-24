@@ -45,9 +45,10 @@ export default function ItemInputForm({
     <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-6 gap-4 p-1">
       {/* Barcode with scanner button */}
       <div className="relative col-span-2 sm:col-span-2 space-y-1.5">
-        <label className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1">Barcode / Item No.</label>
+        <label htmlFor="barcode-input" className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1">Barcode / Item No.</label>
         <div className="relative group">
           <Input
+            id="barcode-input"
             ref={refs.barcodeRef}
             data-testid="barcode-input"
             value={barcode}
@@ -61,18 +62,19 @@ export default function ItemInputForm({
             data-testid="scan-barcode-btn"
             onClick={onOpenScanner}
             className="absolute right-1 top-1/2 -translate-y-1/2 p-2.5 text-primary hover:bg-primary/10 rounded-lg active:scale-90 transition-colors"
-            title="Scan with camera"
+            aria-label="Scan barcode with camera"
             type="button"
           >
-            <Barcode size={22} weight="duotone" />
+            <Barcode size={22} weight="duotone" aria-hidden="true" />
           </button>
         </div>
       </div>
 
       {/* Quantity */}
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1">Qty (m)</label>
+        <label htmlFor="qty-input" className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1">Qty (m)</label>
         <Input
+          id="qty-input"
           ref={refs.qtyRef}
           data-testid="qty-input"
           value={qty}
@@ -89,8 +91,9 @@ export default function ItemInputForm({
 
       {/* Price */}
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1">Price/m</label>
+        <label htmlFor="price-input" className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1">Price/m</label>
         <Input
+          id="price-input"
           ref={refs.priceRef}
           data-testid="price-input"
           value={price}
@@ -106,8 +109,9 @@ export default function ItemInputForm({
 
       {/* Discount */}
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1">Disc %</label>
+        <label htmlFor="discount-input" className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1">Disc %</label>
         <Input
+          id="discount-input"
           ref={refs.discountRef}
           data-testid="discount-input"
           value={discount}
@@ -130,8 +134,9 @@ export default function ItemInputForm({
           disabled={!barcode || !qty || !price}
           className="w-full h-11 font-black uppercase tracking-widest gap-2 shadow-lg shadow-primary/20"
           type="button"
+          aria-label={isEditing ? "Update item" : "Add item"}
         >
-          {isEditing ? 'Update' : <><Plus size={18} weight="bold" /> Add</>}
+          {isEditing ? 'Update' : <><Plus size={18} weight="bold" aria-hidden="true" /> Add</>}
         </Button>
       </div>
     </div>

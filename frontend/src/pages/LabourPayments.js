@@ -77,6 +77,11 @@ export default function LabourPayments() {
 
   const toggleMode = (m) => setSelectedModes(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
 
+  /**
+   * Processes payment for selected labour items (tailoring and/or embroidery).
+   * Generates a shared payment_id for the batch and records payments via API.
+   * @returns {Promise<void>}
+   */
   const handlePay = async () => {
     if (selected.length === 0) { toast({ title: "Nothing selected", description: "Select at least one item", variant: "destructive" }); return; }
 
@@ -267,8 +272,8 @@ export default function LabourPayments() {
           <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Labour Payments</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Settle accounts for tailoring and embroidery services</p>
         </div>
-        <Button variant="outline" size="icon" onClick={() => loadData(true)} disabled={loading} className="rounded-full shadow-sm hover:rotate-180 transition-transform duration-300">
-          <ArrowsClockwise size={20} className={loading ? "animate-spin text-primary" : ""} />
+        <Button variant="outline" size="icon" onClick={() => loadData(true)} disabled={loading} className="rounded-full shadow-sm hover:rotate-180 transition-transform duration-300" aria-label="Refresh labour payments">
+          <ArrowsClockwise size={20} className={loading ? "animate-spin text-primary" : ""} aria-hidden="true" />
         </Button>
       </div>
 
@@ -285,7 +290,7 @@ export default function LabourPayments() {
                 onClick={() => setViewMode("unpaid")}
                 className={cn("h-8 px-3 text-[11px] font-black uppercase tracking-widest rounded-md transition-all", viewMode === "unpaid" ? "shadow-sm" : "text-muted-foreground")}
               >
-                <Circle size={12} weight={viewMode === "unpaid" ? "fill" : "bold"} className="mr-1.5" /> Pending
+                <Circle size={12} weight={viewMode === "unpaid" ? "fill" : "bold"} className="mr-1.5" aria-hidden="true" /> Pending
               </Button>
               <Button
                 variant={viewMode === "paid" ? "default" : "ghost"}
@@ -293,7 +298,7 @@ export default function LabourPayments() {
                 onClick={() => setViewMode("paid")}
                 className={cn("h-8 px-3 text-[11px] font-black uppercase tracking-widest rounded-md transition-all", viewMode === "paid" ? "shadow-sm" : "text-muted-foreground")}
               >
-                <CheckCircle size={12} weight={viewMode === "paid" ? "fill" : "bold"} className="mr-1.5" /> Settled
+                <CheckCircle size={12} weight={viewMode === "paid" ? "fill" : "bold"} className="mr-1.5" aria-hidden="true" /> Settled
               </Button>
             </div>
 

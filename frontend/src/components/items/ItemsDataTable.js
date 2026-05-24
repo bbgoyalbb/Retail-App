@@ -7,7 +7,7 @@ const StatusBadge = ({ settled, cancelled, pending }) => {
   );
   if (settled) return (
     <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#455D4A15] text-[var(--success)] font-medium flex items-center gap-0.5">
-      <Check size={10} weight="fill" />Settled
+      <Check size={10} weight="fill" aria-hidden="true" />Settled
     </span>
   );
   return <span className="text-[10px] font-mono text-[var(--warning)]">₹{fmt(pending)}</span>;
@@ -168,30 +168,30 @@ export default function ItemsDataTable({
                       <button
                         onClick={() => onEdit(item, "order")}
                         className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--brand)] rounded-sm"
-                        title="Edit"
+                        aria-label="Edit item"
                       >
-                        <PencilSimple size={14} />
+                        <PencilSimple size={14} aria-hidden="true" />
                       </button>
                       <button
                         onClick={() => onPrint(item.ref)}
                         className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--info)] rounded-sm"
-                        title="Print"
+                        aria-label="Print item"
                       >
-                        <Printer size={14} />
+                        <Printer size={14} aria-hidden="true" />
                       </button>
                       <button
                         onClick={() => onDelete(item)}
                         className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--error)] rounded-sm"
-                        title="Delete"
+                        aria-label="Delete item"
                       >
-                        <Trash size={14} />
+                        <Trash size={14} aria-hidden="true" />
                       </button>
                       <button
                         onClick={() => onOpenDetail(item)}
                         className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-sm sm:hidden"
-                        title="Details"
+                        aria-label="View details"
                       >
-                        <CaretDown size={14} />
+                        <CaretDown size={14} aria-hidden="true" />
                       </button>
                     </div>
                   </td>

@@ -4,14 +4,8 @@ import { DatePickerInput } from "@/components/DatePickerInput";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-const SEARCH_DATE_PRESETS = [
-  { label: "Today",        from: new Date().toISOString().split("T")[0], to: new Date().toISOString().split("T")[0] },
-  { label: "This Week",   from: new Date(Date.now() - ((new Date().getDay()||7)-1)*86400000).toISOString().split("T")[0], to: new Date().toISOString().split("T")[0] },
-  { label: "This Month",  from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0], to: new Date().toISOString().split("T")[0] },
-  { label: "Last Month",  from: new Date(new Date().getFullYear(), new Date().getMonth()-1, 1).toISOString().split("T")[0], to: new Date(new Date().getFullYear(), new Date().getMonth(), 0).toISOString().split("T")[0] },
-  { label: "Last 90 Days",from: new Date(Date.now() - 89*86400000).toISOString().split("T")[0], to: new Date().toISOString().split("T")[0] },
-];
+import FilterField from "./FilterField";
+import DatePresets from "./DatePresets";
 
 const SETTLE_TABS = [
   { k: "unsettled", l: "Pending" },
@@ -37,7 +31,6 @@ export default function ItemsFilterBar({
   searchMaxAmt, setSearchMaxAmt,
   customers,
 }) {
-  const datePresets = useMemo(() => SEARCH_DATE_PRESETS, []);
 
   return (
     <div className="flex-shrink-0 bg-background border-b border-border/50 sticky top-0 z-20">
@@ -50,7 +43,7 @@ export default function ItemsFilterBar({
             onClick={() => setSortDir(d => d === "desc" ? "asc" : "desc")}
             className="h-8 text-[11px] font-medium tracking-tight"
           >
-            {sortDir === "desc" ? <CaretDown className="w-3.5 h-3.5" /> : <CaretRight className="w-3.5 h-3.5 -rotate-90" />}
+            {sortDir === "desc" ? <CaretDown className="w-3.5 h-3.5" aria-hidden="true" /> : <CaretRight className="w-3.5 h-3.5 -rotate-90" aria-hidden="true" />}
             <span className="hidden sm:inline">Order Date: {sortDir === "desc" ? "Newest" : "Oldest"}</span>
           </Button>
         </div>
@@ -78,7 +71,7 @@ export default function ItemsFilterBar({
       {/* Row 2: search bar + filter toggle */}
       <div className="flex items-center gap-3 px-4 pb-3">
         <div className="relative flex-1 min-w-0 group">
-          <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none" />
+          <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none" aria-hidden="true" />
           <input
             ref={searchRef}
             type="text"
@@ -88,11 +81,12 @@ export default function ItemsFilterBar({
             className="w-full pl-9 pr-8 h-9 text-xs border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-muted/20 transition-colors"
           />
           {nameFilter && (
-            <button 
-              onClick={() => setNameFilter("")} 
+            <button
+              onClick={() => setNameFilter("")}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full transition-colors"
+              aria-label="Clear search"
             >
-              <X size={12} />
+              <X size={12} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -106,7 +100,7 @@ export default function ItemsFilterBar({
             hasAdvancedFilters && !showFilters && "border-primary text-primary"
           )}
         >
-          <Funnel className="w-3.5 h-3.5" />
+          <Funnel className="w-3.5 h-3.5" aria-hidden="true" />
           <span className="hidden sm:inline">Filters</span>
           {hasAdvancedFilters && (
             <span className="w-1.5 h-1.5 rounded-full bg-current ml-0.5 animate-pulse" />
@@ -119,9 +113,9 @@ export default function ItemsFilterBar({
             size="icon"
             onClick={clearSearch}
             className="h-9 w-9 text-destructive hover:bg-destructive/10"
-            title="Clear all filters"
+            aria-label="Clear all filters"
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </Button>
         )}
 
@@ -138,30 +132,7 @@ export default function ItemsFilterBar({
       {/* Filter panel */}
       {showFilters && (
         <div className="px-4 pb-4 border-t border-border/50 pt-3 space-y-4">
-          <div className="flex flex-wrap gap-1.5">
-            {datePresets.map(p => (
-              <button
-                key={p.label}
-                onClick={() => { setSearchDateFrom(p.from); setSearchDateTo(p.to); }}
-                className={cn(
-                  "px-3 py-1 text-[10px] font-bold rounded-md border transition-colors uppercase tracking-wider",
-                  searchDateFrom === p.from && searchDateTo === p.to
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                    : "border-border/50 text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5"
-                )}
-              >
-                {p.label}
-              </button>
-            ))}
-            {(searchDateFrom || searchDateTo) && (
-              <button
-                onClick={() => { setSearchDateFrom(""); setSearchDateTo(""); }}
-                className="px-3 py-1 text-[10px] font-bold rounded-md border border-destructive/30 text-destructive hover:bg-destructive/5 uppercase tracking-wider"
-              >
-                Clear Dates
-              </button>
-            )}
-          </div>
+          <DatePresets searchDateFrom={searchDateFrom} searchDateTo={searchDateTo} setSearchDateFrom={setSearchDateFrom} setSearchDateTo={setSearchDateTo} />
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <FilterField label="Customer">
@@ -225,17 +196,6 @@ export default function ItemsFilterBar({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function FilterField({ label, children }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/80 block px-0.5">
-        {label}
-      </label>
-      {children}
     </div>
   );
 }

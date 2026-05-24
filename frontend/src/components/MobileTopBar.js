@@ -20,7 +20,7 @@ export default function MobileTopBar({ title, onMenuClick }) {
         aria-label="Open menu"
         className="w-10 h-10 flex items-center justify-center rounded-xl bg-muted/30 text-foreground active:scale-90 transition-colors"
       >
-        <List size={22} weight="bold" />
+        <List size={22} weight="bold" aria-hidden="true" />
       </button>
       
       <div className="flex items-center gap-3 min-w-0 flex-1">

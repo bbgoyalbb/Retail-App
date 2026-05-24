@@ -40,12 +40,12 @@ const BillLineItemRow = memo(function BillLineItemRow({
           )}
           {tailoringActive && (
             <Badge variant="outline" className="h-5 px-2 text-[9px] font-black uppercase tracking-widest bg-info/5 text-info border-info/20 gap-1.5">
-              <Scissors size={10} weight="bold" /> {item.tailoring.article_type}
+              <Scissors size={10} weight="bold" aria-hidden="true" /> {item.tailoring.article_type}
             </Badge>
           )}
           {addonActive && (
             <Badge variant="outline" className="h-5 px-2 text-[9px] font-black uppercase tracking-widest bg-success/5 text-success border-success/20 gap-1.5">
-              <Plus size={10} weight="bold" /> {item.addon.items.length} Add-on{item.addon.items.length > 1 ? 's' : ''}
+              <Plus size={10} weight="bold" aria-hidden="true" /> {item.addon.items.length} Add-on{item.addon.items.length > 1 ? 's' : ''}
             </Badge>
           )}
         </div>
@@ -87,11 +87,11 @@ const BillLineItemRow = memo(function BillLineItemRow({
             "h-10 w-10 rounded-xl transition-colors duration-150",
             tailoringActive ? "bg-info hover:bg-info/90 shadow-info/20" : "text-muted-foreground hover:text-info hover:bg-info/5 hover:border-info/30"
           )}
-          title={tailoringActive ? "Edit Tailoring" : "Add Tailoring"}
+          aria-label={tailoringActive ? "Edit Tailoring" : "Add Tailoring"}
         >
-          <Scissors size={18} weight={tailoringActive ? "bold" : "regular"} />
+          <Scissors size={18} weight={tailoringActive ? "bold" : "regular"} aria-hidden="true" />
         </Button>
-        
+
         <Button
           variant={addonActive ? "default" : "outline"}
           size="icon"
@@ -100,9 +100,9 @@ const BillLineItemRow = memo(function BillLineItemRow({
             "h-10 w-10 rounded-xl transition-colors duration-150",
             addonActive ? "bg-success hover:bg-success/90 shadow-success/20" : "text-muted-foreground hover:text-success hover:bg-success/5 hover:border-success/30"
           )}
-          title={addonActive ? "Edit Add-ons" : "Add Add-ons"}
+          aria-label={addonActive ? "Edit Add-ons" : "Add Add-ons"}
         >
-          <Plus size={18} weight={addonActive ? "bold" : "regular"} />
+          <Plus size={18} weight={addonActive ? "bold" : "regular"} aria-hidden="true" />
         </Button>
         
         <Button
@@ -113,7 +113,7 @@ const BillLineItemRow = memo(function BillLineItemRow({
             "h-10 w-10 rounded-xl transition-colors duration-150",
             isEditing ? "bg-primary shadow-primary/20" : "text-muted-foreground hover:text-primary hover:bg-primary/5 hover:border-primary/30"
           )}
-          title="Edit Details"
+          aria-label="Edit Details"
         >
           <PencilSimple size={18} weight={isEditing ? "bold" : "regular"} />
         </Button>
@@ -123,7 +123,7 @@ const BillLineItemRow = memo(function BillLineItemRow({
           size="icon"
           onClick={() => onRemove(index)}
           className="h-10 w-10 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 hover:border-destructive/30 transition-colors duration-150"
-          title="Remove Article"
+          aria-label="Remove Article"
         >
           <Trash size={18} />
         </Button>

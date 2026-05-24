@@ -5,6 +5,8 @@ import { fmt } from "@/lib/fmt";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import { CurrencyDollar, X, CheckCircle, CaretDown, CaretRight } from "@phosphor-icons/react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import BalanceTiles from "./SettlementPanel/BalanceTiles";
+import PaymentModeSelector from "./SettlementPanel/PaymentModeSelector";
 
 /**
  * SettlementPanel — multi-ref capable settlement overlay.
@@ -216,8 +218,8 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
               }
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)] rounded-sm transition-colors flex-shrink-0 ml-3">
-            <X size={16} />
+          <button onClick={onClose} className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)] rounded-sm transition-colors flex-shrink-0 ml-3" aria-label="Close settlement panel">
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
 
@@ -232,52 +234,25 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
             <>
               {message && (
                 <div className={`p-3 rounded-sm text-sm flex items-start gap-2 ${message.type === "success" ? "bg-[#455D4A10] border border-[var(--success)] text-[var(--success)]" : "bg-[#9E473D10] border border-[var(--error)] text-[var(--error)]"}`}>
-                  {message.type === "success" && <CheckCircle size={15} weight="fill" className="flex-shrink-0 mt-0.5" />}
+                  {message.type === "success" && <CheckCircle size={15} weight="fill" className="flex-shrink-0 mt-0.5" aria-hidden="true" />}
                   {message.text}
                 </div>
               )}
 
               {/* ── Aggregated balance tiles ── */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)]">
-                    {isMulti ? "Combined Pending" : "Pending Balances"}
-                  </p>
-                  <span className="font-mono text-sm font-semibold text-[var(--warning)]">₹{fmt(totalPending)}</span>
-                </div>
-                {/* 2 columns on mobile, 4 on desktop */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { label: "Fabric",    value: aggBalances.fabric,     color: "var(--warning)" },
-                    { label: "Tailoring", value: aggBalances.tailoring,  color: "var(--info)" },
-                    { label: "Emb.",      value: aggBalances.embroidery, color: "var(--brand)" },
-                    { label: "Add-on",    value: aggBalances.addon,      color: "var(--text-secondary)" },
-                  ].map(b => b.value > 0 ? (
-                    <div key={b.label} className="p-2 rounded-sm text-center bg-[var(--bg)] border border-[var(--border-subtle)]">
-                      <p className="text-[9px] uppercase tracking-[0.12em] text-[var(--text-secondary)]">{b.label}</p>
-                      <p className="font-mono text-xs font-semibold mt-0.5" style={{ color: b.color }}>₹{fmt(b.value)}</p>
-                    </div>
-                  ) : null)}
-                </div>
-                {aggBalances.advance > 0 && (
-                  <div className="mt-2 p-2.5 bg-[#455D4A08] border border-[#455D4A30] rounded-sm flex items-center justify-between">
-                    <span className="text-xs text-[var(--text-secondary)]">Advance credit available</span>
-                    <span className="font-mono text-sm font-semibold text-[var(--success)]">₹{fmt(aggBalances.advance)}</span>
-                  </div>
-                )}
-              </div>
+              <BalanceTiles aggBalances={aggBalances} totalPending={totalPending} isMulti={isMulti} />
 
               {/* ── Payment Date + Fresh Amount ── */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">Payment Date</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[var(--text-secondary)] block mb-1.5">Payment Date</label>
                   <DatePickerInput value={payDate} onChange={setPayDate} placeholder="Payment date" />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-1.5">Amount Received <span className="text-[var(--error)]">*</span></label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[var(--text-secondary)] block mb-1.5">Amount Received <span className="text-[var(--error)]">*</span></label>
                   <input type="number" value={freshPay} onChange={e => setFreshPay(e.target.value)}
                     placeholder="₹ 0"
-                    className="w-full px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)] bg-[var(--surface)]" />
+                    className="w-full h-10 px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--brand)] bg-[var(--surface)]" />
                 </div>
               </div>
 
@@ -292,7 +267,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
               {/* ── Per-ref allotment ── */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)]">Allocate by Order</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[var(--text-secondary)]">Allocate by Order</p>
                   <button onClick={() => autoDistribute()} disabled={totalPool <= 0}
                     className="text-xs text-[var(--brand)] hover:underline disabled:opacity-40 transition-opacity">
                     Auto-distribute
@@ -314,7 +289,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
                           onClick={() => toggleRef(o.ref)}
                         >
                           <span className="text-[var(--text-secondary)] flex-shrink-0">
-                            {isExpanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
+                            {isExpanded ? <CaretDown size={12} aria-hidden="true" /> : <CaretRight size={12} aria-hidden="true" />}
                           </span>
                           <span className="font-mono text-xs text-[var(--brand)] font-medium">{o.ref}</span>
                           <span className="text-xs text-[var(--text-secondary)] truncate flex-1">{o.name}</span>
@@ -335,11 +310,11 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
                               { key: "advance",    label: "New Advance", noBalance: true },
                             ].filter(s => s.noBalance || (bal[s.key] || 0) > 0).map(s => (
                               <div key={s.key} className="flex items-center gap-2">
-                                <label className="w-20 text-[10px] uppercase tracking-[0.12em] font-semibold text-[var(--text-secondary)] flex-shrink-0">{s.label}</label>
+                                <label className="w-20 text-[10px] uppercase tracking-[0.2em] font-semibold text-[var(--text-secondary)] flex-shrink-0">{s.label}</label>
                                 <input
                                   type="number" value={a[s.key] || ""} placeholder="0"
                                   onChange={e => setRefAllot(o.ref, s.key, e.target.value)}
-                                  className="flex-1 px-2.5 py-1.5 text-sm border border-[var(--border-subtle)] rounded-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)] bg-[var(--surface)]"
+                                  className="flex-1 h-10 px-2.5 py-2 text-sm border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--brand)] bg-[var(--surface)]"
                                 />
                                 {!s.noBalance && bal[s.key] > 0 && (
                                   <button
@@ -372,22 +347,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
               </div>
 
               {/* ── Payment Modes ── */}
-              <div>
-                <label className="text-[10px] uppercase tracking-[0.15em] font-semibold text-[var(--text-secondary)] block mb-2">
-                  Payment Mode <span className="text-[var(--error)]">*</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {paymentModes.map(m => (
-                    <button key={m} onClick={() => toggleMode(m)}
-                      className={`px-2.5 py-1 text-xs font-medium rounded-sm border transition-all ${selectedModes.includes(m) ? "bg-[var(--brand)] text-white border-[var(--brand)]" : "bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-[var(--brand)] hover:text-[var(--brand)]"}`}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
-                {selectedModes.length === 0 && totalAlloc > 0 && (
-                  <p className="text-[10px] text-[var(--error)] mt-1.5">Select at least one payment mode</p>
-                )}
-              </div>
+              <PaymentModeSelector paymentModes={paymentModes} selectedModes={selectedModes} toggleMode={toggleMode} totalAlloc={totalAlloc} />
             </>
           )}
         </div>
@@ -401,7 +361,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
               </span>
             )}
             {!saving && <div className="flex-1" />}
-            <button onClick={onClose} className="px-4 py-2 text-sm border border-[var(--border-subtle)] rounded-sm hover:bg-[var(--surface)] transition-colors">
+            <button onClick={onClose} className="px-4 py-2 text-sm border border-[var(--border-subtle)] rounded-sm hover:bg-[var(--surface)] transition-colors" aria-label="Cancel settlement">
               Cancel
             </button>
             <button
@@ -411,7 +371,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
             >
               {saving
                 ? <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Processing…</>
-                : <><CurrencyDollar size={15} weight="bold" />Process {orders.length > 1 ? `${orders.length} Settlements` : "Settlement"}</>
+                : <><CurrencyDollar size={15} weight="bold" aria-hidden="true" />Process {orders.length > 1 ? `${orders.length} Settlements` : "Settlement"}</>
               }
             </button>
           </div>

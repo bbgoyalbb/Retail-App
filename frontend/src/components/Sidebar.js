@@ -244,19 +244,19 @@ export default function Sidebar({ open, setOpen }) {
             <button
               onClick={toggle}
               className="flex items-center justify-center gap-2 py-2 px-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)] rounded-sm transition-colors"
-              title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+              aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
             >
-              {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+              {theme === "light" ? <Moon size={16} aria-hidden="true" /> : <Sun size={16} aria-hidden="true" />}
               {!collapsed && <span>{theme === "light" ? "Dark" : "Light"}</span>}
             </button>
             <button
               onClick={toggleCollapse}
               className="hidden lg:flex flex-1 items-center justify-center gap-2 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)] rounded-sm transition-colors"
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {collapsed
-                ? <CaretDoubleRight size={16} />
-                : <><CaretDoubleLeft size={16} /><span>Collapse</span></>
+                ? <CaretDoubleRight size={16} aria-hidden="true" />
+                : <><CaretDoubleLeft size={16} aria-hidden="true" /><span>Collapse</span></>
               }
             </button>
           </div>
@@ -264,16 +264,17 @@ export default function Sidebar({ open, setOpen }) {
             <button
               onClick={() => { navigate("/new-bill"); setOpen(false); }}
               className="w-full flex items-center justify-center mt-2 py-2 bg-[var(--brand)] text-white rounded-sm hover:opacity-90 active:scale-[0.98] transition-all"
-              title="New Bill"
+              aria-label="New Bill"
             >
-              <Receipt size={18} weight="bold" />
+              <Receipt size={18} weight="bold" aria-hidden="true" />
             </button>
           ) : (
             <button
               onClick={() => { navigate("/new-bill"); setOpen(false); }}
               className="w-full flex items-center justify-center gap-2 mt-2 py-2 px-3 bg-[var(--brand)] text-white text-xs font-medium rounded-sm hover:opacity-90 active:scale-[0.98] transition-all"
+              aria-label="New Bill"
             >
-              <Receipt size={14} weight="bold" />
+              <Receipt size={14} weight="bold" aria-hidden="true" />
               New Bill
             </button>
           )}
@@ -282,16 +283,16 @@ export default function Sidebar({ open, setOpen }) {
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('shortcuts:open'))}
               className="w-full flex items-center justify-center gap-1.5 mt-1 py-1.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)] rounded-sm transition-colors"
-              title="Keyboard shortcuts"
+              aria-label="Keyboard shortcuts"
             >
-              <Keyboard size={13} />
+              <Keyboard size={13} aria-hidden="true" />
               <span>Shortcuts</span>
               <kbd className="ml-auto px-1 py-0.5 text-[9px] border border-[var(--border-subtle)] rounded bg-[var(--bg)] font-mono">?</kbd>
             </button>
           )}
           {/* User info + logout */}
           <div className={`mt-2 flex items-center ${collapsed ? 'justify-center' : 'gap-2 px-2'} py-1.5 rounded-sm bg-[var(--bg)]`}>
-            <UserCircle size={collapsed ? 20 : 18} className="text-[var(--text-secondary)] flex-shrink-0" />
+            <UserCircle size={collapsed ? 20 : 18} className="text-[var(--text-secondary)] flex-shrink-0" aria-hidden="true" />
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-[var(--text-primary)] truncate">{user?.full_name || user?.username}</p>
@@ -301,9 +302,9 @@ export default function Sidebar({ open, setOpen }) {
             <button
               onClick={handleLogout}
               className="p-1 rounded-sm hover:bg-[var(--surface)] text-[var(--text-secondary)] hover:text-red-500 transition-colors"
-              title="Logout"
+              aria-label="Logout"
             >
-              <SignOut size={16} />
+              <SignOut size={16} aria-hidden="true" />
             </button>
           </div>
         </div>

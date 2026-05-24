@@ -68,6 +68,7 @@ export default function OrderStatus() {
   const [deliverConfirm, setDeliverConfirm] = useState(null);
   const [editingDelivery, setEditingDelivery] = useState(null); // { order_no, value }
   const [savingDelivery, setSavingDelivery] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' }); // { key: 'order_no', direction: 'asc' | 'desc' }
   const today = new Date().toISOString().split("T")[0];
 
   // Keep a ref to the latest filter values so loadData is stable
@@ -112,6 +113,11 @@ export default function OrderStatus() {
     return () => window.removeEventListener("order:updated", handler);
   }, [customer, orderNo, fromDate, toDate, overdueOnly, loadData]);
 
+  /**
+   * Saves the edited delivery date for an order.
+   * Updates all items in the order with the new delivery date.
+   * @returns {Promise<void>}
+   */
   const handleSaveDeliveryDate = async () => {
     if (!editingDelivery || savingDelivery) return;
     setSavingDelivery(true);
@@ -130,6 +136,12 @@ export default function OrderStatus() {
     }
   };
 
+  /**
+   * Marks an order as delivered.
+   * Requires double confirmation (user must click twice).
+   * @param {string} order_no - Order number to mark as delivered
+   * @returns {Promise<void>}
+   */
   const handleDeliver = async (order_no) => {
     if (deliverConfirm !== order_no) { setDeliverConfirm(order_no); return; }
     setDeliverConfirm(null);
@@ -142,6 +154,31 @@ export default function OrderStatus() {
       toast({ title: "Error", description: err.message || "Failed", variant: "destructive" });
     } finally { setDelivering(null); }
   };
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const sortedRows = useMemo(() => {
+    if (!sortConfig.key) return rows;
+    return [...rows].sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+      
+      // Handle order_no as numeric for proper sorting
+      if (sortConfig.key === 'order_no') {
+        aVal = parseInt(aVal) || 0;
+        bVal = parseInt(bVal) || 0;
+      }
+      
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [rows, sortConfig]);
 
   const summary = useMemo(() => {
     return rows.reduce(
@@ -163,11 +200,11 @@ export default function OrderStatus() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Order Status</h1>
+          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-[var(--brand)] truncate">Order Status</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Master tracking board for tailoring and delivery pipelines</p>
         </div>
-        <Button variant="outline" size="icon" onClick={() => { invalidateOrderStatusCache(); loadData(); }} disabled={loading} className="rounded-full shadow-sm hover:rotate-180 transition-transform duration-300">
-          <ArrowsClockwise size={20} className={loading ? "animate-spin text-primary" : ""} />
+        <Button variant="outline" size="icon" onClick={() => { invalidateOrderStatusCache(); loadData(); }} disabled={loading} className="rounded-full shadow-sm hover:rotate-180 transition-transform duration-300" aria-label="Refresh order status">
+          <ArrowsClockwise size={20} className={loading ? "animate-spin text-[var(--brand)]" : ""} aria-hidden="true" />
         </Button>
       </div>
 
@@ -335,7 +372,7 @@ export default function OrderStatus() {
             <>
             {/* Mobile card view */}
             <div className="md:hidden divide-y divide-border/30">
-              {rows.map((row) => {
+              {sortedRows.map((row) => {
                 const hasUndelivered = (row.tailoring_pending || 0) + (row.tailoring_stitched || 0) > 0;
                 const isOverdue = hasUndelivered && row.latest_delivery_date && row.latest_delivery_date !== "N/A" && row.latest_delivery_date < today;
                 return (
@@ -408,7 +445,17 @@ export default function OrderStatus() {
           <table className="w-full min-w-[1000px]">
             <thead>
               <tr className="bg-muted/30 border-b border-border/50">
-                <th className="sticky left-0 z-20 bg-muted/30 px-4 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left">Protocol #</th>
+                <th 
+                  className="sticky left-0 z-20 bg-muted/30 px-4 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left cursor-pointer hover:text-primary transition-colors select-none"
+                  onClick={() => handleSort('order_no')}
+                >
+                  <div className="flex items-center gap-2">
+                    Protocol #
+                    {sortConfig.key === 'order_no' && (
+                      sortConfig.direction === 'asc' ? <CaretDown size={12} /> : <CaretRight size={12} />
+                    )}
+                  </div>
+                </th>
                 <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left">Client Entity</th>
                 <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left">Reference(s)</th>
                 <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-left">Articles</th>
@@ -421,7 +468,7 @@ export default function OrderStatus() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
-              {rows.map((row) => {
+              {sortedRows.map((row) => {
                 const hasUndelivered = (row.tailoring_pending || 0) + (row.tailoring_stitched || 0) > 0;
                 const isOverdue = hasUndelivered && row.latest_delivery_date && row.latest_delivery_date !== "N/A" && row.latest_delivery_date < today;
                 return (

@@ -52,7 +52,7 @@ const StatCard = memo(function StatCard({ icon: Icon, label, value, sub, color =
           </div>
           <div className="flex flex-col items-end gap-3">
             <div className="p-2.5 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-150" style={{ backgroundColor: `${color}10` }}>
-              <Icon size={20} weight="duotone" style={{ color }} />
+              <Icon size={20} weight="duotone" style={{ color }} aria-hidden="true" />
             </div>
             {trend && (
               <div className="hidden xxs:block opacity-60 group-hover:opacity-100 transition-opacity">
@@ -151,11 +151,11 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-primary truncate">Dashboard</h1>
+          <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-[var(--brand)] truncate">Dashboard</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium line-clamp-2">Strategic business intelligence overview</p>
         </div>
         <Button variant="outline" size="icon" onClick={() => { invalidateDashboardCache(); fetchData(true); }} disabled={refreshing} className="rounded-full shadow-sm">
-          <ArrowsClockwise size={20} className={refreshing ? "animate-spin text-primary" : ""} />
+          <ArrowsClockwise size={20} className={refreshing ? "animate-spin text-[var(--brand)]" : ""} />
         </Button>
       </div>
 
@@ -167,12 +167,12 @@ export default function Dashboard() {
       {/* Today's Summary Banner */}
       {data.total_items > 0 && (
         <Card className="bg-card border-none shadow-lg shadow-black/5 overflow-hidden group">
-          <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-[var(--brand)]" />
           <CardContent className="p-0">
             <div className="flex flex-col sm:flex-row sm:items-center p-6 gap-6 sm:gap-12">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-primary/10 transition-transform group-hover:rotate-12 duration-150">
-                  <CalendarCheck size={24} className="text-primary" weight="duotone" />
+                <div className="p-3 rounded-2xl bg-[var(--brand)]/10 transition-transform group-hover:rotate-12 duration-150">
+                  <CalendarCheck size={24} className="text-[var(--brand)]" weight="duotone" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground">Pulse</span>

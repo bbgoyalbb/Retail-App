@@ -484,6 +484,13 @@ export default function ItemsManager() {
     setEditItems(p=>[...p,ni]); setEditData(p=>({...p,[tempId]:{...ni}})); setOriginalData(p=>({...p,[tempId]:{...ni}})); setNewItemIds(p=>[...p,tempId]);
   };
 
+  /**
+   * Detects changes to settled payment amounts (fabric, tailoring, embroidery, addon).
+   * Only checks sections that were previously marked as "Settled".
+   * @param {Object} orig - Original item data
+   * @param {Object} cur - Current/edited item data
+   * @returns {Array} List of changed sections with old and new amounts
+   */
   const detectSettledChanges = (orig, cur) => {
     const changed = [];
     const chk = (ak, mk, label) => {
@@ -496,6 +503,13 @@ export default function ItemsManager() {
     return changed;
   };
 
+  /**
+   * Detects payment mismatches where received amount exceeds the new amount.
+   * Checks fabric, tailoring, embroidery, and addon sections.
+   * @param {Object} orig - Original item data
+   * @param {Object} cur - Current/edited item data
+   * @returns {Array} List of mismatches with details
+   */
   const detectMismatches = (orig, cur) => {
     const mm = [];
     const chk = (ak, rk, mk, label) => {
@@ -510,6 +524,12 @@ export default function ItemsManager() {
     return mm;
   };
 
+  /**
+   * Saves edits for items or advances based on the selected section.
+   * Handles both creating new items/advances and updating existing ones.
+   * Detects mismatches and settled changes to prompt user for reconciliation.
+   * @returns {Promise<void>}
+   */
   const saveEdits = async () => {
     setSaving(true);
     const affectedRefs = new Set(editItems.map(i => i.ref).filter(Boolean));
@@ -693,7 +713,7 @@ export default function ItemsManager() {
                   }}
                   className="h-7 text-[10px] font-bold uppercase tracking-wider gap-1.5"
                 >
-                  <Printer size={12} weight="bold" />
+                  <Printer size={12} weight="bold" aria-hidden="true" />
                   Combined Invoice
                 </Button>
                 <Button
@@ -713,9 +733,9 @@ export default function ItemsManager() {
                 size="icon"
                 onClick={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(1); }}
                 className={cn("h-8 w-8 text-muted-foreground hover:text-primary transition-all", loading && "animate-spin")}
-                title="Refresh"
+                aria-label="Refresh orders"
               >
-                <ArrowsClockwise size={16} />
+                <ArrowsClockwise size={16} aria-hidden="true" />
               </Button>
               {refs.length > 0 && (
                 <Button
@@ -733,9 +753,9 @@ export default function ItemsManager() {
                     navigator.clipboard.writeText(text).then(() => toast({ title: "Copied", description: `${source.length} orders copied to clipboard` }));
                   }}
                   className="h-8 w-8 text-muted-foreground hover:text-primary transition-all"
-                  title="Copy summary"
+                  aria-label="Copy orders summary"
                 >
-                  <Copy size={16} />
+                  <Copy size={16} aria-hidden="true" />
                 </Button>
               )}
             </div>
@@ -753,7 +773,7 @@ export default function ItemsManager() {
             {!loading && refs.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
                 <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-6">
-                  <Package size={32} className="text-muted-foreground/30" />
+                  <Package size={32} className="text-muted-foreground/30" aria-hidden="true" />
                 </div>
                 <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground/70 mb-2">
                   {isSearchMode ? (searchLoading ? "Searching..." : "No Matches Found") : "Empty Inventory"}
@@ -841,9 +861,9 @@ export default function ItemsManager() {
                         </div>
 
                         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover/row:opacity-100 transition-all sm:translate-x-2 group-hover/row:translate-x-0" onClick={e => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; savedPage.current = itemsPage; setTailoringGroup(group); }} title="Tailoring"><Scissors size={14} weight="bold"/></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; savedPage.current = itemsPage; setAddonGroup(group); }} title="Add-on"><Tag size={14} weight="bold"/></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => { setShowFormatDialog(group.ref); }} title="Invoice"><Printer size={14} weight="bold"/></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; savedPage.current = itemsPage; setTailoringGroup(group); }} aria-label="Open tailoring"><Scissors size={14} weight="bold" aria-hidden="true"/></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; savedPage.current = itemsPage; setAddonGroup(group); }} aria-label="Open add-ons"><Tag size={14} weight="bold" aria-hidden="true"/></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => { setShowFormatDialog(group.ref); }} aria-label="View invoice"><Printer size={14} weight="bold" aria-hidden="true"/></Button>
                         </div>
                       </div>
                     </div>
@@ -860,8 +880,8 @@ export default function ItemsManager() {
                   className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary transition-colors disabled:opacity-40"
                 >
                   {loadingMore
-                    ? <><ArrowsClockwise size={11} className="animate-spin" /> Loading…</>
-                    : <><ArrowsClockwise size={11} /> Load more orders</>}
+                    ? <><ArrowsClockwise size={11} className="animate-spin" aria-hidden="true" /> Loading…</>
+                    : <><ArrowsClockwise size={11} aria-hidden="true" /> Load more orders</>}
                 </button>
               </div>
             )}

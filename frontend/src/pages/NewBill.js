@@ -136,7 +136,7 @@ export default function NewBill() {
     if (lastBillRef) {
       window.open(getInvoiceUrl(lastBillRef, format), '_blank');
     }
-  }, [lastBillRef]);
+  }, [lastBillRef, setShowFormatDialog]);
 
   const nameWrapRef = useRef(null);
 
