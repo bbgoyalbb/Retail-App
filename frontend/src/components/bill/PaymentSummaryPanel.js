@@ -144,17 +144,29 @@ export default function PaymentSummaryPanel({
         <Button
           ref={refs.saveBtnRef}
           data-testid="save-bill-btn"
-          onClick={onSave}
+          onClick={(e) => {
+            // Prevent double-tap zoom and ensure single click on mobile
+            e.preventDefault();
+            onSave();
+          }}
           disabled={!canSubmit || saving}
-          className="w-full h-11 text-sm font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 active:scale-[0.98] transition-colors"
+          className={`w-full h-11 text-sm font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 transition-all duration-200 select-none touch-manipulation ${
+            saving ? 'opacity-90 cursor-wait' : 'active:scale-[0.98]'
+          } ${!canSubmit && !saving ? 'opacity-60' : ''}`}
+          style={{ WebkitTapHighlightColor: 'transparent' }}
         >
           {saving ? (
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>Finalizing…</span>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin flex-shrink-0" />
+              <span className="truncate">Finalizing…</span>
             </div>
+          ) : !canSubmit ? (
+            <span className="truncate">Add Items First</span>
           ) : (
-            <><FloppyDisk size={18} weight="bold" className="mr-2" aria-hidden="true" />Commit Invoice</>
+            <div className="flex items-center justify-center gap-2">
+              <FloppyDisk size={18} weight="bold" className="flex-shrink-0" aria-hidden="true" />
+              <span className="truncate">Commit Invoice</span>
+            </div>
           )}
         </Button>
         {!canSubmit && !saving && (

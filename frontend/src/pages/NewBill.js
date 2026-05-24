@@ -362,7 +362,17 @@ export default function NewBill() {
       return;
     }
 
+    // Prevent double-clicks on mobile
+    if (saving) return;
+
     setSaving(true);
+    const saveTimeout = setTimeout(() => {
+      // Safety net: if save takes >30s, reset button (mobile network issues)
+      console.warn("Save operation timeout - resetting button state");
+      setSaving(false);
+      toast({ title: "Timeout", description: "Save is taking too long. Please check your connection and try again.", variant: "destructive" });
+    }, 30000);
+
     try {
       const hasTailoringRows = items.some(i => i.tailoring?.enabled);
       const res = await createBill({
@@ -402,17 +412,22 @@ export default function NewBill() {
         ...(refEdited && customRef.trim() ? { custom_ref: customRef.trim() } : {}),
       });
 
+      clearTimeout(saveTimeout);
       setLastBillRef(res.data.ref);
       setLastBillTotal(res.data.grand_total);
       setShowPostSave(true);
-      toast({ title: "Success", description: `Invoice ${res.data.ref} created successfully` });
+      // Dismiss any existing toasts first (mobile fix)
+      toast({ title: "✓ Success", description: `Invoice ${res.data.ref} created`, variant: "default" });
       invalidate("dashboard");
       invalidate("daybook");
       invalidateCustomersCache();
       getCustomers().then(res => setConfig(p => ({ ...p, customers: res.data || [] }))).catch(() => {});
       resetFormFields();
     } catch (err) {
-      toast({ title: "Error", description: err.response?.data?.detail || "Failed to save bill", variant: "destructive" });
+      clearTimeout(saveTimeout);
+      console.error("Save bill error:", err);
+      const errorMsg = err.response?.data?.detail || err.message || "Failed to save bill. Check connection.";
+      toast({ title: "Error", description: errorMsg, variant: "destructive" });
     } finally {
       setSaving(false);
     }
