@@ -10,16 +10,12 @@ root.render(
   </React.StrictMode>,
 );
 
-// Register service worker for PWA support
+// Unregister any existing service workers to fix "site not reachable" issues
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/service-worker.js')
-      .then((registration) => {
-        console.log('SW registered: ', registration.scope);
-      })
-      .catch((error) => {
-        console.log('SW registration failed: ', error);
-      });
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
+      console.log('Service worker unregistered');
+    }
   });
 }
