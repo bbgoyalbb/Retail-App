@@ -90,8 +90,22 @@ export default function BarcodeScanner({ onScan, onClose }) {
           stream.getTracks().forEach(track => track.stop()); // Release immediately
         } catch (permErr) {
           console.error("Camera permission check failed:", permErr);
+          const permMsg = permErr?.message || "";
+          
           if (permErr.name === "NotAllowedError") {
-            setError("Camera permission denied. Please allow camera access in your browser settings.");
+            if (permMsg.includes("denied by system") || permMsg.includes("system")) {
+              // OS-level block (common on iOS Safari)
+              setError(
+                `Camera blocked by device settings.\n\n` +
+                `iOS Safari:\n` +
+                `Settings → Safari → Camera → Allow\n\n` +
+                `Android Chrome:\n` +
+                `Settings → Apps → Chrome → Permissions → Camera → Allow\n\n` +
+                `Or check if your device has camera restrictions enabled.`
+              );
+            } else {
+              setError("Camera permission denied. Please allow camera access in your browser settings and refresh the page.");
+            }
           } else if (permErr.name === "NotFoundError") {
             setError("No camera found on this device.");
           } else {
