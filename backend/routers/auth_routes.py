@@ -275,6 +275,42 @@ async def register_user(req: UserCreateRequest, db = Depends(get_db), current_us
     logger.info(f"User '{new_user['username']}' created by '{current_user['username']}'")
     return {"message": "User created successfully", "username": new_user["username"]}
 
+
+@router.post("/auth/rotate-api-key")
+async def rotate_api_key(
+    request: Request,
+    db = Depends(get_db),
+    current_user: dict = Depends(get_current_user_dep)
+):
+    """
+    Rotate the admin API key.
+    Only admins can rotate the API key.
+    Returns the new key - save it immediately as it won't be shown again.
+    """
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can rotate API keys")
+    
+    new_key, old_preview = auth_module.rotate_admin_api_key(current_user.get("username"))
+    
+    await audit_log(
+        db, 
+        "rotate_api_key", 
+        current_user, 
+        "system", 
+        "admin_api_key", 
+        {"old_key_preview": old_preview}
+    )
+    
+    logger.warning(f"API key rotated by '{current_user['username']}'. Old key: {old_preview}")
+    
+    return {
+        "message": "API key rotated successfully. Save this key immediately - it won't be shown again.",
+        "new_key": new_key,
+        "old_key_preview": old_preview,
+        "rotated_by": current_user.get("username"),
+        "rotated_at": datetime.now(timezone.utc).isoformat()
+    }
+
 @router.get("/auth/users")
 async def list_users(
     db = Depends(get_db),

@@ -164,7 +164,29 @@ export const getJobworkFilters = () => {
 };
 
 export const getBalances = (params) => api.get("/settlements/balances", { params });
-export const processSettlement = (data) => api.post("/settlements/pay", data);
+
+// Optimistic settlement processing with rollback support
+export const processSettlement = (data, optimisticCallbacks = null) => {
+  if (optimisticCallbacks?.onOptimistic) {
+    optimisticCallbacks.onOptimistic(data);
+  }
+  
+  return api.post("/settlements/pay", data)
+    .then(res => {
+      if (optimisticCallbacks?.onSuccess) {
+        optimisticCallbacks.onSuccess(res.data);
+      }
+      invalidateDashboardCache();
+      invalidateCustomersCache();
+      return res;
+    })
+    .catch(err => {
+      if (optimisticCallbacks?.onError) {
+        optimisticCallbacks.onError(err, data);
+      }
+      throw err;
+    });
+};
 
 export const getDaybook = (params) => api.get("/daybook", { params });
 let _daybookDatesCache = null;
@@ -364,5 +386,7 @@ export const getGroup = (groupId) => api.get(`/items/group/${groupId}`).then(r =
 
 // Bug Reporting
 export const submitBugReport = (data) => api.post("/bug-report", data);
+
+export const rotateApiKey = () => api.post("/auth/rotate-api-key").then(r => r.data);
 
 export default api;

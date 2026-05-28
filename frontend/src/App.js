@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, lazy, Suspense, memo, useCallback, useMemo
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
 import BackToTop from "@/components/BackToTop";
+import SkipNavLink from "@/components/SkipNavLink";
 import MobileTopBar from "@/components/MobileTopBar";
 import MobileBottomTabBar from "@/components/MobileBottomTabBar";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -203,10 +204,11 @@ function AppShell() {
   return (
     <ErrorBoundary>
       <div className="flex h-screen overflow-hidden bg-background" data-testid="app-shell">
+        <SkipNavLink />
         <OfflineBanner />
         <Sidebar open={sidebarOpen} setOpen={handleSetOpen} />
         <BackToTop />
-        <main className="flex-1 overflow-hidden min-w-0 flex flex-col relative">
+        <main id="main-content" className="flex-1 overflow-hidden min-w-0 flex flex-col relative" tabIndex={-1}>
           <MobileTopBar title={pageTitle} onMenuClick={() => handleSetOpen(!sidebarOpen)} />
           <MobileBottomTabBar onOpenSidebar={() => handleSetOpen(true)} />
           <div ref={contentRef} data-page="in" className="flex-1 overflow-y-auto p-4 pt-[calc(4rem+var(--offline-banner-h,0px))] pb-20 md:p-6 md:pt-[calc(1.5rem+var(--offline-banner-h,0px))] md:pb-6 lg:p-8 lg:pt-[calc(2rem+var(--offline-banner-h,0px))] custom-scrollbar">

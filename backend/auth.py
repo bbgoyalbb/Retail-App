@@ -149,3 +149,70 @@ async def audit_log(db, action: str, user: dict, entity_type: str = "", entity_i
         "details": details or {},
     }
     await db.audit_logs.insert_one(log)
+
+
+# ============================================================================
+# API KEY ROTATION
+# ============================================================================
+
+_api_key_file = os.path.join(os.path.dirname(__file__), ".api_key")
+_api_key_history_file = os.path.join(os.path.dirname(__file__), ".api_key_history")
+
+
+def _load_api_key():
+    """Load current API key from file or environment."""
+    # First check environment
+    env_key = os.environ.get("ADMIN_API_KEY")
+    if env_key:
+        return env_key
+    
+    # Then check file
+    if os.path.exists(_api_key_file):
+        with open(_api_key_file, "r") as f:
+            return f.read().strip()
+    
+    return None
+
+
+def _save_api_key(key: str, username: str = "system"):
+    """Save new API key and add old one to history."""
+    # Load current key for history
+    current_key = _load_api_key()
+    
+    # Save new key
+    with open(_api_key_file, "w") as f:
+        f.write(key)
+    os.chmod(_api_key_file, 0o600)  # Restrict permissions
+    
+    # Add old key to history with timestamp
+    if current_key:
+        from datetime import datetime
+        history_entry = f"{datetime.utcnow().isoformat()}|{username}|{current_key[:16]}...\n"
+        with open(_api_key_history_file, "a") as f:
+            f.write(history_entry)
+
+
+def rotate_admin_api_key(username: str = "system"):
+    """
+    Rotate the admin API key.
+    
+    Returns:
+        tuple: (new_key, old_key_preview) where old_key_preview is first 16 chars of old key
+    """
+    import secrets
+    new_key = secrets.token_hex(32)
+    old_key = _load_api_key()
+    _save_api_key(new_key, username)
+    
+    # Clear any cached key
+    os.environ["ADMIN_API_KEY"] = new_key
+    
+    old_preview = old_key[:16] + "..." if old_key else "None"
+    return new_key, old_preview
+
+
+# Initialize ADMIN_API_KEY from file if not in environment
+if not os.environ.get("ADMIN_API_KEY"):
+    loaded = _load_api_key()
+    if loaded:
+        os.environ["ADMIN_API_KEY"] = loaded

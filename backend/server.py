@@ -171,10 +171,19 @@ _debug = os.environ.get("DEBUG", "false").lower() == "true"
 app = FastAPI(
     title="Retail Management API",
     version="2.0.0",
+    description="Full-featured retail management system for fabric shops and tailoring businesses.",
     lifespan=lifespan,
     docs_url="/docs" if _debug else None,
-    redoc_url=None,
+    redoc_url="/redoc" if _debug else None,
     openapi_url="/openapi.json" if _debug else None,
+    openapi_tags=[
+        {"name": "Bills", "description": "Bill creation and dashboard"},
+        {"name": "Tailoring", "description": "Tailoring order management"},
+        {"name": "Job Work", "description": "Embroidery tracking"},
+        {"name": "Reports", "description": "Revenue and customer analytics"},
+        {"name": "Settlements", "description": "Payment processing"},
+        {"name": "Auth", "description": "Authentication and user management"},
+    ],
 )
 
 # Attach db to app state for use in Depends(get_db)
