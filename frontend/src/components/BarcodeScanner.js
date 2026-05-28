@@ -70,6 +70,36 @@ export default function BarcodeScanner({ onScan, onClose }) {
 
     const startScanner = async () => {
       try {
+        // Pre-check: Verify secure context and camera permissions first
+        if (!window.isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+          setError(
+            `HTTPS Required\n\n` +
+            `Current: ${window.location.protocol}//${window.location.host}\n\n` +
+            `Camera access requires a secure HTTPS connection.\n\n` +
+            `Please:\n` +
+            `1. Use the HTTPS URL (https://...)\n` +
+            `2. Accept any certificate warnings\n` +
+            `3. On mobile: ensure you're on the same WiFi as the server`
+          );
+          return;
+        }
+        
+        // Try to get camera permission explicitly first
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          stream.getTracks().forEach(track => track.stop()); // Release immediately
+        } catch (permErr) {
+          console.error("Camera permission check failed:", permErr);
+          if (permErr.name === "NotAllowedError") {
+            setError("Camera permission denied. Please allow camera access in your browser settings.");
+          } else if (permErr.name === "NotFoundError") {
+            setError("No camera found on this device.");
+          } else {
+            throw permErr; // Let main error handler deal with it
+          }
+          return;
+        }
+        
         await scanner.start(
           {
             facingMode: "environment",
@@ -101,25 +131,80 @@ export default function BarcodeScanner({ onScan, onClose }) {
         }
         runningRef.current = true;
       } catch (err) {
+        // Log full error details for debugging
+        console.error("Barcode scanner error:", {
+          name: err?.name,
+          message: err?.message,
+          stack: err?.stack,
+          protocol: window.location.protocol,
+          hostname: window.location.hostname,
+          isSecureContext: window.isSecureContext
+        });
+        
         // Suppress "play() interrupted" — happens when modal closes before camera starts
         if (err?.name === "AbortError" || err?.message?.includes("play()")) return;
         if (!cancelled && mountedRef.current) {
-          // Detect specific error types for better user guidance
-          const errorMsg = err?.message || "";
-          const isHttpsError = errorMsg.includes("secure origin") || 
-                               errorMsg.includes("HTTPS") ||
-                               window.location.protocol !== "https:" && window.location.hostname !== "localhost";
-          const isPermissionDenied = err?.name === "NotAllowedError" || errorMsg.includes("Permission denied");
-          const isNotFound = err?.name === "NotFoundError" || errorMsg.includes("Requested device not found");
+          const errorMsg = (err?.message || "").toLowerCase();
+          const errorName = err?.name || "";
+          
+          // Check for HTTPS/secure context issues (multiple patterns)
+          const isNotHttps = window.location.protocol !== "https:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
+          const isNotSecureContext = typeof window.isSecureContext !== "undefined" ? !window.isSecureContext : isNotHttps;
+          const isHttpsError = 
+            errorMsg.includes("secure origin") || 
+            errorMsg.includes("only supported") ||
+            errorMsg.includes("https") ||
+            errorMsg.includes("insecure") ||
+            isNotSecureContext ||
+            isNotHttps;
+          
+          // Permission issues
+          const isPermissionDenied = 
+            errorName === "NotAllowedError" || 
+            errorMsg.includes("permission") ||
+            errorMsg.includes("denied") ||
+            errorMsg.includes("not allowed");
+          
+          // Camera not found
+          const isNotFound = 
+            errorName === "NotFoundError" || 
+            errorMsg.includes("not found") ||
+            errorMsg.includes("no camera") ||
+            errorMsg.includes("requested device not found");
+          
+          // Overconstrained (camera in use or bad constraints)
+          const isOverconstrained = 
+            errorName === "OverconstrainedError" ||
+            errorMsg.includes("overconstrained") ||
+            errorMsg.includes("constraints");
           
           if (isHttpsError) {
-            setError("Camera requires HTTPS connection. On mobile: 1) Use the HTTPS URL shown in your browser 2) Accept the self-signed certificate warning 3) Grant camera permission.");
+            const currentUrl = window.location.href;
+            setError(
+              `Camera requires secure HTTPS connection.\n\n` +
+              `Current URL: ${currentUrl}\n\n` +
+              `On mobile:\n` +
+              `1. Make sure you're using HTTPS (not HTTP)\n` +
+              `2. Accept the self-signed certificate warning\n` +
+              `3. Grant camera permission when prompted\n\n` +
+              `Protocol: ${window.location.protocol}\n` +
+              `Secure context: ${window.isSecureContext ? 'Yes' : 'No'}`
+            );
           } else if (isPermissionDenied) {
-            setError("Camera permission denied. Please allow camera access in your browser settings and try again.");
+            setError("Camera permission denied. Please:\n1. Check browser settings > Site settings > Camera\n2. Allow camera access for this site\n3. Refresh and try again");
           } else if (isNotFound) {
             setError("No camera found on this device. Please connect a camera and try again.");
+          } else if (isOverconstrained) {
+            setError("Camera is in use by another app or doesn't support required settings. Please close other camera apps and try again.");
           } else {
-            setError(`Camera error: ${err?.name || "Unknown error"}. Please check HTTPS connection and camera permissions.`);
+            setError(
+              `Camera error: ${errorName || "Unknown error"}\n` +
+              `${err?.message || ""}\n\n` +
+              `Please check:\n` +
+              `• HTTPS connection (required)\n` +
+              `• Camera permissions granted\n` +
+              `• No other app using camera`
+            );
           }
         }
       }
