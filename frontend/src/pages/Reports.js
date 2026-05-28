@@ -298,7 +298,7 @@ export default function Reports() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="h-64 sm:h-80" ref={chartRef}>
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
                           <BarChart data={revenueData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                             <XAxis 
@@ -337,7 +337,7 @@ export default function Reports() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="h-64 sm:h-80">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
                           <LineChart data={revenueData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                             <XAxis 
@@ -461,7 +461,7 @@ export default function Reports() {
                     <CardContent className="p-3 sm:p-6">
                       {summary.payment_modes?.length > 0 ? (
                         <div className="h-64 sm:h-80">
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
                             <PieChart>
                               <Pie
                                 data={summary.payment_modes}
@@ -511,7 +511,7 @@ export default function Reports() {
                     <CardContent className="p-3 sm:p-6">
                       {summary.article_types?.length > 0 ? (
                         <div className="h-64 sm:h-80">
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
                             <BarChart data={summary.article_types} layout="vertical">
                               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
                               <XAxis type="number" hide />
