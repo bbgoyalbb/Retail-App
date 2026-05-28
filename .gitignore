@@ -24,19 +24,12 @@ htmlcov/
 *.coverage
 .coverage
 
-# Next.js
-/.next/
-/out/
-next-env.d.ts
-*.tsbuildinfo
-
 # Production builds
 /build
 dist/
 dist
 
 # Environment files (comprehensive coverage)
-
 *token.json*
 *credentials.json*
 
@@ -71,17 +64,10 @@ backend/.jwt_secret.lock
 .gitconfig
 
 # Development tools
-chainlit.md
-.chainlit
 .ipynb_checkpoints/
-.ac
-.emergent/
 
 # Deployment
 .vercel
-
-# Data and databases
-agenthub/agents/youtube/db
 
 # Archive files and large assets
 **/*.zip
@@ -101,8 +87,6 @@ memory/test_credentials.md
 audit_screenshots/
 db_field_audit.txt
 create_review_zip.ps1
-
-# Mobile development
 
 # Environment and credential files
 .env

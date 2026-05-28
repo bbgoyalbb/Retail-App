@@ -74,11 +74,38 @@ export default function UsersPage() {
   const [newPassword, setNewPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const validateField = (field, value) => {
+    const errors = { ...fieldErrors };
+    switch (field) {
+      case 'username':
+        if (!value) errors.username = 'Username is required';
+        else if (value.length < 3) errors.username = 'Username must be at least 3 characters';
+        else if (!/^[a-z0-9_]+$/.test(value)) errors.username = 'Only lowercase letters, numbers, and underscores';
+        else delete errors.username;
+        break;
+      case 'password':
+        if (!value) errors.password = 'Password is required';
+        else if (value.length < 6) errors.password = 'Password must be at least 6 characters';
+        else delete errors.password;
+        break;
+      case 'full_name':
+        if (!value) errors.full_name = 'Full name is required';
+        else if (value.length < 2) errors.full_name = 'Name must be at least 2 characters';
+        else delete errors.full_name;
+        break;
+      default:
+        break;
+    }
+    setFieldErrors(errors);
+    return !errors[field];
+  };
 
   const fetchUsers = useCallback(async () => {
     try {
       const data = await listUsers();
-      setUsers(data);
+      setUsers(data?.users ?? (Array.isArray(data) ? data : []));
     } catch (err) {
       console.error("Failed to fetch users", err);
     } finally {
@@ -377,18 +404,21 @@ export default function UsersPage() {
               <form onSubmit={handleAdd} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Full Name</label>
-                  <input className="w-full h-11 px-4 text-xs font-bold bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} placeholder="e.g. Alexander Pierce" required />
+                  <input className={`w-full h-11 px-4 text-xs font-bold bg-muted/30 border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all ${fieldErrors.full_name ? 'border-destructive' : 'border-border/50'}`}
+                    value={form.full_name} onChange={e => { setForm(f => ({ ...f, full_name: e.target.value })); validateField('full_name', e.target.value); }} placeholder="e.g. Alexander Pierce" required />
+                  {fieldErrors.full_name && <p className="text-[10px] text-destructive font-medium">{fieldErrors.full_name}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Username</label>
-                  <input className="w-full h-11 px-4 text-xs font-black font-mono bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g, "") }))} placeholder="e.g. alexp" required />
+                  <input className={`w-full h-11 px-4 text-xs font-black font-mono bg-muted/30 border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all ${fieldErrors.username ? 'border-destructive' : 'border-border/50'}`}
+                    value={form.username} onChange={e => { const val = e.target.value.toLowerCase().replace(/\s/g, ""); setForm(f => ({ ...f, username: val })); validateField('username', val); }} placeholder="e.g. alexp" required />
+                  {fieldErrors.username && <p className="text-[10px] text-destructive font-medium">{fieldErrors.username}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Password</label>
-                  <input type="password" className="w-full h-11 px-4 text-xs font-black font-mono bg-muted/30 border border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Min. 6 characters" required />
+                  <input type="password" className={`w-full h-11 px-4 text-xs font-black font-mono bg-muted/30 border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all ${fieldErrors.password ? 'border-destructive' : 'border-border/50'}`}
+                    value={form.password} onChange={e => { setForm(f => ({ ...f, password: e.target.value })); validateField('password', e.target.value); }} placeholder="Min. 6 characters" required />
+                  {fieldErrors.password && <p className="text-[10px] text-destructive font-medium">{fieldErrors.password}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Role</label>
@@ -398,7 +428,7 @@ export default function UsersPage() {
                   </select>
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <Button type="button" variant="ghost" onClick={() => setShowAdd(false)} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px]">Cancel</Button>
+                  <Button type="button" variant="ghost" onClick={() => { setShowAdd(false); setForm(EMPTY_FORM); setFieldErrors({}); }} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px]">Cancel</Button>
                   <Button type="submit" disabled={busy} className="flex-1 h-11 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20">
                     {busy ? "Creating..." : "Create User"}
                   </Button>

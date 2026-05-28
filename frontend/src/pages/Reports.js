@@ -171,10 +171,8 @@ export default function Reports() {
           <Button variant="outline" size="sm" onClick={() => window.print()} className="rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2">
             <Printer size={16} /> Print
           </Button>
-          <Button variant="outline" size="sm" asChild className="rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2">
-            <a href={exportExcelUrl()} target="_blank" rel="noreferrer">
-              <DownloadSimple size={16} /> Export Excel
-            </a>
+          <Button variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2" onClick={async () => { const url = await exportExcelUrl(); window.open(url, '_blank'); }}>
+            <DownloadSimple size={16} /> Export Excel
           </Button>
         </div>
       </div>

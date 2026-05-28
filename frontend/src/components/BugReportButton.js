@@ -105,25 +105,12 @@ export function BugReportButton() {
     setIsSubmitting(true);
 
     try {
-      // Get current user from session storage
-      let username = "anonymous";
-      try {
-        const userJson = sessionStorage.getItem("user");
-        if (userJson) {
-          const user = JSON.parse(userJson);
-          username = user.username || "anonymous";
-        }
-      } catch {
-        // Ignore
-      }
-
       const bugData = {
         title: title.trim() || "Bug Report",
         description: description.trim(),
         page: window.location.pathname + window.location.search,
         userAgent: navigator.userAgent,
         consoleLogs: logsRef.current.slice(-20), // Send last 20 logs
-        username,
         timestamp: new Date().toISOString(),
       };
 

@@ -33,7 +33,7 @@ async def get_dashboard(db = Depends(get_db), current_user: dict = Depends(get_c
 
     # Single $facet aggregation covers all pending sums, status counts, revenue, trend — 1 DB round trip
     _nc = {"$ne": True}  # not cancelled
-    facet_pipeline = [{"$match": {"cancelled": _nc}}, {"$facet": {
+    facet_pipeline = [{"$match": {"cancelled": _nc}}, {"$hint": "date_1"}, {"$facet": {
         "fab_pending":  [{"$match": {"fabric_amount":     {"$gt": 0}, "fabric_pay_mode":     _ns}}, {"$group": {"_id": None, "t": {"$sum": "$fabric_pending"}}}],
         "tail_pending": [{"$match": {"tailoring_amount":  {"$gt": 0}, "tailoring_pay_mode":  _ns}}, {"$group": {"_id": None, "t": {"$sum": "$tailoring_pending"}}}],
         "emb_pending":  [{"$match": {"embroidery_amount": {"$gt": 0}, "embroidery_pay_mode": _ns}}, {"$group": {"_id": None, "t": {"$sum": "$embroidery_pending"}}}],

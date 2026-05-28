@@ -6,6 +6,10 @@ All route logic lives in routers/. This file handles:
   - Middleware
   - Static file serving
   - Startup / shutdown lifecycle
+
+IMPORTANT: The in-memory rate limiter (auth.py) is single-worker only.
+If running with multiple uvicorn workers, rate limiting will not work correctly.
+For production with multiple workers, use Redis-backed rate limiting.
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -16,6 +20,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 import os
+import uuid
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -147,6 +152,11 @@ async def lifespan(app: FastAPI):
     await db.bug_reports.create_index("priority")
     await db.bug_reports.create_index("username")
 
+    # User collection indexes (Fix 2.7)
+    await db.users.create_index("username", unique=True)
+    await db.users.create_index("role")
+    await db.users.create_index("is_active")
+
     logger.info("MongoDB indexes ensured.")
 
     yield
@@ -221,9 +231,65 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(GZipMiddleware, minimum_size=500)
+app.add_middleware(GZipMiddleware, minimum_size=2048)  # 2KB threshold for gzip efficiency
 
 
+# ==========================================
+# SECURITY HEADERS MIDDLEWARE (Fix 1.4)
+# ==========================================
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    """Add security headers to all responses."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    return response
+
+
+# ==========================================
+# GLOBAL RATE LIMITING MIDDLEWARE (Fix 1.5)
+# ==========================================
+# Single-worker in-memory rate limiter for all endpoints
+# 200 requests per minute per IP, stricter for expensive endpoints
+_RATE_LIMIT_MAX = 200
+_RATE_LIMIT_WINDOW = 60  # 1 minute in seconds
+
+try:
+    from cachetools import TTLCache
+    _global_rate_limits: dict = TTLCache(maxsize=10000, ttl=_RATE_LIMIT_WINDOW)
+except ImportError:
+    _global_rate_limits: dict = {}  # type: ignore
+
+@app.middleware("http")
+async def global_rate_limit(request: Request, call_next):
+    """Apply global rate limiting to all endpoints."""
+    # Get client IP
+    client_ip = request.client.host if request.client else "unknown"
+    
+    # Skip rate limiting for GET requests (read-only)
+    if request.method == "GET":
+        return await call_next(request)
+    
+    # Check rate limit
+    try:
+        count = _global_rate_limits.get(client_ip, 0)
+        if count >= _RATE_LIMIT_MAX:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": f"Rate limit exceeded. Maximum {_RATE_LIMIT_MAX} requests per minute."}
+            )
+        _global_rate_limits[client_ip] = count + 1
+    except Exception:
+        pass  # Fail open on rate limit errors
+    
+    return await call_next(request)
+
+
+# ==========================================
+# ERROR LOGGING MIDDLEWARE
 @app.middleware("http")
 async def limit_upload_size(request: Request, call_next):
     if request.method in ("POST", "PUT", "PATCH"):
@@ -272,24 +338,31 @@ async def cache_control(request: Request, call_next):
 # ==========================================
 @app.middleware("http")
 async def error_logging_middleware(request: Request, call_next):
-    """Catch all unhandled exceptions, log with full context, and store in DB."""
+    """Log unhandled Python exceptions and 5xx responses.
+    NOTE: HTTPExceptions raised by FastAPI endpoints are handled by FastAPI's own
+    exception handlers and do NOT reach this middleware as exceptions — they return
+    normal responses. This middleware fires only for truly unhandled Python errors.
+    """
     try:
         response = await call_next(request)
+        # Also log unexpected 5xx responses that slipped through without raising
+        if response.status_code >= 500:
+            error_logger.warning(f"5xx response {response.status_code} for {request.method} {request.url.path}")
         return response
     except Exception as exc:
         import traceback
         from datetime import datetime, timezone
 
-        # Build detailed error context
-        error_id = f"err_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{id(exc) & 0xFFFFFF:06x}"
+        # Build detailed error context with UUID for uniqueness (Fix 3.8)
+        error_id = f"err_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
         stack_trace = traceback.format_exc()
 
-        # Get request details safely
+        # Get request body safely — body may be consumed for form/multipart requests
         try:
-            body = await request.body()
+            body = getattr(request, "_body", None) or await request.body()
             body_preview = body[:1000].decode('utf-8', errors='replace') if body else ""
         except Exception:
-            body_preview = "<could not read body>"
+            body_preview = "<body unavailable — likely consumed by form parser>"
 
         client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
         user_agent = request.headers.get("user-agent", "unknown")
@@ -339,9 +412,12 @@ STACK TRACE:
         )
 
 
+# Import auth dependency for bug report endpoint
+from routers.deps import get_current_user_dep
+
 @app.post("/api/bug-report", include_in_schema=False)
-async def submit_bug_report(request: Request):
-    """Receive bug reports from frontend with full context."""
+async def submit_bug_report(request: Request, current_user: dict = Depends(get_current_user_dep)):
+    """Receive bug reports from frontend with full context. Requires authentication (Fix 1.7)."""
     from datetime import datetime, timezone
 
     try:
@@ -357,14 +433,14 @@ async def submit_bug_report(request: Request):
     console_logs = data.get("consoleLogs", [])
     username = data.get("username", "anonymous")
 
-    # Generate report ID
-    report_id = f"bug_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{hash(description) & 0xFFFFFF:06x}"
+    # Generate report ID with UUID for uniqueness (Fix 3.9)
+    report_id = f"bug_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
 
     # Build bug report document
     bug_report = {
         "report_id": report_id,
         "timestamp": datetime.now(timezone.utc),
-        "username": username,
+        "username": current_user.get("username", username),  # Use authenticated user (Fix 1.7)
         "title": title,
         "description": description,
         "page": page,
@@ -391,7 +467,7 @@ async def submit_bug_report(request: Request):
     # Also log to file for immediate visibility
     log_entry = f"""
 BUG REPORT: {report_id}
-USER: {username}
+USER: {current_user.get('username', username)} (authenticated)
 PAGE: {page}
 TITLE: {title}
 DESCRIPTION: {description[:500]}

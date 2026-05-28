@@ -1,5 +1,6 @@
 """Auto-generate a self-signed SSL certificate for the current machine IP."""
 import ipaddress
+import os
 import socket
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -10,6 +11,9 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
 out_dir = Path(__file__).parent
+
+# Read organization name from env or use generic placeholder
+ORG_NAME = os.getenv("FIRM_NAME", "Retail Business")
 
 # Detect current local IP
 try:
@@ -34,7 +38,7 @@ key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 subject = issuer = x509.Name([
     x509.NameAttribute(NameOID.COMMON_NAME, "Retail App"),
-    x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Narwana Agencies"),
+    x509.NameAttribute(NameOID.ORGANIZATION_NAME, ORG_NAME),
 ])
 
 cert = (

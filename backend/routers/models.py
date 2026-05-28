@@ -38,10 +38,10 @@ DEFAULT_SETTINGS = {
     "addon_items": ADDON_ITEMS,
     "karigars": KARIGARS,
     "gst_rate": 5.0,
-    "firm_name": "Narwana Agencies",
-    "firm_address": "Jasmeet Nagar, Near Kalka Chowk, Ambala City, Pin: 134003, Haryana",
-    "firm_phones": "9467902343, 7056212655",
-    "firm_gstin": "06ADMPG9353K1Z4",
+    "firm_name": "",
+    "firm_address": "",
+    "firm_phones": "",
+    "firm_gstin": "",
     "firm_logo": None,
     "firm_logo_dark": None,
     "firm_name_color": "#C86B4D",
@@ -340,4 +340,34 @@ class AdvanceUpdateRequest(BaseModel):
     date: Optional[str] = None
     mode: Optional[str] = None
     tally: Optional[bool] = None
+
+
+# --- SettingsUpdateRequest (Fix 3.2) ---
+class SettingsUpdateRequest(BaseModel):
+    """Schema for settings updates with explicit field validation."""
+    article_types: Optional[List[str]] = None
+    tailoring_rates: Optional[Dict[str, Dict[str, float]]] = None
+    payment_modes: Optional[List[str]] = None
+    addon_items: Optional[List[str]] = None
+    karigars: Optional[List[str]] = None
+    gst_rate: Optional[float] = None
+    firm_name: Optional[str] = None
+    firm_address: Optional[str] = None
+    firm_phones: Optional[str] = None
+    firm_gstin: Optional[str] = None
+    firm_logo: Optional[str] = None
+    firm_logo_dark: Optional[str] = None
+    firm_name_color: Optional[str] = None
+    firm_name_size: Optional[str] = None
+    firm_name_case: Optional[str] = None
+
+
+# --- UserUpdateRequest (Fix 3.3) ---
+class UserUpdateRequest(BaseModel):
+    """Schema for user updates with explicit field validation."""
+    full_name: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    allowed_pages: Optional[List[str]] = None
+    password: Optional[str] = None
 

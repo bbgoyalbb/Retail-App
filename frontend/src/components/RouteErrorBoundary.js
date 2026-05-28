@@ -1,6 +1,8 @@
 import { Component } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw, Home } from '@phosphor-icons/react';
+import { submitBugReport } from '@/api';
 
 /**
  * Route-level Error Boundary
@@ -19,6 +21,16 @@ export class RouteErrorBoundary extends Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
     console.error('Route Error Boundary caught an error:', error, errorInfo);
+    try {
+      submitBugReport({
+        title: `Auto: ${error?.message || 'Route error'}`,
+        description: `${error?.toString()}\n\nComponent Stack:\n${errorInfo?.componentStack || ''}`,
+        page: window.location.pathname + window.location.search,
+        userAgent: navigator.userAgent,
+        consoleLogs: [],
+        timestamp: new Date().toISOString(),
+      }).catch(() => {});
+    } catch {}
   }
 
   handleReset = () => {
@@ -26,7 +38,11 @@ export class RouteErrorBoundary extends Component {
   };
 
   handleGoHome = () => {
-    window.location.href = '/';
+    if (this.props.navigate) {
+      this.props.navigate('/');
+    } else {
+      window.location.href = '/';
+    }
   };
 
   render() {
@@ -83,4 +99,10 @@ export class RouteErrorBoundary extends Component {
 
     return this.props.children;
   }
+}
+
+// Functional wrapper to inject the navigate hook into the class component
+export default function RouteErrorBoundaryWrapper(props) {
+  const navigate = useNavigate();
+  return <RouteErrorBoundary {...props} navigate={navigate} />;
 }

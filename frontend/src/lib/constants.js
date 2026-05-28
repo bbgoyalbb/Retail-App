@@ -33,8 +33,34 @@ export const ANIMATION_DURATION = {
 
 // Toast configuration
 export const TOAST_CONFIG = {
-  LIMIT: 1,
+  LIMIT: 3,
   REMOVE_DELAY: 4000,
+};
+
+// CSS Token Constants (Fix 4.7)
+// Centralized CSS variable references for consistency
+export const CSS_TOKENS = {
+  // Colors
+  BG: 'var(--bg)',
+  SURFACE: 'var(--surface)',
+  TEXT_PRIMARY: 'var(--text-primary)',
+  TEXT_SECONDARY: 'var(--text-secondary)',
+  BRAND: 'var(--brand)',
+  BRAND_HOVER: 'var(--brand-hover)',
+  BRAND_FG: 'var(--brand-fg)',
+  SUCCESS: 'var(--success)',
+  WARNING: 'var(--warning)',
+  INFO: 'var(--info)',
+  ERROR: 'var(--error)',
+  BORDER_SUBTLE: 'var(--border-subtle)',
+  BORDER_STRONG: 'var(--border-strong)',
+  // Aliases for commonly used tokens
+  MUTED: 'var(--text-secondary)',
+  MUTED_FOREGROUND: 'var(--text-secondary)',
+  FOREGROUND: 'var(--text-primary)',
+  BACKGROUND: 'var(--bg)',
+  CARD: 'var(--surface)',
+  BORDER: 'var(--border-subtle)',
 };
 
 // Pagination and limits
@@ -107,6 +133,22 @@ export const SETTLE_TABS = [
   { k: 'awaiting', l: 'Awaiting' },
   { k: 'settled', l: 'Settled' },
   { k: 'all', l: 'All' },
+];
+
+// Unified navigation configuration (Fix 6.2)
+export const NAV_CONFIG = [
+  { key: "dashboard", label: "Dashboard", icon: "House", path: "/" },
+  { key: "new-bill", label: "New Bill", icon: "Receipt", path: "/new-bill" },
+  { key: "daybook", label: "Daybook", icon: "BookOpen", path: "/daybook", managerOnly: true },
+  { key: "labour", label: "Labour Payments", icon: "UsersThree", path: "/labour", managerOnly: true },
+  { key: "items", label: "Manage Orders", icon: "Table", path: "/items", managerOnly: true },
+  { key: "jobwork", label: "Job Work", icon: "Kanban", path: "/jobwork" },
+  { key: "order-status", label: "Order Status", icon: "ClipboardText", path: "/order-status" },
+  { key: "reports", label: "Reports", icon: "ChartBar", path: "/reports", managerOnly: true },
+  { key: "data", label: "Data Manager", icon: "Database", path: "/data", adminOnly: true },
+  { key: "settings", label: "Settings", icon: "Gear", path: "/settings", adminOnly: true },
+  { key: "users", label: "Users", icon: "UsersFour", path: "/users", adminOnly: true },
+  { key: "audit", label: "Audit Log", icon: "ClockCounterClockwise", path: "/audit", adminOnly: true },
 ];
 
 // Tailoring status options

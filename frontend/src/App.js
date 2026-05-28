@@ -65,19 +65,19 @@ function RequireRole({ roles, path, children }) {
         </div>
         
         <div className="max-w-md space-y-4">
-          <h2 className="font-heading text-2xl font-black uppercase tracking-[0.2em] text-destructive">Security Protocol</h2>
+          <h2 className="font-heading text-2xl font-bold text-destructive">Access Denied</h2>
           <p className="text-sm font-medium text-muted-foreground leading-relaxed">
             {roleBlocked
-              ? <>Your current clearance level (<span className="text-destructive font-black uppercase">{user?.role}</span>) is insufficient to access this operational sector.</>
-              : "This specific endpoint has been administratively restricted for your agent profile."}
+              ? <>You don't have permission to access this page. Contact your administrator if you need access.</>  
+              : "This page has been restricted for your account. Contact your administrator if you need access."}
           </p>
           
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button variant="outline" onClick={() => navigate(-1)} className="h-11 px-8 font-black uppercase tracking-widest text-[10px] rounded-xl gap-2 transition-colors active:scale-95">
-              <ArrowLeft size={16} weight="bold" /> Return to Previous Sector
+            <Button variant="outline" onClick={() => navigate(-1)} className="h-11 px-8 rounded-xl gap-2 transition-colors active:scale-95">
+              <ArrowLeft size={16} weight="bold" /> Go Back
             </Button>
-            <Button onClick={() => navigate("/")} className="h-11 px-8 font-black uppercase tracking-widest text-[10px] rounded-xl gap-2 shadow-lg shadow-primary/20 transition-colors active:scale-95">
-              Dashboard Base
+            <Button onClick={() => navigate("/")} className="h-11 px-8 rounded-xl gap-2 shadow-lg shadow-primary/20 transition-colors active:scale-95">
+              Dashboard
             </Button>
           </div>
         </div>
@@ -158,14 +158,11 @@ function AppShell() {
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
-    el.classList.remove("page-in", "page-out");
-    el.classList.add("page-out");
-    const t = setTimeout(() => {
-      el.classList.remove("page-out");
-      void el.offsetWidth;
-      el.classList.add("page-in");
-    }, 100);
-    return () => clearTimeout(t);
+    el.setAttribute("data-page", "out");
+    const t = requestAnimationFrame(() => {
+      el.setAttribute("data-page", "in");
+    });
+    return () => cancelAnimationFrame(t);
   }, [location.pathname]);
 
   const handleSetOpen = useCallback((v) => {
@@ -195,7 +192,6 @@ function AppShell() {
   if (!user) {
     return (
       <Suspense fallback={<PageLoader />}>
-        <Toaster />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/login" state={{ from: location.pathname }} />} />
@@ -213,7 +209,7 @@ function AppShell() {
         <main className="flex-1 overflow-hidden min-w-0 flex flex-col relative">
           <MobileTopBar title={pageTitle} onMenuClick={() => handleSetOpen(!sidebarOpen)} />
           <MobileBottomTabBar onOpenSidebar={() => handleSetOpen(true)} />
-          <div ref={contentRef} className="flex-1 overflow-y-auto p-4 pt-[calc(4rem+var(--offline-banner-h,0px))] pb-20 md:p-6 md:pt-[calc(1.5rem+var(--offline-banner-h,0px))] md:pb-6 lg:p-8 lg:pt-[calc(2rem+var(--offline-banner-h,0px))] page-in custom-scrollbar">
+          <div ref={contentRef} data-page="in" className="flex-1 overflow-y-auto p-4 pt-[calc(4rem+var(--offline-banner-h,0px))] pb-20 md:p-6 md:pt-[calc(1.5rem+var(--offline-banner-h,0px))] md:pb-6 lg:p-8 lg:pt-[calc(2rem+var(--offline-banner-h,0px))] custom-scrollbar">
             <div className="max-w-[1400px] mx-auto w-full">
               <ErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
@@ -247,7 +243,6 @@ function AppShell() {
             </div>
           </div>
         </main>
-        <Toaster />
         <BugReportButton />
       </div>
     </ErrorBoundary>
@@ -259,6 +254,7 @@ function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
+          <Toaster />
           <AppShell />
         </AuthProvider>
       </BrowserRouter>

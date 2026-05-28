@@ -201,6 +201,11 @@ export default function ItemsManager() {
   const [message, setMessage]       = useState(null);
   const [settings, setSettings]   = useState(null);
 
+  // Pagination (Fix 2.2)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(100);
+  const [totalItems, setTotalItems] = useState(0);
+
   // Filters
   const [nameFilter, setNameFilter] = useState("");
   const [debouncedName, setDebouncedName] = useState("");

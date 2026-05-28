@@ -12,27 +12,25 @@ export function useFocusTrap(active) {
     if (!active || !ref.current) return;
 
     const el = ref.current;
-    // Get all focusable elements
-    const focusable = el.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
+    const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
     // Focus first element when trap activates
-    first?.focus();
+    el.querySelectorAll(FOCUSABLE)[0]?.focus();
 
     const trap = (e) => {
       if (e.key !== "Tab") return;
+      // Re-query on every keydown so dynamic content is always current
+      const focusable = Array.from(el.querySelectorAll(FOCUSABLE)).filter(n => !n.disabled);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first) return;
 
       if (e.shiftKey) {
-        // Shift+Tab: moving backwards
         if (document.activeElement === first) {
           e.preventDefault();
           last?.focus();
         }
       } else {
-        // Tab: moving forwards
         if (document.activeElement === last) {
           e.preventDefault();
           first?.focus();

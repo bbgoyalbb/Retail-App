@@ -4,7 +4,7 @@ Auth Routes router.
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, Header, status
 from fastapi.responses import FileResponse, JSONResponse
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 import uuid
 import re
 import os
@@ -16,7 +16,7 @@ from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
-from .models import LoginRequest, UserCreateRequest, DEFAULT_SETTINGS, merge_settings
+from .models import LoginRequest, UserCreateRequest, UserUpdateRequest, SettingsUpdateRequest, DEFAULT_SETTINGS, merge_settings
 from jose import jwt as jose_jwt, JWTError
 from pymongo import ReturnDocument
 try:
@@ -82,28 +82,30 @@ async def get_settings(db = Depends(get_db), current_user: dict = Depends(get_cu
     return merge_settings(settings)
 
 @router.put("/settings")
-async def update_settings(data: dict, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def update_settings(data: SettingsUpdateRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can update settings")
+    # Convert Pydantic model to dict, excluding unset fields
+    update_data = data.model_dump(exclude_unset=True)
     # Validate hex color format if provided
-    if "firm_name_color" in data:
-        color = data["firm_name_color"]
+    if "firm_name_color" in update_data:
+        color = update_data["firm_name_color"]
         if color and not re.fullmatch(r'#[0-9a-fA-F]{3,6}', color):
             raise HTTPException(status_code=400, detail="Invalid color format. Use hex like #C86B4D or #fff")
     # Deduplicate list fields before saving
     for list_key in ("payment_modes", "addon_items", "article_types", "karigars"):
-        if isinstance(data.get(list_key), list):
+        if isinstance(update_data.get(list_key), list):
             seen = set()
-            data[list_key] = [x for x in data[list_key] if not (x.lower() in seen or seen.add(x.lower()))]
-    data["key"] = "app_settings"
+            update_data[list_key] = [x for x in update_data[list_key] if not (x.lower() in seen or seen.add(x.lower()))]
+    update_data["key"] = "app_settings"
     settings = await db.settings.find_one_and_update(
         {"key": "app_settings"},
-        {"$set": data},
+        {"$set": update_data},
         upsert=True,
         return_document=ReturnDocument.AFTER,
         projection={"_id": 0},
     )
-    await audit_log(db, "update", current_user, "settings", "app_settings", {"fields": list(data.keys())})
+    await audit_log(db, "update", current_user, "settings", "app_settings", {"fields": list(update_data.keys())})
     return merge_settings(settings)
 
 # ==========================================
@@ -126,11 +128,22 @@ async def upload_logo(file: UploadFile = File(...), current_user: dict = Depends
         img = _PILImage.open(_io.BytesIO(contents))
         img_format = img.format  # read format BEFORE verify()
         img.verify()
+        # Re-open for processing since verify() invalidates
+        img = _PILImage.open(_io.BytesIO(contents))
+        # Resize to max 300px dimension, maintain aspect ratio
+        MAX_DIM = 300
+        if img.width > MAX_DIM or img.height > MAX_DIM:
+            img.thumbnail((MAX_DIM, MAX_DIM), _PILImage.Resampling.LANCZOS)
+        # Convert to RGB if RGBA (for WebP compatibility)
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        # Save as WebP for better compression
+        output = _io.BytesIO()
+        img.save(output, format="WebP", quality=85, optimize=True)
+        contents = output.getvalue()
+        ext = "webp"
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid or corrupt image file")
-    ext = (img_format or "png").lower()
-    if ext == "jpeg":
-        ext = "jpg"
     upload_dir = ROOT_DIR / "static" / "uploads"
     upload_dir.mkdir(parents=True, exist_ok=True)
     safe_name = f"logo_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{os.urandom(4).hex()}.{ext}"
@@ -138,6 +151,43 @@ async def upload_logo(file: UploadFile = File(...), current_user: dict = Depends
     with open(file_path, "wb") as f:
         f.write(contents)
     return {"url": f"/uploads/{safe_name}"}
+
+# ==========================================
+# SHORT-LIVED DOWNLOAD TOKENS (Fix 1.3)
+# Replaces JWT-in-URL pattern for invoice/export/backup downloads
+# ==========================================
+
+_download_tokens: dict = {}  # token -> {username, expires_at, used}
+
+@router.post("/auth/download-token")
+async def create_download_token(current_user: dict = Depends(get_current_user_dep)):
+    """Issue a short-lived (5 min), single-use download token for file endpoints."""
+    import secrets
+    token = secrets.token_urlsafe(32)
+    _download_tokens[token] = {
+        "username": current_user["username"],
+        "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5),
+        "used": False,
+    }
+    # Prune expired tokens (simple cleanup)
+    now = datetime.now(timezone.utc)
+    expired = [k for k, v in _download_tokens.items() if v["expires_at"] < now]
+    for k in expired:
+        del _download_tokens[k]
+    return {"download_token": token}
+
+async def validate_download_token(token: str) -> str:
+    """Validate a download token and mark it as used. Returns the username."""
+    entry = _download_tokens.get(token)
+    if not entry:
+        raise HTTPException(status_code=401, detail="Invalid or expired download token")
+    if entry["used"]:
+        raise HTTPException(status_code=401, detail="Download token already used")
+    if entry["expires_at"] < datetime.now(timezone.utc):
+        del _download_tokens[token]
+        raise HTTPException(status_code=401, detail="Download token expired")
+    entry["used"] = True
+    return entry["username"]
 
 # ==========================================
 # AUTH ENDPOINTS
@@ -201,6 +251,8 @@ async def register_user(req: UserCreateRequest, db = Depends(get_db), current_us
         raise HTTPException(status_code=403, detail="Only admins can create users")
     if len(req.username.strip()) < 3:
         raise HTTPException(status_code=400, detail="Username must be at least 3 characters")
+    if len(req.username.strip()) > 50:
+        raise HTTPException(status_code=400, detail="Username must be 50 characters or fewer")
     if len(req.password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
     if req.role not in ["admin", "manager", "cashier"]:
@@ -224,32 +276,40 @@ async def register_user(req: UserCreateRequest, db = Depends(get_db), current_us
     return {"message": "User created successfully", "username": new_user["username"]}
 
 @router.get("/auth/users")
-async def list_users(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def list_users(
+    db = Depends(get_db),
+    current_user: dict = Depends(get_current_user_dep),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can list users")
-    users = await db.users.find({}, {"password_hash": 0}).to_list(None)
+    users = await db.users.find({}, {"password_hash": 0}).skip(skip).limit(limit).to_list(length=limit)
+    total = await db.users.count_documents({})
     for u in users:
         u["_id"] = str(u["_id"])
-    return users
+    return {"users": users, "total": total, "skip": skip, "limit": limit}
 
 @router.put("/auth/users/{username}")
-async def update_user(username: str, data: dict, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def update_user(username: str, data: UserUpdateRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Only admins can update users")
     if username == "admin" and current_user["username"] != "admin":
         raise HTTPException(status_code=403, detail="Cannot modify the admin account")
+    # Convert Pydantic model to dict, excluding unset fields
+    update_data = data.model_dump(exclude_unset=True)
     update = {}
-    if "full_name" in data: update["full_name"] = data["full_name"]
-    if "role" in data:
-        if data["role"] not in ["admin", "manager", "cashier"]:
+    if "full_name" in update_data: update["full_name"] = update_data["full_name"]
+    if "role" in update_data:
+        if update_data["role"] not in ["admin", "manager", "cashier"]:
             raise HTTPException(status_code=400, detail="Role must be admin, manager, or cashier")
-        update["role"] = data["role"]
-    if "is_active" in data: update["is_active"] = data["is_active"]
-    if "allowed_pages" in data: update["allowed_pages"] = data["allowed_pages"]
-    if "password" in data and data["password"]:
-        if len(data["password"]) < 8:
+        update["role"] = update_data["role"]
+    if "is_active" in update_data: update["is_active"] = update_data["is_active"]
+    if "allowed_pages" in update_data: update["allowed_pages"] = update_data["allowed_pages"]
+    if "password" in update_data and update_data["password"]:
+        if len(update_data["password"]) < 8:
             raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
-        update["password_hash"] = auth_module.get_password_hash(data["password"])
+        update["password_hash"] = auth_module.get_password_hash(update_data["password"])
     if not update:
         raise HTTPException(status_code=400, detail="No fields to update")
     result = await db.users.update_one({"username": username}, {"$set": update})
@@ -303,9 +363,15 @@ async def list_audit_logs(
     if date_from or date_to:
         date_filter = {}
         if date_from:
-            date_filter["$gte"] = f"{date_from}T00:00:00"
+            try:
+                date_filter["$gte"] = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date_from format. Use YYYY-MM-DD")
         if date_to:
-            date_filter["$lte"] = f"{date_to}T23:59:59"
+            try:
+                date_filter["$lte"] = datetime.strptime(date_to, "%Y-%m-%d").replace(tzinfo=timezone.utc) + timedelta(days=1)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date_to format. Use YYYY-MM-DD")
         query_filter["timestamp"] = date_filter
     
     cursor = db.audit_logs.find(query_filter).sort("timestamp", -1).skip(skip).limit(limit)

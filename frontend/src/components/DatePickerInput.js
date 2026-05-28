@@ -7,6 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 
 /**
  * A styled date picker input that wraps the shadcn Calendar inside a Popover.
+ * Falls back to native date input on Safari/iOS for better mobile support (Fix 6.7).
  * value: ISO date string "YYYY-MM-DD" or ""
  * onChange: (isoString) => void
  * placeholder: string
@@ -18,6 +19,7 @@ const DatePickerInput = forwardRef(function DatePickerInput(
   ref
 ) {
   const [open, setOpen] = useState(false);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   const parsed = value ? parseISO(value) : undefined;
   const selected = parsed && isValid(parsed) ? parsed : undefined;
@@ -31,6 +33,25 @@ const DatePickerInput = forwardRef(function DatePickerInput(
     }
     setOpen(false);
   };
+
+  // Safari/iOS fallback: use native date input
+  if (isIOS) {
+    return (
+      <div className="relative">
+        <input
+          ref={ref}
+          type="date"
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          onKeyDown={onKeyDown}
+          data-testid={testId}
+          className={`h-10 px-3 py-2 text-sm border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--brand)] bg-[var(--surface)] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+          aria-label={ariaLabel || placeholder}
+        />
+      </div>
+    );
+  }
 
   return (
     <Popover open={open && !disabled} onOpenChange={(v) => !disabled && setOpen(v)}>

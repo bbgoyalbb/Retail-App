@@ -1,29 +1,30 @@
-import { Package, Plus } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
+import PropTypes from "prop-types";
+import { Scissors, ArrowRight } from "@phosphor-icons/react";
 
-/**
- * EmptyState - Displayed when no data is available
- * 
- * @param {Object} props
- * @param {string} props.title - Title text
- * @param {string} props.description - Description text
- * @param {Function} props.action - Optional action callback
- * @param {string} props.actionLabel - Label for action button
- */
-export function EmptyState({ title, description, action, actionLabel = "Get Started" }) {
+export function EmptyState({ title, description, action, onAction, icon: Icon = Scissors }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-      <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
-        <Package size={32} className="text-muted-foreground" aria-hidden="true" />
+    <div className="flex flex-col items-start sm:items-center justify-center py-12 px-4 text-left sm:text-center">
+      <div className="w-16 h-16 rounded-full bg-[var(--bg)] border border-[var(--border-subtle)] flex items-center justify-center mb-4">
+        <Icon size={28} className="text-[var(--brand)]" aria-hidden="true" />
       </div>
-      <h3 className="font-heading text-lg font-semibold text-foreground mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground max-w-sm mb-6">{description}</p>
-      {action && (
-        <Button onClick={action} className="gap-2">
-          <Plus size={16} weight="bold" aria-hidden="true" />
-          {actionLabel}
-        </Button>
+      <h3 className="font-heading text-base font-medium text-[var(--text-primary)] mb-1">{title}</h3>
+      <p className="text-sm text-[var(--text-secondary)] max-w-xs mb-4">{description}</p>
+      {action && onAction && (
+        <button
+          onClick={onAction}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[var(--brand)] text-white rounded-sm hover:bg-[var(--brand-hover)] transition-colors"
+        >
+          {action} <ArrowRight size={14} aria-hidden="true" />
+        </button>
       )}
     </div>
   );
 }
+
+EmptyState.propTypes = {
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+  action: PropTypes.string,
+  onAction: PropTypes.func,
+  icon: PropTypes.elementType,
+};

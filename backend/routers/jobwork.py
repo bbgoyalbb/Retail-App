@@ -136,8 +136,7 @@ async def move_jobwork(req: StatusUpdateRequest, db = Depends(get_db), current_u
 
 @router.post("/jobwork/move-back")
 async def move_jobwork_back(req: MoveBackRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
-    TAILORING_PREV = {"Stitched": "Pending", "Delivered": "Stitched"}
-    EMB_PREV = {"In Progress": "Required", "Finished": "In Progress"}
+    from constants import TAILORING_PREV, EMB_PREV
     if req.current_status in TAILORING_PREV:
         update_fields = {"tailoring_status": TAILORING_PREV[req.current_status]}
     elif req.current_status in EMB_PREV:

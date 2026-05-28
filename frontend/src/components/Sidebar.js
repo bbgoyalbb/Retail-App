@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { getDaybookPendingCount, getPublicSettings, BACKEND_URL } from "@/api";
 import { dataEvents } from "@/lib/dataEvents";
+import { NAV_CONFIG } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import {
   House, Receipt, Kanban,
@@ -13,24 +14,17 @@ import {
   CaretDoubleLeft, CaretDoubleRight, Sun, Moon, SignOut, UserCircle, UsersFour, ClockCounterClockwise, Keyboard
 } from "@phosphor-icons/react";
 
-
+const ICON_MAP = {
+  House, Receipt, Kanban, BookOpen, UsersThree, Table, ChartBar, Database, Gear, ClipboardText, UsersFour, ClockCounterClockwise,
+};
 
 const NAV_ITEMS = [
-  { key: "dashboard", label: "Dashboard", icon: House, path: "/" },
   { key: "section-tx", type: "section", label: "Transactions" },
-  { key: "new-bill", label: "New Bill", icon: Receipt, path: "/new-bill" },
-  { key: "daybook", label: "Daybook", icon: BookOpen, path: "/daybook", managerOnly: true },
-  { key: "labour", label: "Labour Payments", icon: UsersThree, path: "/labour", managerOnly: true },
+  ...NAV_CONFIG.filter(i => i.key === "dashboard" || i.key === "new-bill" || i.key === "daybook" || i.key === "labour").map(i => ({ ...i, icon: ICON_MAP[i.icon] })),
   { key: "section-mgmt", type: "section", label: "Manage" },
-  { key: "items", label: "Manage Orders", icon: Table, path: "/items", managerOnly: true },
-  { key: "jobwork", label: "Job Work", icon: Kanban, path: "/jobwork" },
-  { key: "order-status", label: "Order Status", icon: ClipboardText, path: "/order-status" },
-  { key: "reports", label: "Reports", icon: ChartBar, path: "/reports", managerOnly: true },
+  ...NAV_CONFIG.filter(i => i.key === "items" || i.key === "jobwork" || i.key === "order-status" || i.key === "reports").map(i => ({ ...i, icon: ICON_MAP[i.icon] })),
   { key: "section-admin", type: "section", label: "Admin", adminOnly: true },
-  { key: "data", label: "Data Manager", icon: Database, path: "/data", adminOnly: true },
-  { key: "settings", label: "Settings", icon: Gear, path: "/settings", adminOnly: true },
-  { key: "users", label: "Users", icon: UsersFour, path: "/users", adminOnly: true },
-  { key: "audit", label: "Audit Log", icon: ClockCounterClockwise, path: "/audit", adminOnly: true },
+  ...NAV_CONFIG.filter(i => i.key === "data" || i.key === "settings" || i.key === "users" || i.key === "audit").map(i => ({ ...i, icon: ICON_MAP[i.icon] })),
 ];
 
 export default function Sidebar({ open, setOpen }) {
@@ -53,7 +47,11 @@ export default function Sidebar({ open, setOpen }) {
       }).catch(() => {});
     };
     fetchSettings();
-    const onFocus = () => fetchSettings();
+    let lastFocus = 0;
+    const onFocus = () => {
+      const now = Date.now();
+      if (now - lastFocus > 5000) { lastFocus = now; fetchSettings(); }
+    };
     const onSettingsUpdated = () => fetchSettings();
     window.addEventListener("focus", onFocus);
     window.addEventListener("settings:updated", onSettingsUpdated);

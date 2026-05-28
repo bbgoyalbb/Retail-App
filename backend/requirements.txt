@@ -1,31 +1,31 @@
-# Core (updated for security patches and bug fixes)
+# Core
 fastapi==0.115.5
 uvicorn==0.32.0
-python-dotenv>=1.0.1
-starlette>=0.41.0
+python-dotenv==1.0.1
+starlette==0.41.3
 
-# MongoDB (updated for compatibility and bug fixes)
+# MongoDB
 motor==3.6.0
-pymongo>=4.9.0
+pymongo==4.9.2
 
-# Data handling (updated for latest features and fixes)
-pydantic>=2.9.0
+# Data handling
+pydantic==2.9.2
 openpyxl==3.1.5
-httpx>=0.27.0
-email-validator>=2.1.0
-pytz>=2024.1
+httpx==0.27.2
+email-validator==2.2.0
+pytz==2024.1
 passlib[bcrypt]==1.7.4
 bcrypt==4.2.1
 python-jose[cryptography]==3.3.0
-Pillow>=10.3.0
+Pillow==10.4.0
 
 # SSL certificate generation (gen_cert.py)
-cryptography>=42.0.0
+cryptography==42.0.8
 
 # Utilities
-python-multipart>=0.0.9
-cachetools>=5.3.0
+python-multipart==0.0.9
+cachetools==5.3.3
 
 # Development/Testing
-pytest>=8.0.0
-pytest-asyncio>=0.23.0
+pytest==8.3.3
+pytest-asyncio==0.23.8

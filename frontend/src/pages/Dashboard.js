@@ -27,7 +27,7 @@ const Sparkline = memo(function Sparkline({ data, color = "var(--success)", widt
   }).join(' ');
   
   return (
-    <svg width={width} height={height} className="flex-shrink-0 overflow-visible">
+    <svg width={width} height={height} className="flex-shrink-0 overflow-visible" aria-hidden="true">
       <polyline
         points={points}
         fill="none"

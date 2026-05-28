@@ -1,5 +1,6 @@
 import { Component } from "react";
 import { Warning, ArrowCounterClockwise } from "@phosphor-icons/react";
+import { submitBugReport } from "@/api";
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -13,6 +14,16 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error("ErrorBoundary caught:", error, info);
+    try {
+      submitBugReport({
+        title: `Auto: ${error?.message || "Unknown error"}`,
+        description: `${error?.toString()}\n\nComponent Stack:\n${info?.componentStack || ""}`,
+        page: window.location.pathname + window.location.search,
+        userAgent: navigator.userAgent,
+        consoleLogs: [],
+        timestamp: new Date().toISOString(),
+      }).catch(() => {});
+    } catch {}
   }
 
   render() {

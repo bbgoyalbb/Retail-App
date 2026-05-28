@@ -1,12 +1,15 @@
 import axios from "axios";
 import { CACHE_TTL, PAGINATION } from "@/lib/constants";
-import { getCsrfToken, isSessionValid, clearSession } from "@/lib/security";
+import { isSessionValid, clearSession } from "@/lib/security";
 
-// In production (build_and_run.bat), React is served by FastAPI on the same port —
-// use current origin. In dev mode (any port except 8001), point to backend port 8001.
-export const BACKEND_URL = window.location.port === "8001"
-  ? window.location.origin
-  : `http://${window.location.hostname}:8001`;
+// Backend URL configuration (Fix 4.4)
+// Priority: 1. Env var REACT_APP_BACKEND_URL, 2. Same origin (production), 3. Default dev port
+const envBackendUrl = process.env.REACT_APP_BACKEND_URL;
+export const BACKEND_URL = envBackendUrl || (
+  window.location.port === "8001"
+    ? window.location.origin
+    : `http://${window.location.hostname}:8001`
+);
 
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
 
@@ -15,10 +18,6 @@ api.interceptors.request.use(
     const token = sessionStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    }
-    // Add CSRF token to all non-GET requests
-    if (config.method && config.method.toLowerCase() !== 'get') {
-      config.headers['X-CSRF-Token'] = getCsrfToken();
     }
     return config;
   },
@@ -250,17 +249,18 @@ export const createItem = (data) => api.post("/items", data);
 // Search
 export const searchItems = (params) => api.get("/search", { params });
 
-// Auth token helper for direct URL links (iframe / anchor href)
-const _authToken = () => { try { return sessionStorage.getItem("token") || ""; } catch { return ""; } };
+// Short-lived download token (Fix 1.3) — replaces JWT-in-URL pattern
+export const createDownloadToken = () => api.post("/auth/download-token");
 
-// Invoice (HTML only) — include token so iframe/direct links authenticate
-export const getInvoiceUrl = (ref, format = "standard", refs = null) => {
-  const t = _authToken();
+// Invoice (HTML only) — use short-lived download token instead of JWT in URL
+export const getInvoiceUrl = async (ref, format = "standard", refs = null) => {
+  const { data } = await createDownloadToken();
+  const t = data.download_token;
   if (refs && refs.length > 0) {
     const refsParam = refs.map(r => encodeURIComponent(r)).join("&refs=");
-    return `${BACKEND_URL}/api/invoice?refs=${refsParam}&format=${encodeURIComponent(format)}${t ? `&token=${encodeURIComponent(t)}` : ''}`;
+    return `${BACKEND_URL}/api/invoice?refs=${refsParam}&format=${encodeURIComponent(format)}&token=${encodeURIComponent(t)}`;
   }
-  return `${BACKEND_URL}/api/invoice?ref=${encodeURIComponent(ref)}&format=${encodeURIComponent(format)}${t ? `&token=${encodeURIComponent(t)}` : ''}`;
+  return `${BACKEND_URL}/api/invoice?ref=${encodeURIComponent(ref)}&format=${encodeURIComponent(format)}&token=${encodeURIComponent(t)}`;
 };
 
 // Reports — 30 s in-process cache per param set
@@ -284,8 +284,8 @@ export const invalidateReportsCache = () => _reportsCache.clear();
 
 // Import / Export / Backup
 export const importExcel = (formData, mode) => api.post(`/import/excel?mode=${mode}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-export const exportExcelUrl = () => { const t = _authToken(); return `${BACKEND_URL}/api/export/excel${t ? `?token=${encodeURIComponent(t)}` : ''}`; };
-export const backupUrl = () => { const t = _authToken(); return `${BACKEND_URL}/api/backup${t ? `?token=${encodeURIComponent(t)}` : ''}`; };
+export const exportExcelUrl = async () => { const { data } = await createDownloadToken(); return `${BACKEND_URL}/api/export/excel?token=${encodeURIComponent(data.download_token)}`; };
+export const backupUrl = async () => { const { data } = await createDownloadToken(); return `${BACKEND_URL}/api/backup?token=${encodeURIComponent(data.download_token)}`; };
 export const restoreBackup = (formData) => api.post("/restore", formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const getDbStats = () => api.get("/db/stats");
 export const getDbAudit = (params) => api.get("/db/audit", { params });

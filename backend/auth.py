@@ -140,7 +140,7 @@ async def get_current_user(
 async def audit_log(db, action: str, user: dict, entity_type: str = "", entity_id: str = "", details: dict = None):
     """Record an audit log entry."""
     log = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(timezone.utc),
         "action": action,
         "username": user.get("username", "unknown") if user else "system",
         "full_name": user.get("full_name", "") if user else "",

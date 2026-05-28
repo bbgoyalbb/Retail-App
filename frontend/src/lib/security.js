@@ -46,34 +46,11 @@ export function sanitizeNumber(value, options = {}) {
 }
 
 /**
- * Generate CSRF token for requests
- * @returns {string} CSRF token
- */
-export function getCsrfToken() {
-  let token = sessionStorage.getItem('csrf_token');
-  if (!token) {
-    token = generateRandomToken();
-    sessionStorage.setItem('csrf_token', token);
-  }
-  return token;
-}
-
-/**
- * Generate a random token
- * @returns {string} Random token
- */
-function generateRandomToken() {
-  return Array.from(crypto.getRandomValues(new Uint8Array(32)))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-/**
  * Validate session and check for expiry
  * @param {number} maxAge - Maximum session age in milliseconds
  * @returns {boolean} Whether session is valid
  */
-export function isSessionValid(maxAge = 3600000) {
+export function isSessionValid(maxAge = 86400000) {
   const loginTime = sessionStorage.getItem('login_time');
   if (!loginTime) return false;
   const elapsed = Date.now() - parseInt(loginTime, 10);
@@ -92,6 +69,5 @@ export function setSessionLoginTime() {
  */
 export function clearSession() {
   sessionStorage.removeItem('token');
-  sessionStorage.removeItem('csrf_token');
   sessionStorage.removeItem('login_time');
 }

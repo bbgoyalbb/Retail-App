@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { importExcel, exportExcelUrl, backupUrl, restoreBackup, getDbStats, getDbAudit, normalizeDbData, repairDbData } from "@/api";
 import { 
   Upload, DownloadSimple, Database, ArrowsClockwise, 
@@ -395,9 +395,9 @@ export default function DataManager() {
                   asChild 
                   className="h-14 px-12 text-sm font-black uppercase tracking-[0.2em] bg-success hover:bg-success/90 shadow-xl shadow-success/20 gap-3"
                 >
-                  <a href={exportExcelUrl()} target="_blank" rel="noopener noreferrer">
+                  <button onClick={async () => { const url = await exportExcelUrl(); window.open(url, '_blank'); }}>
                     <DownloadSimple size={20} weight="bold" /> Initialize Download
-                  </a>
+                  </button>
                 </Button>
               </div>
             </CardContent>
@@ -425,9 +425,9 @@ export default function DataManager() {
                 <div className="p-6 rounded-2xl bg-muted/30 border border-border/50 flex flex-col items-center gap-4">
                   <FileCsv size={40} className="text-success opacity-40" weight="duotone" />
                   <Button asChild className="w-full h-12 text-[10px] font-black uppercase tracking-widest bg-success hover:bg-success/90 shadow-lg shadow-success/10">
-                    <a href={backupUrl()} target="_blank" rel="noopener noreferrer">
+                    <button onClick={async () => { const url = await backupUrl(); window.open(url, '_blank'); }} className="w-full h-12 text-[10px] font-black uppercase tracking-widest">
                       <DownloadSimple size={16} weight="bold" className="mr-2" /> Download JSON Backup
-                    </a>
+                    </button>
                   </Button>
                 </div>
               </CardContent>

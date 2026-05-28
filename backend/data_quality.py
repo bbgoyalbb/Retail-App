@@ -9,6 +9,41 @@ from pymongo import UpdateOne
 PENNY_TOLERANCE = 0.01
 RUPEE_TOLERANCE = 1.0
 
+# Status constants (Fix 7.6)
+class PaymentStatus:
+    SETTLED = "Settled"
+    PENDING = "Pending"
+    AWAITING = "Awaiting"
+    N_A = "N/A"
+
+class TailoringStatus:
+    PENDING = "Pending"
+    STITCHED = "Stitched"
+    DELIVERED = "Delivered"
+    REQUIRED = "Required"
+    IN_PROGRESS = "In Progress"
+    N_A = "N/A"
+
+class EmbroideryStatus:
+    REQUIRED = "Required"
+    IN_PROGRESS = "In Progress"
+    COMPLETED = "Completed"
+    N_A = "N/A"
+
+__all__ = [
+    "PENNY_TOLERANCE",
+    "RUPEE_TOLERANCE",
+    "round_money",
+    "round_money_precise",
+    "determine_payment_status",
+    "build_payment_mode_label",
+    "analyze_payment_field",
+    "to_list",
+    "PaymentStatus",
+    "TailoringStatus",
+    "EmbroideryStatus",
+]
+
 def round_money(value: float) -> float:
     return round(float(value or 0), 2)
 
@@ -23,6 +58,16 @@ def determine_payment_status(pending_amount: float, received_amount: float) -> s
     if pending_amount <= PENNY_TOLERANCE:
         return "Settled"
     return "Pending"
+
+
+async def to_list(cursor, length: int) -> List:
+    """Wrapper for Motor's to_list that raises explicit error when cap is hit (Fix 3.1).
+    If result length equals requested length, it means more data exists than requested.
+    """
+    result = await cursor.to_list(length=length)
+    if len(result) == length:
+        raise ValueError(f"Query result cap ({length}) hit - more data exists than requested")
+    return result
 
 
 def build_payment_mode_label(payment_modes: List[str], pending_amount: float, received_amount: float) -> str:

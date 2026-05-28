@@ -131,10 +131,11 @@ export default function NewBill() {
   const setLastBillTotal   = useCallback((v) => updateUi("lastBillTotal", v), [updateUi]);
   const setShowFormatDialog = useCallback((v) => updateUi("showFormatDialog", v), [updateUi]);
 
-  const handleFormatSelect = useCallback((format) => {
+  const handleFormatSelect = useCallback(async (format) => {
     setShowFormatDialog(false);
     if (lastBillRef) {
-      window.open(getInvoiceUrl(lastBillRef, format), '_blank');
+      const invoiceUrl = await getInvoiceUrl(lastBillRef, format);
+      window.open(invoiceUrl, '_blank');
     }
   }, [lastBillRef, setShowFormatDialog]);
 

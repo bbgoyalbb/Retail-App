@@ -6,12 +6,17 @@ import InvoiceFormatDialog from "./InvoiceFormatDialog";
 
 export default function InvoiceModal({ billRef, format = "standard", billRefs = null, onClose }) {
   const [showFormatDialog, setShowFormatDialog] = useState(false);
-  const url = getInvoiceUrl(billRef, format, billRefs);
+  const [url, setUrl] = useState(null);
   const trapRef = useFocusTrap(true);
 
-  const handleFormatSelect = (selectedFormat) => {
+  useEffect(() => {
+    getInvoiceUrl(billRef, format, billRefs).then(setUrl);
+  }, [billRef, format, billRefs]);
+
+  const handleFormatSelect = async (selectedFormat) => {
     setShowFormatDialog(false);
-    window.open(getInvoiceUrl(billRef, selectedFormat, billRefs), '_blank');
+    const invoiceUrl = await getInvoiceUrl(billRef, selectedFormat, billRefs);
+    window.open(invoiceUrl, '_blank');
   };
 
   useEffect(() => {
