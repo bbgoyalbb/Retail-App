@@ -84,9 +84,37 @@ export default function BarcodeScanner({ onScan, onClose }) {
           return;
         }
         
-        // Let html5-qrcode handle camera permissions natively
+        // Get list of available cameras first
+        let cameraId = null;
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          console.log("Available cameras:", devices);
+          if (devices && devices.length > 0) {
+            // On mobile, prefer back camera (environment-facing)
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+              // Look for back camera
+              const backCamera = devices.find(d => 
+                d.label.toLowerCase().includes('back') || 
+                d.label.toLowerCase().includes('environment') ||
+                d.label.toLowerCase().includes('rear')
+              );
+              cameraId = backCamera ? backCamera.id : devices[0].id;
+            } else {
+              // Desktop: use first available camera
+              cameraId = devices[0].id;
+            }
+          }
+        } catch (e) {
+          console.error("Error enumerating cameras:", e);
+        }
+        
+        // Start scanner with camera ID (preferred) or facingMode (fallback)
+        const cameraConfig = cameraId ? cameraId : { facingMode: "environment" };
+        console.log("Using camera config:", cameraConfig);
+        
         await scanner.start(
-          undefined, // Let browser pick default camera (works on both desktop & mobile)
+          cameraConfig,
           {
             fps: 10,
             qrbox: { width: 280, height: 150 },
