@@ -7,6 +7,20 @@
 @import '@fontsource/ibm-plex-mono/400.css';
 @import '@fontsource/ibm-plex-mono/500.css';
 
+/* Fix 5.3: Font display swap for faster initial render */
+@font-face {
+  font-family: 'Manrope';
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

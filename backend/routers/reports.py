@@ -16,6 +16,7 @@ import auth as auth_module
 from auth import audit_log
 from .models import ARTICLE_TYPES, TAILORING_RATES, DEFAULT_SETTINGS, merge_settings
 import io
+from cachetools import TTLCache
 
 router = APIRouter()
 
