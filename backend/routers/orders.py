@@ -1,18 +1,13 @@
 """
 Orders router.
 """
-import asyncio
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone, date
-import uuid
 import re
-from bson import ObjectId
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from typing import Optional, List
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from .deps import get_db, get_current_user_dep
-from data_quality import round_money, determine_payment_status, build_payment_mode_label
-import auth as auth_module
 from auth import audit_log
+from constants import TAILORING_STATUS
 
 router = APIRouter()
 

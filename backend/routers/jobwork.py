@@ -13,6 +13,7 @@ from data_quality import round_money, determine_payment_status, build_payment_mo
 import auth as auth_module
 from auth import audit_log
 from .models import AddOnRequest, EmbEditRequest, EmbMoveRequest, MoveBackRequest, StatusUpdateRequest
+from constants import TAILORING_PREV, EMB_PREV
 
 router = APIRouter()
 
@@ -136,7 +137,6 @@ async def move_jobwork(req: StatusUpdateRequest, db = Depends(get_db), current_u
 
 @router.post("/jobwork/move-back")
 async def move_jobwork_back(req: MoveBackRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
-    from constants import TAILORING_PREV, EMB_PREV
     if req.current_status in TAILORING_PREV:
         update_fields = {"tailoring_status": TAILORING_PREV[req.current_status]}
     elif req.current_status in EMB_PREV:
