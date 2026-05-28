@@ -70,66 +70,27 @@ export default function BarcodeScanner({ onScan, onClose }) {
 
     const startScanner = async () => {
       try {
-        // Pre-check: Verify secure context and camera permissions first
-        if (!window.isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+        // Check for HTTPS (required for camera on non-localhost)
+        const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        const isHttps = window.location.protocol === "https:";
+        
+        if (!isLocalhost && !isHttps) {
           setError(
             `HTTPS Required\n\n` +
             `Current: ${window.location.protocol}//${window.location.host}\n\n` +
             `Camera access requires a secure HTTPS connection.\n\n` +
-            `Please:\n` +
-            `1. Use the HTTPS URL (https://...)\n` +
-            `2. Accept any certificate warnings\n` +
-            `3. On mobile: ensure you're on the same WiFi as the server`
+            `Please use the HTTPS URL shown in your terminal.`
           );
           return;
         }
         
-        // Try to get camera permission explicitly first
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          stream.getTracks().forEach(track => track.stop()); // Release immediately
-        } catch (permErr) {
-          console.error("Camera permission check failed:", permErr);
-          const permMsg = permErr?.message || "";
-          
-          if (permErr.name === "NotAllowedError") {
-            if (permMsg.includes("denied by system") || permMsg.includes("system")) {
-              // OS-level block (common on iOS Safari)
-              setError(
-                `Camera blocked by device settings.\n\n` +
-                `iOS Safari:\n` +
-                `Settings → Safari → Camera → Allow\n\n` +
-                `Android Chrome:\n` +
-                `Settings → Apps → Chrome → Permissions → Camera → Allow\n\n` +
-                `Or check if your device has camera restrictions enabled.`
-              );
-            } else {
-              setError("Camera permission denied. Please allow camera access in your browser settings and refresh the page.");
-            }
-          } else if (permErr.name === "NotFoundError") {
-            setError("No camera found on this device.");
-          } else {
-            throw permErr; // Let main error handler deal with it
-          }
-          return;
-        }
-        
+        // Let html5-qrcode handle camera permissions natively
         await scanner.start(
-          {
-            facingMode: "environment",
-            advanced: [{ focusMode: "continuous" }],
-          },
+          undefined, // Let browser pick default camera (works on both desktop & mobile)
           {
             fps: 10,
             qrbox: { width: 280, height: 150 },
             aspectRatio: 1.5,
-            videoConstraints: {
-              facingMode: "environment",
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-              focusMode: "continuous",
-              advanced: [{ focusMode: "continuous" }],
-            },
           },
           (decodedText) => {
             if (!cancelled && mountedRef.current) {
@@ -145,52 +106,56 @@ export default function BarcodeScanner({ onScan, onClose }) {
         }
         runningRef.current = true;
       } catch (err) {
-        // Log full error details for debugging
-        console.error("Barcode scanner error:", {
-          name: err?.name,
-          message: err?.message,
-          stack: err?.stack,
-          protocol: window.location.protocol,
-          hostname: window.location.hostname,
-          isSecureContext: window.isSecureContext
-        });
+        // Ensure we capture the error properly
+        console.error("Barcode scanner raw error:", err);
+        console.error("Error constructor:", err?.constructor?.name);
+        console.error("Error typeof:", typeof err);
+        console.error("Error is null:", err === null);
+        console.error("Error is undefined:", err === undefined);
+        
+        // Handle primitive errors (strings, etc.)
+        const errorString = String(err || "");
+        console.error("Error as string:", errorString);
         
         // Suppress "play() interrupted" — happens when modal closes before camera starts
-        if (err?.name === "AbortError" || err?.message?.includes("play()")) return;
+        if (errorString.includes("AbortError") || errorString.includes("play()")) return;
+        
         if (!cancelled && mountedRef.current) {
-          const errorMsg = (err?.message || "").toLowerCase();
           const errorName = err?.name || "";
           
           // Check for HTTPS/secure context issues (multiple patterns)
           const isNotHttps = window.location.protocol !== "https:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
           const isNotSecureContext = typeof window.isSecureContext !== "undefined" ? !window.isSecureContext : isNotHttps;
           const isHttpsError = 
-            errorMsg.includes("secure origin") || 
-            errorMsg.includes("only supported") ||
-            errorMsg.includes("https") ||
-            errorMsg.includes("insecure") ||
+            errorString.includes("secure origin") || 
+            errorString.includes("only supported") ||
+            errorString.includes("https") ||
+            errorString.includes("insecure") ||
             isNotSecureContext ||
             isNotHttps;
           
           // Permission issues
           const isPermissionDenied = 
             errorName === "NotAllowedError" || 
-            errorMsg.includes("permission") ||
-            errorMsg.includes("denied") ||
-            errorMsg.includes("not allowed");
+            errorString.includes("permission") ||
+            errorString.includes("denied") ||
+            errorString.includes("not allowed");
+          
+          // System-level permission block (iOS Safari common issue)
+          const isSystemDenied = errorString.includes("denied by system") || errorString.includes("system");
           
           // Camera not found
           const isNotFound = 
             errorName === "NotFoundError" || 
-            errorMsg.includes("not found") ||
-            errorMsg.includes("no camera") ||
-            errorMsg.includes("requested device not found");
+            errorString.includes("not found") ||
+            errorString.includes("no camera") ||
+            errorString.includes("requested device not found");
           
           // Overconstrained (camera in use or bad constraints)
           const isOverconstrained = 
             errorName === "OverconstrainedError" ||
-            errorMsg.includes("overconstrained") ||
-            errorMsg.includes("constraints");
+            errorString.includes("overconstrained") ||
+            errorString.includes("constraints");
           
           if (isHttpsError) {
             const currentUrl = window.location.href;
@@ -203,6 +168,15 @@ export default function BarcodeScanner({ onScan, onClose }) {
               `3. Grant camera permission when prompted\n\n` +
               `Protocol: ${window.location.protocol}\n` +
               `Secure context: ${window.isSecureContext ? 'Yes' : 'No'}`
+            );
+          } else if (isSystemDenied) {
+            setError(
+              `Camera blocked by device system settings.\n\n` +
+              `iPhone/iPad (iOS):\n` +
+              `Settings → Safari → Camera → Allow\n\n` +
+              `Android:\n` +
+              `Settings → Apps → Chrome → Permissions → Camera → Allow\n\n` +
+              `Then refresh this page.`
             );
           } else if (isPermissionDenied) {
             setError("Camera permission denied. Please:\n1. Check browser settings > Site settings > Camera\n2. Allow camera access for this site\n3. Refresh and try again");
