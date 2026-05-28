@@ -106,8 +106,8 @@ async def mark_order_delivered(
     if not order_no:
         raise HTTPException(status_code=400, detail="order_no is required")
     result = await db.items.update_many(
-        {"order_no": order_no, "cancelled": {"$ne": True}, "tailoring_status": {"$in": ["Pending", "Stitched"]}},
-        {"$set": {"tailoring_status": "Delivered"}},
+        {"order_no": order_no, "cancelled": {"$ne": True}, "tailoring_status": {"$in": [TAILORING_STATUS['Pending'], TAILORING_STATUS['Stitched']]}},
+        {"$set": {"tailoring_status": TAILORING_STATUS['Delivered']}},
     )
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="No items updated — order may not exist or is already delivered")
