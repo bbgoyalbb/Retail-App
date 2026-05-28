@@ -119,6 +119,11 @@ export default function BarcodeScanner({ onScan, onClose }) {
             fps: 10,
             qrbox: { width: 280, height: 150 },
             aspectRatio: 1.5,
+            videoConstraints: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              focusMode: "continuous"
+            }
           },
           (decodedText) => {
             if (!cancelled && mountedRef.current) {
@@ -230,11 +235,21 @@ export default function BarcodeScanner({ onScan, onClose }) {
     const startTimer = setTimeout(startScanner, 150);
 
     // Touch-to-focus handler — attached after scanner starts
+    // Increased delay to 1500ms to ensure scanner fully initializes video element
     const focusTimer = setTimeout(() => {
       const container = document.getElementById("barcode-reader-container");
       const video = container?.querySelector("video");
-      if (!video) return;
+      console.log("Tap-to-focus: video element found:", !!video, "container:", !!container);
+      if (!video) {
+        console.warn("Tap-to-focus: video element not found after delay");
+        return;
+      }
+      if (video._focusHandler) {
+        console.log("Tap-to-focus: handler already attached");
+        return;
+      }
       const onTap = (e) => {
+        console.log("Tap-to-focus triggered");
         const rect = video.getBoundingClientRect();
         const touch = e.touches?.[0] ?? e;
         const x = touch.clientX - rect.left;
@@ -246,7 +261,8 @@ export default function BarcodeScanner({ onScan, onClose }) {
       video.addEventListener("touchstart", onTap, { passive: true });
       video.addEventListener("click", onTap);
       video._focusHandler = onTap;
-    }, 500);
+      console.log("Tap-to-focus: handler attached successfully");
+    }, 1500);
 
     return () => {
       clearTimeout(startTimer);
