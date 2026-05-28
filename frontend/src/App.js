@@ -255,8 +255,8 @@ function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
+        <Toaster />
         <AuthProvider>
-          <Toaster />
           <AppShell />
         </AuthProvider>
       </BrowserRouter>

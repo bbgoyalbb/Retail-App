@@ -153,11 +153,12 @@ async def upload_logo(file: UploadFile = File(...), current_user: dict = Depends
     return {"url": f"/uploads/{safe_name}"}
 
 # ==========================================
-# SHORT-LIVED DOWNLOAD TOKENS (Fix 1.3)
+# SHORT-LIVED DOWNLOAD TOKENS (Fix 1.3, Fix N2)
 # Replaces JWT-in-URL pattern for invoice/export/backup downloads
+# WARNING: TTLCache is per-process; deploy single-worker or use Redis
 # ==========================================
 
-_download_tokens: dict = {}  # token -> {username, expires_at, used}
+_download_tokens: TTLCache = TTLCache(maxsize=10000, ttl=300)  # 5 min expiry, auto-cleanup
 
 @router.post("/auth/download-token")
 async def create_download_token(current_user: dict = Depends(get_current_user_dep)):
@@ -166,14 +167,8 @@ async def create_download_token(current_user: dict = Depends(get_current_user_de
     token = secrets.token_urlsafe(32)
     _download_tokens[token] = {
         "username": current_user["username"],
-        "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5),
         "used": False,
     }
-    # Prune expired tokens (simple cleanup)
-    now = datetime.now(timezone.utc)
-    expired = [k for k, v in _download_tokens.items() if v["expires_at"] < now]
-    for k in expired:
-        del _download_tokens[k]
     return {"download_token": token}
 
 async def validate_download_token(token: str) -> str:
@@ -183,9 +178,6 @@ async def validate_download_token(token: str) -> str:
         raise HTTPException(status_code=401, detail="Invalid or expired download token")
     if entry["used"]:
         raise HTTPException(status_code=401, detail="Download token already used")
-    if entry["expires_at"] < datetime.now(timezone.utc):
-        del _download_tokens[token]
-        raise HTTPException(status_code=401, detail="Download token expired")
     entry["used"] = True
     return entry["username"]
 
