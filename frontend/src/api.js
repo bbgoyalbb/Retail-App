@@ -281,13 +281,19 @@ export const getInvoiceUrl = async (ref, format = "standard", refs = null) => {
   return `${BACKEND_URL}/api/invoice?ref=${encodeURIComponent(ref)}&format=${encodeURIComponent(format)}&token=${encodeURIComponent(t)}`;
 };
 
-// Reports — 30 s in-process cache per param set
+// Reports — 30 s in-process LRU cache per param set
+// Map preserves insertion order; moving a hit to the end makes the first key the LRU.
 const _reportsCache = new Map();
 const _cachedReport = (key, fetcher) => {
   const now = Date.now();
   const hit = _reportsCache.get(key);
-  if (hit && now - hit.ts < CACHE_TTL.REPORTS) return Promise.resolve(hit.res);
+  if (hit && now - hit.ts < CACHE_TTL.REPORTS) {
+    _reportsCache.delete(key);
+    _reportsCache.set(key, hit);
+    return Promise.resolve(hit.res);
+  }
   return fetcher().then(res => {
+    _reportsCache.delete(key);
     if (_reportsCache.size >= PAGINATION.REPORTS_CACHE_MAX) {
       _reportsCache.delete(_reportsCache.keys().next().value);
     }

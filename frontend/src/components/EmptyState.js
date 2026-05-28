@@ -1,4 +1,3 @@
-import PropTypes from "prop-types";
 import { Scissors, ArrowRight } from "@phosphor-icons/react";
 
 export function EmptyState({ title, description, action, onAction, icon: Icon = Scissors }) {
@@ -21,10 +20,3 @@ export function EmptyState({ title, description, action, onAction, icon: Icon = 
   );
 }
 
-EmptyState.propTypes = {
-  title: PropTypes.string.isRequired,
-  description: PropTypes.string.isRequired,
-  action: PropTypes.string,
-  onAction: PropTypes.func,
-  icon: PropTypes.elementType,
-};

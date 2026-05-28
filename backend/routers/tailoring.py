@@ -15,13 +15,14 @@ from data_quality import round_money, determine_payment_status, build_payment_mo
 import auth as auth_module
 from auth import audit_log
 from .models import AddOnRequest, TAILORING_RATES, TailoringOrderRequest, SplitItem, SplitTailoringRequest, merge_settings
+from constants import TAILORING_STATUS, EMBROIDERY_STATUS
 
 router = APIRouter()
 
 @router.get("/tailoring/awaiting")
 async def get_awaiting_orders(db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     pipeline = [
-        {"$match": {"tailoring_status": "Awaiting Order", "cancelled": {"$ne": True}}},
+        {"$match": {"tailoring_status": TAILORING_STATUS["Awaiting Order"], "cancelled": {"$ne": True}}},
         {"$group": {
             "_id": {"name": "$name", "ref": "$ref"},
             "items": {"$push": {
@@ -72,7 +73,7 @@ async def assign_tailoring(req: TailoringOrderRequest, db: AsyncIOMotorDatabase 
         tail_mode = existing_tail_mode if str(existing_tail_mode).startswith("Settled") else ("Pending" if existing_tail_received <= 0 else existing_tail_mode)
 
         fields = {
-            "tailoring_status": "Pending",
+            "tailoring_status": TAILORING_STATUS["Pending"],
             "article_type": article_type,
             "order_no": req.order_no,
             "delivery_date": req.delivery_date,
@@ -82,7 +83,7 @@ async def assign_tailoring(req: TailoringOrderRequest, db: AsyncIOMotorDatabase 
             "labour_amount": labour_amt,
             "embroidery_status": emb_status,
         }
-        if emb_status == "Required":
+        if emb_status == EMBROIDERY_STATUS["Required"]:
             fields["embroidery_pay_mode"] = "Pending"
         bulk_ops.append(UpdateOne({"id": item_id}, {"$set": fields}))
 
@@ -133,7 +134,7 @@ async def split_and_assign(req: SplitTailoringRequest, db: AsyncIOMotorDatabase 
                 "qty": split.qty,
                 "fabric_amount": split_fabric_amt,
                 "article_type": split.article_type,
-                "tailoring_status": "Awaiting Order",
+                "tailoring_status": TAILORING_STATUS["Awaiting Order"],
                 "tailoring_amount": tail_amt,
                 "tailoring_pending": tail_pending,
                 "tailoring_pay_mode": tail_mode,
@@ -149,7 +150,7 @@ async def split_and_assign(req: SplitTailoringRequest, db: AsyncIOMotorDatabase 
                 first_update["fabric_pending"] = split_fabric_amt
                 first_update["fabric_received"] = 0
 
-            if split.embroidery_status == "Required":
+            if split.embroidery_status == EMBROIDERY_STATUS["Required"]:
                 first_update["embroidery_pay_mode"] = "Pending"
         else:
             new_item = {**item}
@@ -170,7 +171,7 @@ async def split_and_assign(req: SplitTailoringRequest, db: AsyncIOMotorDatabase 
                 new_item["fabric_pay_date"] = "N/A"
 
             new_item["article_type"] = split.article_type
-            new_item["tailoring_status"] = "Awaiting Order"
+            new_item["tailoring_status"] = TAILORING_STATUS["Awaiting Order"]
             new_item["order_no"] = "N/A"
             new_item["delivery_date"] = "N/A"
             new_item["tailoring_amount"] = tail_amt
@@ -178,7 +179,7 @@ async def split_and_assign(req: SplitTailoringRequest, db: AsyncIOMotorDatabase 
             new_item["tailoring_pending"] = tail_amt
             new_item["tailoring_pay_mode"] = "Pending"
             new_item["embroidery_status"] = split.embroidery_status
-            if split.embroidery_status == "Required":
+            if split.embroidery_status == EMBROIDERY_STATUS["Required"]:
                 new_item["embroidery_pay_mode"] = "Pending"
             new_item["created_at"] = datetime.now(timezone.utc).isoformat()
             new_docs.append(new_item)

@@ -10,6 +10,21 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from motor.motor_asyncio import AsyncIOMotorDatabase
 import auth as auth_module
+import logging
+
+_logger = logging.getLogger(__name__)
+
+def warn_if_capped(results: list, cap: int, context: str = "") -> list:
+    """Log a warning when a to_list(cap) call returns exactly `cap` items.
+    This means results were silently truncated — the caller should paginate.
+    Returns the list unchanged for use in-line: results = warn_if_capped(await cursor.to_list(N), N, 'context')
+    """
+    if len(results) >= cap:
+        _logger.warning(
+            "to_list cap hit (%d items): results may be truncated. %s",
+            cap, context or "(no context)"
+        )
+    return results
 
 # db is set once at startup by server.py (DI pattern)
 db = None  # type: ignore

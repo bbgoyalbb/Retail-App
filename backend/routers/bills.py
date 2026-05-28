@@ -11,11 +11,12 @@ import logging
 logger = logging.getLogger(__name__)
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .deps import get_db, get_current_user_dep
+from .deps import get_db, get_current_user_dep, warn_if_capped
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
 from .models import ADDON_ITEMS, ARTICLE_TYPES, BillLineItem, CreateBillRequest, PAYMENT_MODES, TAILORING_RATES, validate_date
+from constants import TAILORING_STATUS, EMBROIDERY_STATUS
 
 router = APIRouter()
 
@@ -40,10 +41,10 @@ async def get_dashboard(db: AsyncIOMotorDatabase = Depends(get_db), current_user
         "emb_pending":  [{"$match": {"embroidery_amount": {"$gt": 0}, "embroidery_pay_mode": _ns}}, {"$group": {"_id": None, "t": {"$sum": "$embroidery_pending"}}}],
         "addon_pending":[{"$match": {"addon_amount":      {"$gt": 0}, "addon_pay_mode":      _ns}}, {"$group": {"_id": None, "t": {"$sum": "$addon_pending"}}}],
         "revenue":      [{"$group": {"_id": None, "t": {"$sum": {"$add": ["$fabric_received", "$tailoring_received", "$embroidery_received", "$addon_received"]}}}}],
-        "tail_pend_ct": [{"$match": {"tailoring_status": "Pending"}},     {"$count": "n"}],
-        "tail_stit_ct": [{"$match": {"tailoring_status": "Stitched"}},    {"$count": "n"}],
-        "emb_req_ct":   [{"$match": {"embroidery_status": "Required"}},   {"$count": "n"}],
-        "emb_prog_ct":  [{"$match": {"embroidery_status": "In Progress"}},{"$count": "n"}],
+        "tail_pend_ct": [{"$match": {"tailoring_status": TAILORING_STATUS["Pending"]}},     {"$count": "n"}],
+        "tail_stit_ct": [{"$match": {"tailoring_status": TAILORING_STATUS["Stitched"]}},    {"$count": "n"}],
+        "emb_req_ct":   [{"$match": {"embroidery_status": EMBROIDERY_STATUS["Required"]}},   {"$count": "n"}],
+        "emb_prog_ct":  [{"$match": {"embroidery_status": EMBROIDERY_STATUS["In Progress"]}},{"$count": "n"}],
         "trend":        [{"$match": {"date": {"$in": days}}}, {"$group": {"_id": "$date", "t": {"$sum": {"$add": ["$fabric_received", "$tailoring_received", "$embroidery_received", "$addon_received"]}}}}],
         "customers":    [{"$group": {"_id": "$name"}}],
         "total_ct":     [{"$count": "n"}],
@@ -51,7 +52,7 @@ async def get_dashboard(db: AsyncIOMotorDatabase = Depends(get_db), current_user
         "today_collected_items": [{"$match": {"date": today}}, {"$group": {"_id": None,
             "t": {"$sum": {"$add": ["$fabric_received", "$tailoring_received", "$embroidery_received", "$addon_received"]}}
         }}],
-        "overdue_orders": [{"$match": {"delivery_date": {"$lt": today, "$gt": ""}, "tailoring_status": {"$in": ["Pending", "Stitched"]}}}, {"$count": "n"}],
+        "overdue_orders": [{"$match": {"delivery_date": {"$lt": today, "$gt": ""}, "tailoring_status": {"$in": [TAILORING_STATUS["Pending"], TAILORING_STATUS["Stitched"]]}}}, {"$count": "n"}],
     }}]
 
     cutoff_90d = (date.today() - timedelta(days=90)).isoformat()
@@ -186,7 +187,7 @@ async def get_items(
                   "addon_desc", "karigar"]:
             projection[f] = 1
 
-    items = await db.items.find(query, projection).sort("date", -1).skip(skip).limit(limit).to_list(limit)
+    items = warn_if_capped(await db.items.find(query, projection).sort("date", -1).skip(skip).limit(limit).to_list(limit), limit, "GET /items")
     # Skip expensive count_documents when result fits in one page — common case
     if skip == 0 and len(items) < limit:
         total = len(items)
@@ -329,7 +330,7 @@ async def create_bill(req: CreateBillRequest, db: AsyncIOMotorDatabase = Depends
         if _retries >= 20:
             raise HTTPException(status_code=500, detail="Could not generate a unique bill reference. Please try again.")
     modes_str = ", ".join(req.payment_modes) if req.payment_modes else "Cash"
-    tailoring_status = "Awaiting Order" if req.needs_tailoring else "N/A"
+    tailoring_status = TAILORING_STATUS["Awaiting Order"] if req.needs_tailoring else "N/A"
 
     fabric_only_total = 0
     addon_only_total = 0
@@ -363,13 +364,13 @@ async def create_bill(req: CreateBillRequest, db: AsyncIOMotorDatabase = Depends
         tail_amt, labour_amt = TAILORING_RATES.get(item_article_type, (0, 0)) if item_article_type != "N/A" else (0, 0)
 
         # If an order_no was already set on the line, tailoring starts as Pending
-        item_tailoring_status = "Pending" if item_order_no != "N/A" else tailoring_status
+        item_tailoring_status = TAILORING_STATUS["Pending"] if item_order_no != "N/A" else tailoring_status
 
         # Resolve addon fields from line item
         item_addons = item.addons or []
         item_addon_amount   = round_money(sum(float(a.get("price", 0)) for a in item_addons))
         item_addon_desc     = ", ".join(a.get("name", "") for a in item_addons) if item_addons else "N/A"
-        item_addon_pay_mode = "Pending" if item_addon_amount > 0 else "N/A"
+        item_addon_pay_mode = "Pending" if item_addon_amount > 0 else "N/A"  # payment mode, not a status constant
         item_addon_pending  = item_addon_amount if item_addon_amount > 0 else 0
 
         # is_settled=True with amount_paid=0 must NOT mark fabric as Settled —

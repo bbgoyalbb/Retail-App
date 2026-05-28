@@ -1,5 +1,4 @@
 import * as React from "react"
-import PropTypes from "prop-types";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react"
 import { DayPicker } from "react-day-picker"
 
@@ -68,10 +67,5 @@ function Calendar({
   );
 }
 Calendar.displayName = "Calendar"
-Calendar.propTypes = {
-  className: PropTypes.string,
-  classNames: PropTypes.object,
-  showOutsideDays: PropTypes.bool,
-};
 
 export { Calendar }

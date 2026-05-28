@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .deps import get_db, get_current_user_dep
+from .deps import get_db, get_current_user_dep, warn_if_capped
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
@@ -237,7 +237,7 @@ async def export_excel(db: AsyncIOMotorDatabase = Depends(get_db), current_user:
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center")
 
-    items = await db.items.find({}, {"_id": 0}).sort("date", 1).to_list(10000)
+    items = warn_if_capped(await db.items.find({}, {"_id": 0}).sort("date", 1).to_list(10000), 10000, "GET /export/excel items")
     fields = [
         "date", "name", "ref", "barcode", "price", "qty", "discount", "fabric_amount",
         "tailoring_status", "article_type", "order_no", "delivery_date", "tailoring_amount",
@@ -293,7 +293,7 @@ async def backup_database(db: AsyncIOMotorDatabase = Depends(get_db), current_us
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    items = await db.items.find({}, {"_id": 0}).to_list(50000)
+    items = warn_if_capped(await db.items.find({}, {"_id": 0}).to_list(50000), 50000, "GET /backup items")
     advances = await db.advances.find({}, {"_id": 0}).to_list(10000)
 
     backup_data = {

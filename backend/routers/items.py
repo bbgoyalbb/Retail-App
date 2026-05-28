@@ -14,6 +14,7 @@ from data_quality import round_money, determine_payment_status, build_payment_mo
 import auth as auth_module
 from auth import audit_log
 from .models import ItemCreateRequest, ItemUpdateRequest
+from constants import TAILORING_STATUS, EMBROIDERY_STATUS
 
 router = APIRouter()
 
@@ -220,9 +221,9 @@ async def search_items(
         filters.append({"date": date_q})
 
     if status and status != "All":
-        if status in ["Pending", "Stitched", "Delivered", "Awaiting Order", "N/A"]:
+        if status in [TAILORING_STATUS["Pending"], TAILORING_STATUS["Stitched"], TAILORING_STATUS["Delivered"], TAILORING_STATUS["Awaiting Order"], "N/A"]:
             filters.append({"tailoring_status": status})
-        elif status in ["Required", "In Progress", "Finished", "Not Required"]:
+        elif status in [EMBROIDERY_STATUS["Required"], EMBROIDERY_STATUS["In Progress"], EMBROIDERY_STATUS["Finished"], "Not Required"]:
             filters.append({"embroidery_status": status})
 
     if payment_status and payment_status != "All":

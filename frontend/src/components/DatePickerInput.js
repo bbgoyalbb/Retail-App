@@ -1,5 +1,4 @@
 import { useState, forwardRef, memo } from "react";
-import PropTypes from "prop-types";
 import { format, parseISO, isValid } from "date-fns";
 import { CalendarBlank } from "@phosphor-icons/react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -93,15 +92,6 @@ const DatePickerInput = forwardRef(function DatePickerInput(
   );
 });
 
-DatePickerInput.propTypes = {
-  value: PropTypes.string,
-  onChange: PropTypes.func.isRequired,
-  placeholder: PropTypes.string,
-  disabled: PropTypes.bool,
-  className: PropTypes.string,
-  'data-testid': PropTypes.string,
-  onKeyDown: PropTypes.func,
-};
 
 DatePickerInput.displayName = 'DatePickerInput';
 

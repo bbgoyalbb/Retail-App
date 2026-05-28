@@ -11,11 +11,12 @@ import uuid
 import re
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .deps import get_db, get_current_user_dep
+from .deps import get_db, get_current_user_dep, warn_if_capped
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
 from .models import ARTICLE_TYPES, TAILORING_RATES, DEFAULT_SETTINGS, merge_settings
+from constants import TAILORING_STATUS, EMBROIDERY_STATUS
 import io
 from cachetools import TTLCache
 
@@ -31,7 +32,7 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
 
     # Fetch items and advances from all refs
     items_query = {"ref": {"$in": refs}, "cancelled": {"$ne": True}}
-    items = await db.items.find(items_query, {"_id": 0}).to_list(1000)
+    items = warn_if_capped(await db.items.find(items_query, {"_id": 0}).to_list(1000), 1000, "GET /invoice items")
 
     if not items:
         raise HTTPException(status_code=404, detail="No items found for the provided references")
@@ -113,7 +114,7 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
         amt = float(item.get("fabric_amount", 0))
         fab_total += amt
         badges = []
-        if item.get("tailoring_status") not in ("N/A", None, "", "Not Required"):
+        if item.get("tailoring_status") not in ("N/A", None, "", TAILORING_STATUS["Not Required"]):
             art_type = item.get("article_type", "Item")
             badges.append(f'<span class="item-badge">✂ {html_mod.escape(str(art_type))}</span>')
         if item.get("addon_desc"):
@@ -133,13 +134,13 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
         </tr>"""
 
     # ---- Tailoring details (conditional) ----
-    tailoring_items = [x for x in items if x.get("tailoring_status") not in ("N/A", None, "", "Not Required", "Awaiting Order")]
+    tailoring_items = [x for x in items if x.get("tailoring_status") not in ("N/A", None, "", TAILORING_STATUS["Not Required"], TAILORING_STATUS["Awaiting Order"])]
     tailoring_html = ""
     if tailoring_items:
         tail_rows = ""
         for ti in tailoring_items:
-            emb = ti.get("embroidery_status", "Not Required")
-            emb_display = emb if emb not in ("N/A", "", None, "Not Required") else "—"
+            emb = ti.get("embroidery_status", EMBROIDERY_STATUS["Not Required"])
+            emb_display = emb if emb not in ("N/A", "", None, EMBROIDERY_STATUS["Not Required"]) else "—"
             tail_rows += f"""
             <tr>
               <td>{html_mod.escape(str(ti.get("barcode", "N/A")))}</td>
