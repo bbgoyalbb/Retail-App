@@ -98,6 +98,8 @@ echo.
 echo [2/4] Building React frontend for production...
 cd /d "%ROOT%frontend"
 set GENERATE_SOURCEMAP=false
+:: Suppress Node.js deprecation warnings (fs.F_OK, url.parse, etc.)
+set NODE_OPTIONS=--no-deprecation
 :: Clear old builds to ensure a fresh state
 if exist "build" rmdir /s /q "build"
 call yarn install --frozen-lockfile

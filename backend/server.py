@@ -12,7 +12,7 @@ If running with multiple uvicorn workers, rate limiting will not work correctly.
 For production with multiple workers, use Redis-backed rate limiting.
 """
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
@@ -493,6 +493,11 @@ build_dir = ROOT_DIR.parent / "frontend" / "build"
 static_dir = build_dir / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=static_dir), name="react-static")
+
+    # Serve root-level files (manifest.json, favicon.ico, etc.) before SPA fallback
+    @app.get("/manifest.json", include_in_schema=False)
+    async def serve_manifest():
+        return FileResponse(str(build_dir / "manifest.json"))
 
     @app.get("/{full_path:path}", include_in_schema=False)
     async def spa_fallback(full_path: str):

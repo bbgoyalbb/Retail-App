@@ -5,11 +5,7 @@ import { isSessionValid, clearSession } from "@/lib/security";
 // Backend URL configuration (Fix 4.4)
 // Priority: 1. Env var REACT_APP_BACKEND_URL, 2. Same origin (production), 3. Default dev port
 const envBackendUrl = process.env.REACT_APP_BACKEND_URL;
-export const BACKEND_URL = envBackendUrl || (
-  window.location.port === "8001"
-    ? window.location.origin
-    : `http://${window.location.hostname}:8001`
-);
+export const BACKEND_URL = envBackendUrl || window.location.origin;
 
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
 
