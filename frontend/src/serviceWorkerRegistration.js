@@ -36,7 +36,17 @@ export function register(config) {
 function registerValidSW(swUrl, config) {
   navigator.serviceWorker
     .register(swUrl)
+    .catch((error) => {
+      // Silently ignore SSL certificate errors for service workers
+      // This happens with self-signed certs - the app will still work without SW
+      if (error.name === 'SecurityError' && error.message.includes('SSL certificate')) {
+        console.log('Service worker registration skipped due to SSL certificate. This is expected with self-signed certificates.');
+        return;
+      }
+      console.error('Service worker registration failed:', error);
+    })
     .then((registration) => {
+      if (!registration) return; // Service worker registration was skipped
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
         if (installingWorker == null) {

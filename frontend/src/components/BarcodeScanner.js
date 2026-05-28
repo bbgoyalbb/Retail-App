@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Camera, X, Barcode } from "@phosphor-icons/react";
 
@@ -285,13 +285,8 @@ export default function BarcodeScanner({ onScan, onClose }) {
             {error ? (
               <div className="text-center py-8 px-4">
                 <Camera size={40} weight="thin" className="mx-auto text-[var(--error)] mb-4" />
-                <p className="text-sm text-[var(--error)] font-medium mb-3">{error}</p>
-                <button 
-                  onClick={() => { setError(null); startScanner(); }}
-                  className="mt-4 px-4 py-2 bg-[var(--brand)] text-white rounded-sm text-sm font-medium hover:bg-[var(--brand)]/90 transition-colors"
-                >
-                  Retry Camera
-                </button>
+                <p className="text-sm text-[var(--error)] font-medium mb-3 whitespace-pre-line">{error}</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-2">Close and reopen scanner to retry</p>
               </div>
             ) : (
               <>
