@@ -104,7 +104,23 @@ export default function BarcodeScanner({ onScan, onClose }) {
         // Suppress "play() interrupted" — happens when modal closes before camera starts
         if (err?.name === "AbortError" || err?.message?.includes("play()")) return;
         if (!cancelled && mountedRef.current) {
-          setError("Camera access denied or not available. Please allow camera permission.");
+          // Detect specific error types for better user guidance
+          const errorMsg = err?.message || "";
+          const isHttpsError = errorMsg.includes("secure origin") || 
+                               errorMsg.includes("HTTPS") ||
+                               window.location.protocol !== "https:" && window.location.hostname !== "localhost";
+          const isPermissionDenied = err?.name === "NotAllowedError" || errorMsg.includes("Permission denied");
+          const isNotFound = err?.name === "NotFoundError" || errorMsg.includes("Requested device not found");
+          
+          if (isHttpsError) {
+            setError("Camera requires HTTPS connection. On mobile: 1) Use the HTTPS URL shown in your browser 2) Accept the self-signed certificate warning 3) Grant camera permission.");
+          } else if (isPermissionDenied) {
+            setError("Camera permission denied. Please allow camera access in your browser settings and try again.");
+          } else if (isNotFound) {
+            setError("No camera found on this device. Please connect a camera and try again.");
+          } else {
+            setError(`Camera error: ${err?.name || "Unknown error"}. Please check HTTPS connection and camera permissions.`);
+          }
         }
       }
     };
@@ -182,10 +198,15 @@ export default function BarcodeScanner({ onScan, onClose }) {
           </div>
           <div className="p-4">
             {error ? (
-              <div className="text-center py-8">
-                <Camera size={40} weight="thin" className="mx-auto text-[var(--text-secondary)] mb-3" />
-                <p className="text-sm text-[var(--error)]">{error}</p>
-                <p className="text-xs text-[var(--text-secondary)] mt-2">Use HTTPS and grant camera permission</p>
+              <div className="text-center py-8 px-4">
+                <Camera size={40} weight="thin" className="mx-auto text-[var(--error)] mb-4" />
+                <p className="text-sm text-[var(--error)] font-medium mb-3">{error}</p>
+                <button 
+                  onClick={() => { setError(null); startScanner(); }}
+                  className="mt-4 px-4 py-2 bg-[var(--brand)] text-white rounded-sm text-sm font-medium hover:bg-[var(--brand)]/90 transition-colors"
+                >
+                  Retry Camera
+                </button>
               </div>
             ) : (
               <>
