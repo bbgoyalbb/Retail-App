@@ -9,6 +9,7 @@ import uuid
 import re
 from bson import ObjectId
 from pymongo import UpdateOne
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
@@ -18,7 +19,7 @@ from .models import AddOnRequest, TAILORING_RATES, TailoringOrderRequest, SplitI
 router = APIRouter()
 
 @router.get("/tailoring/awaiting")
-async def get_awaiting_orders(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def get_awaiting_orders(db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     pipeline = [
         {"$match": {"tailoring_status": "Awaiting Order", "cancelled": {"$ne": True}}},
         {"$group": {
@@ -38,7 +39,7 @@ async def get_awaiting_orders(db = Depends(get_db), current_user: dict = Depends
              "items": r["items"], "count": r["count"]} for r in result]
 
 @router.post("/tailoring/assign")
-async def assign_tailoring(req: TailoringOrderRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def assign_tailoring(req: TailoringOrderRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     item_ids = [a.get("item_id") for a in req.assignments]
     stored_settings, existing_items_list = await asyncio.gather(
         db.settings.find_one({"key": "app_settings"}, {"_id": 0}),
@@ -92,7 +93,7 @@ async def assign_tailoring(req: TailoringOrderRequest, db = Depends(get_db), cur
     return {"message": f"{result.modified_count} items assigned to order {req.order_no}"}
 
 @router.post("/tailoring/split")
-async def split_and_assign(req: SplitTailoringRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def split_and_assign(req: SplitTailoringRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     item = await db.items.find_one({"id": req.item_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")

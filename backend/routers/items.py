@@ -8,6 +8,7 @@ from datetime import datetime, timezone, date
 import uuid
 import re
 from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
@@ -42,7 +43,7 @@ async def _reset_counter_for_date(db, bill_date: str):
 @router.delete("/items/bulk/delete")
 async def bulk_delete_items(
     item_ids: List[str] = Body(...),
-    db = Depends(get_db),
+    db: AsyncIOMotorDatabase = Depends(get_db),
     current_user: dict = Depends(get_current_user_dep)
 ):
     # Restrict to admin/manager only
@@ -65,7 +66,7 @@ async def bulk_delete_items(
     return {"message": f"{result.deleted_count} items deleted"}
 
 @router.put("/items/{item_id}")
-async def update_item(item_id: str, req: ItemUpdateRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def update_item(item_id: str, req: ItemUpdateRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     item = await db.items.find_one({"id": item_id})
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -97,7 +98,7 @@ async def update_item(item_id: str, req: ItemUpdateRequest, db = Depends(get_db)
     return updated
 
 @router.delete("/items/{item_id}")
-async def delete_item(item_id: str, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def delete_item(item_id: str, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     item = await db.items.find_one({"id": item_id}, {"_id": 0})
     result = await db.items.delete_one({"id": item_id})
     if result.deleted_count == 0:
@@ -109,7 +110,7 @@ async def delete_item(item_id: str, db = Depends(get_db), current_user: dict = D
 
 
 @router.post("/items")
-async def create_item(req: ItemCreateRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def create_item(req: ItemCreateRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     """Create a new item for an existing order."""
     item_id = str(uuid.uuid4())
     
@@ -176,7 +177,7 @@ async def create_item(req: ItemCreateRequest, db = Depends(get_db), current_user
 
 @router.get("/search")
 async def search_items(
-    db = Depends(get_db),
+    db: AsyncIOMotorDatabase = Depends(get_db),
     q: str = "",
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
@@ -254,7 +255,7 @@ async def search_items(
 async def create_group(
     item_ids: List[str] = Body(...),
     group_name: str = Body(...),
-    db = Depends(get_db),
+    db: AsyncIOMotorDatabase = Depends(get_db),
     current_user: dict = Depends(get_current_user_dep)
 ):
     """Create a new group with the specified items using unique _id."""
@@ -303,7 +304,7 @@ async def update_group(
     group_id: str,
     item_ids: Optional[List[str]] = Body(None),
     group_name: Optional[str] = Body(None),
-    db = Depends(get_db),
+    db: AsyncIOMotorDatabase = Depends(get_db),
     current_user: dict = Depends(get_current_user_dep)
 ):
     """Update a group - rename or add/remove items."""
@@ -368,7 +369,7 @@ async def update_group(
 @router.delete("/items/group/{group_id}")
 async def delete_group(
     group_id: str,
-    db = Depends(get_db),
+    db: AsyncIOMotorDatabase = Depends(get_db),
     current_user: dict = Depends(get_current_user_dep)
 ):
     """Delete a group (remove group_id from all items)."""
@@ -392,7 +393,7 @@ async def delete_group(
 @router.get("/items/group/{group_id}")
 async def get_group(
     group_id: str,
-    db = Depends(get_db),
+    db: AsyncIOMotorDatabase = Depends(get_db),
     current_user: dict = Depends(get_current_user_dep)
 ):
     """Get details of a group including all items."""

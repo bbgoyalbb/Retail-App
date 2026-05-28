@@ -10,6 +10,7 @@ import re
 import logging
 logger = logging.getLogger(__name__)
 from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
@@ -23,7 +24,7 @@ router = APIRouter()
 # ==========================================
 
 @router.get("/dashboard")
-async def get_dashboard(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def get_dashboard(db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     _ns = {"$not": {"$regex": "^Settled"}}
 
     # Build 7-day date list for trend
@@ -119,7 +120,7 @@ async def get_dashboard(db = Depends(get_db), current_user: dict = Depends(get_c
 # ==========================================
 
 @router.get("/customers")
-async def get_customers(db = Depends(get_db), pending_only: bool = False, current_user: dict = Depends(get_current_user_dep)):
+async def get_customers(db: AsyncIOMotorDatabase = Depends(get_db), pending_only: bool = False, current_user: dict = Depends(get_current_user_dep)):
     _nc = {"$ne": True}
     if pending_only:
         _ns = {"$not": {"$regex": "^Settled"}}
@@ -143,7 +144,7 @@ async def get_customers(db = Depends(get_db), pending_only: bool = False, curren
 
 @router.get("/items")
 async def get_items(
-    db = Depends(get_db),
+    db: AsyncIOMotorDatabase = Depends(get_db),
     name: Optional[str] = None,
     ref: Optional[str] = None,
     date: Optional[str] = None,
@@ -194,14 +195,14 @@ async def get_items(
     return {"items": items, "total": total}
 
 @router.get("/items/{item_id}")
-async def get_item(item_id: str, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def get_item(item_id: str, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     item = await db.items.find_one({"id": item_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     return item
 
 @router.get("/refs")
-async def get_refs(db = Depends(get_db), name: Optional[str] = None, pending_only: bool = False, current_user: dict = Depends(get_current_user_dep)):
+async def get_refs(db: AsyncIOMotorDatabase = Depends(get_db), name: Optional[str] = None, pending_only: bool = False, current_user: dict = Depends(get_current_user_dep)):
     query = {"cancelled": {"$ne": True}}
     if name:
         query["name"] = name
@@ -226,7 +227,7 @@ async def get_refs(db = Depends(get_db), name: Optional[str] = None, pending_onl
 # ==========================================
 
 @router.get("/bills/next-ref")
-async def get_next_ref(date: str, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def get_next_ref(date: str, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     try:
         parts = date.split("-")
         date_suffix = f"{parts[2]}{parts[1]}{parts[0][2:]}"
@@ -249,7 +250,7 @@ async def get_next_ref(date: str, db = Depends(get_db), current_user: dict = Dep
 
 
 @router.post("/bills")
-async def create_bill(req: CreateBillRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def create_bill(req: CreateBillRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     if not req.items:
         raise HTTPException(status_code=400, detail="At least one item is required")
 

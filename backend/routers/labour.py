@@ -8,6 +8,7 @@ from datetime import datetime, timezone, date
 import uuid
 import re
 from pymongo import UpdateOne
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
@@ -17,7 +18,7 @@ from .models import LabourDeleteRequest, LabourPaymentRequest
 router = APIRouter()
 
 @router.get("/labour")
-async def get_labour_items(db = Depends(get_db), filter_type: str = "All", filter_karigar: str = "All", view_mode: str = "unpaid", current_user: dict = Depends(get_current_user_dep)):
+async def get_labour_items(db: AsyncIOMotorDatabase = Depends(get_db), filter_type: str = "All", filter_karigar: str = "All", view_mode: str = "unpaid", current_user: dict = Depends(get_current_user_dep)):
     paid = view_mode == "paid"
 
     tail_query = None
@@ -84,7 +85,7 @@ async def get_labour_items(db = Depends(get_db), filter_type: str = "All", filte
     return items
 
 @router.get("/labour/karigars")
-async def get_karigars(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def get_karigars(db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     # Get karigars from settings first, then merge with distinct karigars from items for completeness
     settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0, "karigars": 1})
     settings_karigars = settings.get("karigars", []) if settings else []
@@ -98,7 +99,7 @@ async def get_karigars(db = Depends(get_db), current_user: dict = Depends(get_cu
     return all_karigars
 
 @router.post("/labour/pay")
-async def pay_labour(req: LabourPaymentRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def pay_labour(req: LabourPaymentRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     mode_str = ", ".join(req.payment_modes) if req.payment_modes else "Cash"
     if req.labour_type == "tailoring":
         update = {
@@ -120,7 +121,7 @@ async def pay_labour(req: LabourPaymentRequest, db = Depends(get_db), current_us
     return {"message": f"{result.modified_count} labour payments processed"}
 
 @router.post("/labour/delete-payment")
-async def delete_labour_payment(req: LabourDeleteRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def delete_labour_payment(req: LabourDeleteRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     if req.labour_type == "tailoring":
         update = {"labour_paid": "N/A", "labour_pay_date": "N/A", "labour_payment_mode": "N/A", "labour_payment_id": ""}
     else:

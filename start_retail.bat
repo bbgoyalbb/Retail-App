@@ -1,14 +1,28 @@
 @echo off
-:: ---- Self-elevate to Administrator if not already ----
+setlocal EnableDelayedExpansion
+set "ROOT=%~dp0"
+set "BACKEND_PORT=8001"
+set "FRONTEND_PORT=3000"
+
+:: ---- Self-elevate only if firewall rules are missing ----
+:: Check if both firewall rules already exist before demanding admin
+netsh advfirewall firewall show rule name="Retail App Port %BACKEND_PORT%" >nul 2>&1
+set "BACKEND_RULE_MISSING=%errorlevel%"
+netsh advfirewall firewall show rule name="Retail App Port %FRONTEND_PORT%" >nul 2>&1
+set "FRONTEND_RULE_MISSING=%errorlevel%"
+
+if %BACKEND_RULE_MISSING% neq 0 goto :need_elevation
+if %FRONTEND_RULE_MISSING% neq 0 goto :need_elevation
+goto :rules_ok
+
+:need_elevation
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
     exit /b
 )
-setlocal EnableDelayedExpansion
-set "ROOT=%~dp0"
-set "BACKEND_PORT=8001"
-set "FRONTEND_PORT=3000"
+
+:rules_ok
 set "PYTHON=%ROOT%backend\venv\Scripts\python.exe"
 
 :: Check if backend venv exists, fallback to system python

@@ -10,6 +10,7 @@ import html as html_mod
 import uuid
 import re
 from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
@@ -21,7 +22,7 @@ from cachetools import TTLCache
 router = APIRouter()
 
 @router.get("/invoice")
-async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optional[str] = Query(None, alias="ref"), ref_ids: Optional[List[str]] = Query(None, alias="refs"), format: str = Query(default="standard", alias="format"), current_user: dict = Depends(get_current_user_dep)):
+async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(get_db), ref_id: Optional[str] = Query(None, alias="ref"), ref_ids: Optional[List[str]] = Query(None, alias="refs"), format: str = Query(default="standard", alias="format"), current_user: dict = Depends(get_current_user_dep)):
     # format options: standard (section-wise), thermal, article-wise, article-summary
     # Support both single ref (ref_id) and multiple refs (ref_ids)
     refs = ref_ids if ref_ids else ([ref_id] if ref_id else [])
@@ -1560,7 +1561,7 @@ async def generate_invoice(request: Request, db = Depends(get_db), ref_id: Optio
 # ==========================================
 
 @router.get("/reports/revenue")
-async def get_revenue_report(db = Depends(get_db), period: str = "daily", date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
+async def get_revenue_report(db: AsyncIOMotorDatabase = Depends(get_db), period: str = "daily", date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
     match_query = {"cancelled": {"$ne": True}}
     if date_from:
         match_query.setdefault("date", {})["$gte"] = date_from
@@ -1619,7 +1620,7 @@ async def get_revenue_report(db = Depends(get_db), period: str = "daily", date_f
     return await db.items.aggregate(pipeline).to_list(500)
 
 @router.get("/reports/customers")
-async def get_customer_report(db = Depends(get_db), date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
+async def get_customer_report(db: AsyncIOMotorDatabase = Depends(get_db), date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
     match_query = {"cancelled": {"$ne": True}}
     if date_from:
         match_query.setdefault("date", {})["$gte"] = date_from
@@ -1666,7 +1667,7 @@ async def get_customer_report(db = Depends(get_db), date_from: Optional[str] = N
     ]
 
 @router.get("/reports/summary")
-async def get_summary_report(db = Depends(get_db), date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
+async def get_summary_report(db: AsyncIOMotorDatabase = Depends(get_db), date_from: Optional[str] = None, date_to: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
     match_query = {"cancelled": {"$ne": True}}
     if date_from:
         match_query.setdefault("date", {})["$gte"] = date_from

@@ -9,6 +9,7 @@ import uuid
 import re
 from bson import ObjectId
 from pymongo import UpdateOne
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
@@ -18,7 +19,7 @@ from .models import SettlementRequest
 router = APIRouter()
 
 @router.get("/settlements/balances")
-async def get_settlement_balances(db = Depends(get_db), name: Optional[str] = None, ref: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
+async def get_settlement_balances(db: AsyncIOMotorDatabase = Depends(get_db), name: Optional[str] = None, ref: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
     if not ref:
         return {"fabric": 0, "tailoring": 0, "embroidery": 0, "addon": 0, "advance": 0}
 
@@ -47,7 +48,7 @@ async def get_settlement_balances(db = Depends(get_db), name: Optional[str] = No
     }
 
 @router.post("/settlements/pay")
-async def process_settlement(req: SettlementRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def process_settlement(req: SettlementRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     modes_str = ", ".join(req.payment_modes) if req.payment_modes else "Cash"
     total_allocated = round_money(
         req.allot_fabric + req.allot_tailoring + req.allot_embroidery + req.allot_addon + req.allot_advance

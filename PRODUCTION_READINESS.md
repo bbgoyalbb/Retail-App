@@ -48,7 +48,7 @@ Administrators can check `errors.log` or query the database for error details.
   - Username (if logged in)
 - **User Input:** Bug title and description fields
 - **Error Detection:** Shows warning if console errors detected
-- **Non-intrusive:** Manual close after submission review
+- **Non-intrusive:** Stays open after submission so user can review what was sent; close manually
 
 ### Usage:
 1. User clicks bug button (bottom-right corner)

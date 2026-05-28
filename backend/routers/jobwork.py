@@ -12,13 +12,14 @@ from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from .models import AddOnRequest, EmbEditRequest, EmbMoveRequest, MoveBackRequest, StatusUpdateRequest
 from constants import TAILORING_PREV, EMB_PREV
 
 router = APIRouter()
 
 @router.post("/addons")
-async def add_addons(req: AddOnRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def add_addons(req: AddOnRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     item = await db.items.find_one({"id": req.item_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -60,7 +61,7 @@ async def add_addons(req: AddOnRequest, db = Depends(get_db), current_user: dict
 
 @router.get("/jobwork")
 async def get_jobwork(
-    db = Depends(get_db),
+    db: AsyncIOMotorDatabase = Depends(get_db),
     tab: str = "tailoring",
     order_no: Optional[str] = None,
     date_filter: Optional[str] = None,
@@ -120,7 +121,7 @@ async def get_jobwork(
         }
 
 @router.post("/jobwork/move")
-async def move_jobwork(req: StatusUpdateRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def move_jobwork(req: StatusUpdateRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     update_fields = {}
     if req.new_status in ["Pending", "Stitched", "Delivered"]:
         update_fields["tailoring_status"] = req.new_status
@@ -136,7 +137,7 @@ async def move_jobwork(req: StatusUpdateRequest, db = Depends(get_db), current_u
     return {"message": f"{result.modified_count} items moved to {req.new_status}"}
 
 @router.post("/jobwork/move-back")
-async def move_jobwork_back(req: MoveBackRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def move_jobwork_back(req: MoveBackRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     if req.current_status in TAILORING_PREV:
         update_fields = {"tailoring_status": TAILORING_PREV[req.current_status]}
     elif req.current_status in EMB_PREV:
@@ -149,7 +150,7 @@ async def move_jobwork_back(req: MoveBackRequest, db = Depends(get_db), current_
     return {"message": f"{result.modified_count} items moved back"}
 
 @router.post("/jobwork/move-emb")
-async def move_embroidery(req: EmbMoveRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def move_embroidery(req: EmbMoveRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     needs_amounts = req.emb_customer_amount is not None and req.emb_customer_amount > 0
     if needs_amounts:
         # Batch-fetch all items once instead of one find_one per item
@@ -177,7 +178,7 @@ async def move_embroidery(req: EmbMoveRequest, db = Depends(get_db), current_use
     return {"message": f"{result.modified_count} embroidery items updated"}
 
 @router.post("/jobwork/edit-emb")
-async def edit_embroidery(req: EmbEditRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def edit_embroidery(req: EmbEditRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     update_fields = {}
     if req.karigar is not None:
         update_fields["karigar"] = req.karigar
@@ -199,7 +200,7 @@ async def edit_embroidery(req: EmbEditRequest, db = Depends(get_db), current_use
     return {"message": "Updated" if result.modified_count > 0 else "No change"}
 
 @router.get("/jobwork/filters")
-async def get_jobwork_filters(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def get_jobwork_filters(db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     _nc = {"cancelled": {"$ne": True}}
     order_nos, dates, delivery_dates = await asyncio.gather(
         db.items.distinct("order_no", {**_nc, "order_no": {"$ne": "N/A"}}),

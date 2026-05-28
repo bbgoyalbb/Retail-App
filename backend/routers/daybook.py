@@ -9,6 +9,7 @@ from datetime import datetime, timezone, date, timedelta
 import uuid
 import re
 from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
@@ -136,12 +137,12 @@ async def _build_daybook_entries(db, date_filter: Optional[str] = None):
     return list(entries.values())
 
 @router.get("/daybook")
-async def get_daybook(db = Depends(get_db), date_filter: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
+async def get_daybook(db: AsyncIOMotorDatabase = Depends(get_db), date_filter: Optional[str] = None, current_user: dict = Depends(get_current_user_dep)):
     entries = await _build_daybook_entries(db, date_filter)
     return {"entries": entries}
 
 @router.get("/daybook/dates")
-async def get_daybook_dates(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def get_daybook_dates(db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     global _daybook_dates_cache, _daybook_dates_cache_time
     if _daybook_dates_cache and (time.monotonic() - _daybook_dates_cache_time) < _DAYBOOK_DATES_TTL:
         return _daybook_dates_cache
@@ -165,7 +166,7 @@ async def get_daybook_dates(db = Depends(get_db), current_user: dict = Depends(g
     return result
 
 @router.get("/daybook/pending-count")
-async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def get_daybook_pending_count(db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     """Return the number of untallied payment entries across all dates.
     Uses the exact same logic as the daybook endpoint and frontend isFullyTallied.
     """
@@ -187,7 +188,7 @@ async def get_daybook_pending_count(db = Depends(get_db), current_user: dict = D
     return {"count": count}
 
 @router.post("/daybook/tally")
-async def tally_entries(req: TallyRequest, db = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
+async def tally_entries(req: TallyRequest, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     tally_value = req.action == "tally"
 
     date_field_map = {
