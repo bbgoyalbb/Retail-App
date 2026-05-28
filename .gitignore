@@ -66,9 +66,6 @@ backend/.jwt_secret.lock
 # Development tools
 .ipynb_checkpoints/
 
-# Deployment
-.vercel
-
 # Archive files and large assets
 **/*.zip
 **/*.tar.gz
@@ -80,13 +77,6 @@ backend/.jwt_secret.lock
 
 # Build caches
 .cache/
-
-memory/test_credentials.md
-
-# Audit screenshots and dev artifacts
-audit_screenshots/
-db_field_audit.txt
-create_review_zip.ps1
 
 # Environment and credential files
 .env

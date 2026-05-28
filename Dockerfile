@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ COPY frontend/ .
 RUN npm run build
 
 # Final stage
-FROM python:3.11-slim
+FROM python:3.12-slim
 WORKDIR /app
 COPY --from=frontend-builder /app/frontend/build ./frontend/build
 COPY backend/requirements.txt .
