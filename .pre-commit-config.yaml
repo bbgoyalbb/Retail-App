@@ -22,17 +22,8 @@ repos:
         args: ['--max-line-length=88', '--extend-ignore=E203']
         files: ^backend/
 
-  # JavaScript/React hooks
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.57.0
-    hooks:
-      - id: eslint
-        files: ^frontend/src/
-        types: [javascript, jsx]
-        additional_dependencies:
-          - eslint@^8.57.0
-          - eslint-plugin-react@^7.34.0
-          - eslint-plugin-react-hooks@^4.6.0
+  # JavaScript/React hooks - ESLint disabled due to Create React App conflict
+  # Use CRA's built-in ESLint configuration instead
 
   # General hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks

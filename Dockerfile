@@ -36,9 +36,10 @@ COPY backend/ .
 FROM node:20-slim AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm ci
+COPY frontend/yarn.lock ./
+RUN yarn install --frozen-lockfile
 COPY frontend/ .
-RUN npm run build
+RUN yarn build
 
 # Final stage
 FROM python:3.12-slim
