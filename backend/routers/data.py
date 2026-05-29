@@ -52,13 +52,21 @@ async def import_excel(
     # Restrict to admin only
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    
-    if not file.filename.endswith(('.xlsm', '.xlsx', '.xls')):
-        raise HTTPException(status_code=400, detail="Please upload an Excel file (.xlsm or .xlsx)")
+
+    # Validate file extension
+    if not file.filename or not file.filename.lower().endswith(('.xlsm', '.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Please upload an Excel file (.xlsm, .xlsx, or .xls)")
+
+    # Validate file size (max 10MB)
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
+    if len(contents) == 0:
+        raise HTTPException(status_code=400, detail="File is empty")
 
     try:
         import openpyxl
-        contents = await file.read()
         wb = openpyxl.load_workbook(io.BytesIO(contents), data_only=True)
 
         items_count = 0
@@ -325,12 +333,20 @@ async def restore_database(
     # Restrict to admin only
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    
-    if not file.filename.endswith('.json'):
+
+    # Validate file extension
+    if not file.filename or not file.filename.lower().endswith('.json'):
         raise HTTPException(status_code=400, detail="Please upload a .json backup file")
 
+    # Validate file size (max 50MB for backups)
+    MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File size exceeds 50MB limit")
+    if len(contents) == 0:
+        raise HTTPException(status_code=400, detail="File is empty")
+
     try:
-        contents = await file.read()
         backup_data = json.loads(contents.decode('utf-8'))
 
         # ===== VALIDATION PHASE =====

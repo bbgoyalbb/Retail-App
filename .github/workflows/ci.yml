@@ -9,6 +9,16 @@ on:
 jobs:
   backend-test:
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -21,6 +31,10 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-test.txt
       - name: Run tests
+        env:
+          MONGO_URL: mongodb://localhost:27017
+          DB_NAME: retail_test
+          JWT_SECRET_KEY: test-secret-key-for-ci-only
         run: |
           cd backend
           pytest

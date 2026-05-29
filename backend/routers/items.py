@@ -43,7 +43,7 @@ async def _reset_counter_for_date(db, bill_date: str):
 
 @router.delete("/items/bulk/delete")
 async def bulk_delete_items(
-    item_ids: List[str] = Body(...),
+    req: BulkDeleteRequest,
     db: AsyncIOMotorDatabase = Depends(get_db),
     current_user: dict = Depends(get_current_user_dep)
 ):
@@ -52,13 +52,13 @@ async def bulk_delete_items(
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     # Collect affected dates BEFORE deletion so we can reset counters after
-    affected_items = await db.items.find({"id": {"$in": item_ids}}, {"_id": 0, "date": 1}).to_list(500)
+    affected_items = await db.items.find({"id": {"$in": req.item_ids}}, {"_id": 0, "date": 1}).to_list(500)
     affected_dates = {i["date"] for i in affected_items if i.get("date")}
 
     # Audit log the bulk delete
-    await audit_log(db, "bulk_delete", current_user, "items", f"count:{len(item_ids)}", {"count": len(item_ids)})
+    await audit_log(db, "bulk_delete", current_user, "items", f"count:{len(req.item_ids)}", {"count": len(req.item_ids)})
 
-    result = await db.items.delete_many({"id": {"$in": item_ids}})
+    result = await db.items.delete_many({"id": {"$in": req.item_ids}})
 
     # Reset counters for all affected dates
     for d in affected_dates:
@@ -254,27 +254,21 @@ async def search_items(
 
 @router.post("/items/group")
 async def create_group(
-    item_ids: List[str] = Body(...),
-    group_name: str = Body(...),
+    req: GroupCreateRequest,
     db: AsyncIOMotorDatabase = Depends(get_db),
     current_user: dict = Depends(get_current_user_dep)
 ):
     """Create a new group with the specified items using unique _id."""
-    if not item_ids:
-        raise HTTPException(status_code=400, detail="No items provided")
-    if not group_name or not group_name.strip():
-        raise HTTPException(status_code=400, detail="Group name is required")
-
     # Use _id instead of barcode for unique identification
-    items = await db.items.find({"_id": {"$in": item_ids}}).to_list(1000)
+    items = await db.items.find({"_id": {"$in": req.item_ids}}).to_list(1000)
     id_field = "_id"
 
-    if len(items) != len(item_ids):
+    if len(items) != len(req.item_ids):
         # Try with id field as fallback
-        items = await db.items.find({"id": {"$in": item_ids}}).to_list(1000)
+        items = await db.items.find({"id": {"$in": req.item_ids}}).to_list(1000)
         id_field = "id"
 
-        if len(items) != len(item_ids):
+        if len(items) != len(req.item_ids):
             raise HTTPException(status_code=404, detail="Some items not found")
 
     # Normalize customer names (case-insensitive, trimmed) for comparison
@@ -288,23 +282,22 @@ async def create_group(
 
     # Update items with group_id and group_name using the correct id field
     result = await db.items.update_many(
-        {id_field: {"$in": item_ids}},
-        {"$set": {"group_id": group_id, "group_name": group_name.strip()}}
+        {id_field: {"$in": req.item_ids}},
+        {"$set": {"group_id": group_id, "group_name": req.group_name.strip()}}
     )
 
     await audit_log(db, "group_create", current_user, "items", group_id, {
-        "group_name": group_name,
+        "group_name": req.group_name,
         "item_count": result.modified_count,
-        "item_ids": item_ids
+        "item_ids": req.item_ids
     })
 
-    return {"group_id": group_id, "group_name": group_name, "item_count": result.modified_count}
+    return {"group_id": group_id, "group_name": req.group_name, "item_count": result.modified_count}
 
 @router.put("/items/group/{group_id}")
 async def update_group(
     group_id: str,
-    item_ids: Optional[List[str]] = Body(None),
-    group_name: Optional[str] = Body(None),
+    req: GroupUpdateRequest,
     db: AsyncIOMotorDatabase = Depends(get_db),
     current_user: dict = Depends(get_current_user_dep)
 ):
@@ -318,19 +311,19 @@ async def update_group(
     audit_data = {}
 
     # Update group name if provided
-    if group_name is not None and group_name.strip():
-        updates["group_name"] = group_name.strip()
-        audit_data["group_name"] = group_name.strip()
+    if req.group_name is not None and req.group_name.strip():
+        updates["group_name"] = req.group_name.strip()
+        audit_data["group_name"] = req.group_name.strip()
 
     # Update items if provided
-    if item_ids is not None:
+    if req.item_ids is not None:
         # Determine which id field to use
-        test_items = await db.items.find({"_id": {"$in": item_ids}}).to_list(len(item_ids))
-        id_field = "_id" if len(test_items) == len(item_ids) else "id"
+        test_items = await db.items.find({"_id": {"$in": req.item_ids}}).to_list(len(req.item_ids))
+        id_field = "_id" if len(test_items) == len(req.item_ids) else "id"
 
         # Validate all items exist and belong to same customer using the correct id field
-        items = await db.items.find({id_field: {"$in": item_ids}}).to_list(len(item_ids))
-        if len(items) != len(item_ids):
+        items = await db.items.find({id_field: {"$in": req.item_ids}}).to_list(len(req.item_ids))
+        if len(items) != len(req.item_ids):
             raise HTTPException(status_code=404, detail="Some items not found")
 
         # Normalize customer names (case-insensitive, trimmed) for comparison
@@ -346,13 +339,13 @@ async def update_group(
         )
 
         # Add group_id to new set of items using the correct id field
-        if item_ids:
+        if req.item_ids:
             result = await db.items.update_many(
-                {id_field: {"$in": item_ids}},
-                {"$set": {"group_id": group_id, "group_name": group_name.strip() if group_name else existing_group.get("group_name", "")}}
+                {id_field: {"$in": req.item_ids}},
+                {"$set": {"group_id": group_id, "group_name": req.group_name.strip() if req.group_name else existing_group.get("group_name", "")}}
             )
             audit_data["item_count"] = result.modified_count
-            audit_data["item_ids"] = item_ids
+            audit_data["item_ids"] = req.item_ids
         else:
             audit_data["item_count"] = 0
             audit_data["item_ids"] = []

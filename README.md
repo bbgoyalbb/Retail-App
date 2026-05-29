@@ -180,6 +180,33 @@ npm start
 
 
 
+## CI/CD
+
+The project uses GitHub Actions for continuous integration. The CI workflow runs:
+
+- **Backend Tests**: Python tests with pytest (requires MongoDB service)
+- **Frontend Tests**: Jest tests and build verification
+
+### CI Test Requirements
+
+The CI workflow automatically sets up:
+- MongoDB 7 service for backend tests
+- Environment variables: `MONGO_URL`, `DB_NAME`, `JWT_SECRET_KEY`
+
+For local development, ensure:
+- MongoDB is running on `localhost:27017`
+- Backend `.env` file is configured with required variables
+- Run `pytest` in the backend directory to execute tests
+
+### Environment Configuration
+
+The project supports environment-specific configurations:
+- `.env.development` - Local development settings
+- `.env.staging` - Staging environment settings
+- `.env.production` - Production environment settings
+
+Copy the appropriate file to `.env` and customize for your environment.
+
 ## Regression Suite
 
 

@@ -92,15 +92,13 @@ async def get_order_status(
 
 @router.post("/orders/deliver")
 async def mark_order_delivered(
-    payload: dict,
+    req: OrderDeliverRequest,
     request: Request,
     db = Depends(get_db),
     current_user: dict = Depends(get_current_user_dep),
 ):
     """Mark all Pending/Stitched items in an order as Delivered."""
-    order_no = payload.get("order_no", "").strip()
-    if not order_no:
-        raise HTTPException(status_code=400, detail="order_no is required")
+    order_no = req.order_no.strip()
     result = await db.items.update_many(
         {"order_no": order_no, "cancelled": {"$ne": True}, "tailoring_status": {"$in": [TAILORING_STATUS['Pending'], TAILORING_STATUS['Stitched']]}},
         {"$set": {"tailoring_status": TAILORING_STATUS['Delivered']}},

@@ -147,6 +147,17 @@ class ItemUpdateRequest(BaseModel):
     fabric_pay_mode: Optional[str] = None
     fabric_pay_date: Optional[str] = None
     fabric_pending: Optional[float] = None
+
+class BulkDeleteRequest(BaseModel):
+    item_ids: List[str] = Field(..., min_length=1, description="List of item IDs to delete")
+
+class GroupCreateRequest(BaseModel):
+    item_ids: List[str] = Field(..., min_length=1, description="List of item IDs to group")
+    group_name: str = Field(..., min_length=1, max_length=100, description="Group name")
+
+class GroupUpdateRequest(BaseModel):
+    item_ids: Optional[List[str]] = Field(None, description="List of item IDs to add to group")
+    group_name: Optional[str] = Field(None, min_length=1, max_length=100, description="Group name")
     fabric_received: Optional[float] = None
     tailoring_pay_mode: Optional[str] = None
     tailoring_pay_date: Optional[str] = None
@@ -157,6 +168,9 @@ class ItemUpdateRequest(BaseModel):
     embroidery_pending: Optional[float] = None
     embroidery_received: Optional[float] = None
     karigar: Optional[str] = None
+
+class OrderDeliverRequest(BaseModel):
+    order_no: str = Field(..., min_length=1, description="Order number to mark as delivered")
     labour_amount: Optional[float] = None
     labour_paid: Optional[str] = None
     labour_pay_date: Optional[str] = None
