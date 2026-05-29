@@ -229,19 +229,18 @@ export default function BarcodeScanner({ onScan, onClose }) {
     // Small delay ensures modal DOM is fully painted before scanner binds to video element
     const startTimer = setTimeout(startScanner, 150);
 
-    // Touch-to-focus handler — attached after scanner starts
-    // Increased delay to 1500ms to ensure scanner fully initializes video element
-    const focusTimer = setTimeout(() => {
+    // Touch-to-focus handler — poll for video element until it's ready
+    const attachFocusHandler = () => {
       const container = document.getElementById("barcode-reader-container");
       const video = container?.querySelector("video");
       console.log("Tap-to-focus: video element found:", !!video, "container:", !!container);
       if (!video) {
-        console.warn("Tap-to-focus: video element not found after delay");
-        return;
+        console.warn("Tap-to-focus: video element not found");
+        return false;
       }
       if (video._focusHandler) {
         console.log("Tap-to-focus: handler already attached");
-        return;
+        return true;
       }
       const onTap = (e) => {
         console.log("Tap-to-focus triggered");
@@ -257,11 +256,26 @@ export default function BarcodeScanner({ onScan, onClose }) {
       video.addEventListener("click", onTap);
       video._focusHandler = onTap;
       console.log("Tap-to-focus: handler attached successfully");
-    }, 1500);
+      return true;
+    };
+
+    // Poll for video element every 100ms, max 5 seconds
+    let pollAttempts = 0;
+    const maxAttempts = 50; // 50 * 100ms = 5 seconds
+    const focusTimer = setInterval(() => {
+      pollAttempts++;
+      if (attachFocusHandler()) {
+        clearInterval(focusTimer);
+        console.log(`Tap-to-focus: handler attached after ${pollAttempts * 100}ms`);
+      } else if (pollAttempts >= maxAttempts) {
+        clearInterval(focusTimer);
+        console.warn("Tap-to-focus: video element not found after 5 seconds");
+      }
+    }, 100);
 
     return () => {
       clearTimeout(startTimer);
-      clearTimeout(focusTimer);
+      clearInterval(focusTimer);
       cancelled = true;
       mountedRef.current = false;
       const stop = async () => {
