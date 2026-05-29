@@ -17,7 +17,8 @@ services:
     build: .
     # Port removed - only accessible via nginx reverse proxy
     environment:
-      - MONGODB_URI=mongodb://mongo:27017/retail
+      - MONGO_URL=mongodb://mongo:27017
+      - DB_NAME=retail
       - JWT_SECRET=${JWT_SECRET}
       - ORG_NAME=${ORG_NAME:-Retail Business}
     depends_on:

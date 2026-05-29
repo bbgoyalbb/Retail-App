@@ -7,6 +7,7 @@ from typing import Optional, List
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from .deps import get_db, get_current_user_dep
 from auth import audit_log
+from .models import OrderDeliverRequest
 from constants import TAILORING_STATUS
 
 router = APIRouter()

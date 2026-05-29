@@ -13,7 +13,7 @@ from .deps import get_db, get_current_user_dep
 from data_quality import round_money, determine_payment_status, build_payment_mode_label
 import auth as auth_module
 from auth import audit_log
-from .models import ItemCreateRequest, ItemUpdateRequest
+from .models import ItemCreateRequest, ItemUpdateRequest, BulkDeleteRequest, GroupCreateRequest, GroupUpdateRequest
 from constants import TAILORING_STATUS, EMBROIDERY_STATUS
 
 router = APIRouter()
