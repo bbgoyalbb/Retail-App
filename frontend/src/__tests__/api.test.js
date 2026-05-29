@@ -1,6 +1,12 @@
-import api, { 
-  BACKEND_URL, 
-  getDashboard, 
+// Mock lib/security before importing api
+jest.mock('../lib/security', () => ({
+  isSessionValid: jest.fn(() => true),
+  clearSession: jest.fn()
+}));
+
+import api, {
+  BACKEND_URL,
+  getDashboard,
   invalidateDashboardCache,
   getCustomers,
   login,

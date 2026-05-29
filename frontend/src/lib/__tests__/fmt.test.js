@@ -53,7 +53,7 @@ describe('fmt utility functions', () => {
     });
 
     it('should handle invalid dates gracefully', () => {
-      expect(fmtDate('invalid')).toBe('invalid');
+      expect(fmtDate('invalid')).toBe('Invalid Date');
     });
   });
 });

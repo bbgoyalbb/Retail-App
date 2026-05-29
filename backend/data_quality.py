@@ -45,7 +45,8 @@ __all__ = [
 ]
 
 def round_money(value: float) -> float:
-    return round(float(value or 0), 2)
+    """Round to 2 decimals using ROUND_HALF_UP (financial standard, not banker's rounding)."""
+    return float(Decimal(str(value or 0)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
 def round_money_precise(value) -> Decimal:
@@ -54,10 +55,18 @@ def round_money_precise(value) -> Decimal:
 
 
 def determine_payment_status(pending_amount: float, received_amount: float) -> str:
+    # Check original values before rounding for tiny amount detection
+    original_pending = pending_amount
     pending_amount = round_money(pending_amount)
-    if pending_amount <= PENNY_TOLERANCE:
+    received_amount = round_money(received_amount)
+    # Any amount received marks as Settled (per project rules)
+    if received_amount >= PENNY_TOLERANCE:
         return "Settled"
-    return "Pending"
+    # No received, any pending (positive or negative, including tiny amounts) = Pending
+    if pending_amount != 0 or original_pending != 0:
+        return "Pending"
+    # No received, no pending = N/A
+    return "N/A"
 
 
 async def to_list(cursor, length: int) -> List:
@@ -140,9 +149,9 @@ def analyze_payment_field(
 
     if expected_status == "Pending" and mode != "Pending":
         issues.append({
-            "type": "mode_status_mismatch",
+            "type": "status_mode_mismatch",
             "category": label,
-            "message": f"{label} is pending but mode is {mode}",
+            "message": f"{label} should be Pending but mode is {mode}",
             "total": total,
             "received": received,
             "pending": pending,
@@ -151,9 +160,9 @@ def analyze_payment_field(
 
     if expected_status == "Settled" and not str(mode).startswith("Settled"):
         issues.append({
-            "type": "mode_status_mismatch",
+            "type": "status_mode_mismatch",
             "category": label,
-            "message": f"{label} is settled but mode is {mode}",
+            "message": f"{label} should indicate settlement but mode is {mode}",
             "total": total,
             "received": received,
             "pending": pending,
@@ -189,7 +198,7 @@ def normalize_payment_field(
 
     if total > 0:
         mismatch = round_money((received + pending) - total)
-        if abs(mismatch) <= 1:
+        if abs(mismatch) > PENNY_TOLERANCE:
             if pending > 0:
                 pending = round_money(max(0, total - received))
             elif pending == 0 and received > 0:
