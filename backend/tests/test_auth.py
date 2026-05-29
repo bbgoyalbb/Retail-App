@@ -21,11 +21,10 @@ async def client():
 
 @pytest.fixture
 async def test_db():
-    """Test database fixture - uses same DB as app via DB_NAME env var"""
+    """Test database fixture - uses retail_test to avoid affecting production data"""
     mongo_uri = os.getenv("MONGO_URL", os.getenv("MONGO_URI", "mongodb://localhost:27017"))
-    db_name = os.getenv("DB_NAME", "retail")
     client = AsyncIOMotorClient(mongo_uri)
-    db = client[db_name]
+    db = client.retail_test
 
     # Clean up before tests
     await db.users.delete_many({})
