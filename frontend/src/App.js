@@ -255,7 +255,7 @@ function AppShell() {
                 </Suspense>
               </ErrorBoundary>
             </div>
-            <div className="h-[calc(80px+env(safe-area-inset-bottom,0px))] md:hidden" />
+            <div className="h-[calc(100px+env(safe-area-inset-bottom,0px))] md:hidden" />
           </div>
           </div>
         </main>
