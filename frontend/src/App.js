@@ -220,10 +220,10 @@ function AppShell() {
         <OfflineBanner />
         <Sidebar open={sidebarOpen} setOpen={handleSetOpen} />
         <BackToTop />
-        <main id="main-content" className="flex-1 overflow-hidden min-w-0 flex flex-col relative">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
           <MobileTopBar title={pageTitle} onMenuClick={() => handleSetOpen(!sidebarOpen)} />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div ref={contentRef} data-page="in" className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
+          <main id="main-content" className="flex-1 overflow-hidden min-w-0 flex flex-col relative">
+            <div ref={contentRef} data-page="in" className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar" style={{ scrollPaddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
             <div className="max-w-[1400px] mx-auto w-full">
               <ErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
@@ -255,10 +255,11 @@ function AppShell() {
                 </Suspense>
               </ErrorBoundary>
             </div>
+            <div className="h-[calc(80px+env(safe-area-inset-bottom,0px))] md:hidden" />
           </div>
           </div>
-          <MobileBottomTabBar onOpenSidebar={() => handleSetOpen(true)} />
         </main>
+        <MobileBottomTabBar onOpenSidebar={() => handleSetOpen(true)} />
         <BugReportButton />
       </div>
     </ErrorBoundary>
