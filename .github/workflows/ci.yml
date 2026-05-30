@@ -35,6 +35,8 @@ jobs:
           MONGO_URL: mongodb://localhost:27017
           DB_NAME: retail_test
           JWT_SECRET_KEY: test-secret-key-for-ci-only
+          DEBUG: "true"
+          CORS_ORIGINS: "http://localhost:3000"
         run: |
           cd backend
           pytest
