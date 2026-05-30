@@ -100,7 +100,10 @@ async def connect_to_mongo_with_retry(url: str, db_name: str, max_retries: int =
     
     raise RuntimeError(f"Could not connect to MongoDB after {max_retries} attempts")
 
-client, db = asyncio.run(connect_to_mongo_with_retry(mongo_url, db_name))
+# Use synchronous connection for module-level initialization
+# This is acceptable for startup, but retry logic will be handled in lifespan
+client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=5000)
+db = client[db_name]
 
 # Inject db into the shared deps module BEFORE any router is imported.
 # This maintains compatibility with the existing global `db` imports
@@ -229,6 +232,9 @@ from routers import (  # noqa: E402
     advances_router, orders_router, items_router,
     reports_router, data_router, auth_router,
 )
+# Note: metrics router requires prometheus_client dependency
+# Uncomment the following line after adding prometheus_client to requirements.txt
+# from routers.metrics import setup_metrics  # noqa: E402
 
 PREFIX = "/api"
 app.include_router(bills_router,       prefix=PREFIX)
@@ -243,6 +249,9 @@ app.include_router(items_router,       prefix=PREFIX)
 app.include_router(reports_router,     prefix=PREFIX)
 app.include_router(data_router,        prefix=PREFIX)
 app.include_router(auth_router,        prefix=PREFIX)
+
+# Setup metrics endpoint (requires prometheus_client dependency)
+# setup_metrics(app)
 
 # ==========================================
 # MIDDLEWARE

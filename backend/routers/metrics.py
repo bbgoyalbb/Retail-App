@@ -1,5 +1,8 @@
 """
 Metrics router for Prometheus-compatible metrics.
+
+NOTE: This router requires the prometheus_client dependency.
+Add to requirements.txt: prometheus_client==0.20.0
 """
 from fastapi import APIRouter
 from prometheus_client import Counter, Histogram, Gauge, generate_latest
