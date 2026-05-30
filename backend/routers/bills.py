@@ -152,7 +152,7 @@ async def get_items(
     tailoring_status: Optional[str] = None,
     embroidery_status: Optional[str] = None,
     order_no: Optional[str] = None,
-    limit: int = Query(500, le=2000),
+    limit: int = Query(1000, le=2000),
     skip: int = 0,
     summary: bool = False,
     include_cancelled: bool = False,
