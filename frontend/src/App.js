@@ -222,7 +222,7 @@ function AppShell() {
         <BackToTop />
         <main id="main-content" className="flex-1 overflow-hidden min-w-0 flex flex-col relative" tabIndex={-1}>
           <MobileTopBar title={pageTitle} onMenuClick={() => handleSetOpen(!sidebarOpen)} />
-          <div className="flex-1 flex flex-col overflow-hidden pt-16 pb-16 md:pt-0 md:pb-0">
+          <div className="flex-1 flex flex-col overflow-hidden pt-16 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pt-0 md:pb-0">
             <div ref={contentRef} data-page="in" className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
             <div className="max-w-[1400px] mx-auto w-full">
               <ErrorBoundary>
