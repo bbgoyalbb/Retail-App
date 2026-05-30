@@ -133,6 +133,18 @@ function AppShell() {
   const { toast } = useToast();
   const pageTitle = useMemo(() => PAGE_TITLES[location.pathname] ?? "Retail Book", [location.pathname]);
 
+  // Set CSS custom property for bottom tab bar height on mobile
+  useEffect(() => {
+    const updateBottomTabBarHeight = () => {
+      const isMobile = window.innerWidth < 768;
+      document.documentElement.style.setProperty("--bottom-tab-bar-h", isMobile ? "64px" : "0px");
+    };
+    
+    updateBottomTabBarHeight();
+    window.addEventListener("resize", updateBottomTabBarHeight);
+    return () => window.removeEventListener("resize", updateBottomTabBarHeight);
+  }, []);
+
   useEffect(() => {
     const handleError = (e) => {
       toast({
@@ -211,7 +223,7 @@ function AppShell() {
         <main id="main-content" className="flex-1 overflow-hidden min-w-0 flex flex-col relative" tabIndex={-1}>
           <MobileTopBar title={pageTitle} onMenuClick={() => handleSetOpen(!sidebarOpen)} />
           <MobileBottomTabBar onOpenSidebar={() => handleSetOpen(true)} />
-          <div ref={contentRef} data-page="in" className="flex-1 overflow-y-auto p-4 pt-[calc(4rem+var(--offline-banner-h,0px))] pb-20 md:p-6 md:pt-[calc(1.5rem+var(--offline-banner-h,0px))] md:pb-6 lg:p-8 lg:pt-[calc(2rem+var(--offline-banner-h,0px))] custom-scrollbar">
+          <div ref={contentRef} data-page="in" className="flex-1 overflow-y-auto p-4 pt-[calc(4rem+var(--offline-banner-h,0px))] pb-[calc(5rem+var(--bottom-tab-bar-h,0px)+env(safe-area-inset-bottom,0px))] md:p-6 md:pt-[calc(1.5rem+var(--offline-banner-h,0px))] md:pb-6 lg:p-8 lg:pt-[calc(2rem+var(--offline-banner-h,0px))] custom-scrollbar">
             <div className="max-w-[1400px] mx-auto w-full">
               <ErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
