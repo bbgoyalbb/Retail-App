@@ -71,8 +71,36 @@ if not db_name:
         "DB_NAME is not set. Add it to backend/.env before starting the server."
     )
 
-client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=5000)
-db = client[db_name]
+# Database connection with retry logic and exponential backoff
+import asyncio
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+
+async def connect_to_mongo_with_retry(url: str, db_name: str, max_retries: int = 5, initial_delay: float = 1.0):
+    """Connect to MongoDB with exponential backoff retry logic."""
+    retry_count = 0
+    delay = initial_delay
+    
+    while retry_count < max_retries:
+        try:
+            client = AsyncIOMotorClient(url, serverSelectionTimeoutMS=5000)
+            # Test connection
+            await client.admin.command('ping')
+            db = client[db_name]
+            logger.info(f"Successfully connected to MongoDB on attempt {retry_count + 1}")
+            return client, db
+        except (ConnectionFailure, ServerSelectionTimeoutError) as e:
+            retry_count += 1
+            if retry_count >= max_retries:
+                logger.error(f"Failed to connect to MongoDB after {max_retries} attempts")
+                raise RuntimeError(f"Could not connect to MongoDB after {max_retries} attempts: {e}")
+            
+            logger.warning(f"MongoDB connection attempt {retry_count} failed, retrying in {delay}s...")
+            await asyncio.sleep(delay)
+            delay *= 2  # Exponential backoff
+    
+    raise RuntimeError(f"Could not connect to MongoDB after {max_retries} attempts")
+
+client, db = asyncio.run(connect_to_mongo_with_retry(mongo_url, db_name))
 
 # Inject db into the shared deps module BEFORE any router is imported.
 # This maintains compatibility with the existing global `db` imports
@@ -238,6 +266,7 @@ app.add_middleware(
     allow_origins=cors_origins.split(",") if cors_origins != "*" else ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    max_age=600,  # Cache preflight requests for 10 minutes
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=2048)  # 2KB threshold for gzip efficiency
