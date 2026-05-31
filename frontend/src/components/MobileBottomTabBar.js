@@ -57,7 +57,7 @@ export default function MobileBottomTabBar({ onOpenSidebar }) {
   return (
     <nav 
       data-testid="mobile-bottom-tab-bar"
-      className="md:hidden bg-card/90 border-t border-border/50 flex-shrink-0"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/90 border-t border-border/50 flex-shrink-0"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="flex items-center justify-around h-16 px-2">

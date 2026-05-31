@@ -223,7 +223,7 @@ function AppShell() {
         <main id="main-content" className="flex-1 overflow-hidden min-w-0 flex flex-col relative">
           <MobileTopBar title={pageTitle} onMenuClick={() => handleSetOpen(!sidebarOpen)} />
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div ref={contentRef} data-page="in" className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
+            <div ref={contentRef} data-page="in" className="flex-1 overflow-y-auto p-4 pt-[calc(64px+var(--offline-banner-h,0px)+env(safe-area-inset-top,0px))] pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:p-6 md:pt-6 md:pb-6 lg:p-8 lg:pt-8 lg:pb-8 custom-scrollbar">
             <div className="max-w-[1400px] mx-auto w-full">
               <ErrorBoundary>
                 <Suspense fallback={<PageLoader />}>
