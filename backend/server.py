@@ -224,9 +224,9 @@ app = FastAPI(
     version="2.0.0",
     description="Full-featured retail management system for fabric shops and tailoring businesses.",
     lifespan=lifespan,
-    docs_url="/docs" if _debug else None,
-    redoc_url="/redoc" if _debug else None,
-    openapi_url="/openapi.json" if _debug else None,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
     openapi_tags=[
         {"name": "Bills", "description": "Bill creation and dashboard"},
         {"name": "Tailoring", "description": "Tailoring order management"},
