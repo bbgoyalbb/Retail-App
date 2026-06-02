@@ -254,7 +254,7 @@ from routers import (  # noqa: E402
 )
 # Note: metrics router requires prometheus_client dependency
 # Uncomment the following line after adding prometheus_client to requirements.txt
-from routers.metrics import setup_metrics  # noqa: E402
+# from routers.metrics import setup_metrics  # noqa: E402
 
 PREFIX = "/api"
 app.include_router(bills_router,       prefix=PREFIX)
@@ -271,7 +271,7 @@ app.include_router(data_router,        prefix=PREFIX)
 app.include_router(auth_router,        prefix=PREFIX)
 
 # Setup metrics endpoint (requires prometheus_client dependency)
-setup_metrics(app)
+# setup_metrics(app)
 
 # ==========================================
 # MIDDLEWARE
