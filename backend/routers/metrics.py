@@ -6,7 +6,6 @@ Add to requirements.txt: prometheus_client==0.20.0
 """
 from fastapi import APIRouter
 from prometheus_client import Counter, Histogram, Gauge, generate_latest
-from prometheus_client.fastapi import expose_metrics
 from starlette.responses import Response
 
 router = APIRouter()
