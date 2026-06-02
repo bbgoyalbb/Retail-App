@@ -35,9 +35,27 @@ load_dotenv(ROOT_DIR / ".env")
 # ==========================================
 log_file = ROOT_DIR / "server.log"
 error_log_file = ROOT_DIR / "errors.log"
+
+# JSON formatter for structured logging
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        import json
+        log_entry = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+        }
+        if record.exc_info:
+            log_entry["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_entry)
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format="%(message)s",
     handlers=[
         logging.StreamHandler(),
         RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"),
@@ -45,13 +63,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Apply JSON formatter to all handlers
+for handler in logging.getLogger().handlers:
+    handler.setFormatter(JsonFormatter())
+
 # Separate error logger for stack traces
 error_logger = logging.getLogger("error_logger")
 error_logger.setLevel(logging.ERROR)
 error_handler = RotatingFileHandler(error_log_file, maxBytes=50 * 1024 * 1024, backupCount=10, encoding="utf-8")
-error_handler.setFormatter(logging.Formatter(
-    "%(asctime)s - %(levelname)s\n%(message)s\n{'='*80}\n"
-))
+error_handler.setFormatter(JsonFormatter())
 error_logger.addHandler(error_handler)
 
 # Suppress WinError 10054 noise (browser forcibly closes SSL on Windows)
@@ -234,7 +254,7 @@ from routers import (  # noqa: E402
 )
 # Note: metrics router requires prometheus_client dependency
 # Uncomment the following line after adding prometheus_client to requirements.txt
-# from routers.metrics import setup_metrics  # noqa: E402
+from routers.metrics import setup_metrics  # noqa: E402
 
 PREFIX = "/api"
 app.include_router(bills_router,       prefix=PREFIX)
@@ -251,7 +271,7 @@ app.include_router(data_router,        prefix=PREFIX)
 app.include_router(auth_router,        prefix=PREFIX)
 
 # Setup metrics endpoint (requires prometheus_client dependency)
-# setup_metrics(app)
+setup_metrics(app)
 
 # ==========================================
 # MIDDLEWARE
