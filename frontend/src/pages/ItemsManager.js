@@ -1283,7 +1283,10 @@ export default function ItemsManager() {
             }, 0);
           }}
           onSuccess={async () => {
+            // Invalidate cache first to ensure fresh data is loaded
             invalidateItemsCache();
+            // Small delay to ensure cache invalidation propagates
+            await new Promise(resolve => setTimeout(resolve, 100));
             // Reload all pages up to the saved page to restore full list
             for (let p = 1; p <= savedPage.current; p++) {
               await loadData(p);
