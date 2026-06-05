@@ -436,6 +436,8 @@ export default function NewBill() {
       invalidate("dashboard");
       invalidate("daybook");
       invalidateCustomersCache();
+      // Small delay to ensure cache invalidation propagates
+      await new Promise(resolve => setTimeout(resolve, 100));
       getCustomers().then(res => setConfig(p => ({ ...p, customers: res.data || [] }))).catch(() => {});
       resetFormFields();
     } catch (err) {

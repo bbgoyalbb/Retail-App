@@ -371,6 +371,9 @@ export default function JobWork() {
   const handleTailoringMove = async (itemIds, newStatus) => {
     try {
       await moveJobwork({ item_ids: itemIds, new_status: newStatus });
+      invalidateJobworkCache();
+      // Small delay to ensure cache invalidation propagates
+      await new Promise(resolve => setTimeout(resolve, 100));
       loadData();
     } catch (err) {
       toast({ title: "Error", description: err.message || "Failed to move items", variant: "destructive" });
@@ -380,6 +383,9 @@ export default function JobWork() {
   const handleTailoringMoveBack = async (itemIds, currentStatus) => {
     try {
       await moveJobworkBack({ item_ids: itemIds, current_status: currentStatus });
+      invalidateJobworkCache();
+      // Small delay to ensure cache invalidation propagates
+      await new Promise(resolve => setTimeout(resolve, 100));
       loadData();
     } catch (err) {
       toast({ title: "Error", description: err.message || "Failed to move items back", variant: "destructive" });
@@ -389,6 +395,9 @@ export default function JobWork() {
   const handleEmbMoveBack = async (itemIds, currentStatus) => {
     try {
       await moveJobworkBack({ item_ids: itemIds, current_status: currentStatus });
+      invalidateJobworkCache();
+      // Small delay to ensure cache invalidation propagates
+      await new Promise(resolve => setTimeout(resolve, 100));
       loadData();
     } catch (err) {
       toast({ title: "Error", description: err.message || "Failed to move items back", variant: "destructive" });
@@ -404,6 +413,9 @@ export default function JobWork() {
         try {
           await moveJobwork({ item_ids: itemIds, new_status: "In Progress", karigar: skips.karigar ? undefined : (values.karigar || undefined) });
           setDialog(null);
+          invalidateJobworkCache();
+          // Small delay to ensure cache invalidation propagates
+          await new Promise(resolve => setTimeout(resolve, 100));
           loadData();
         } catch (err) {
           toast({ title: "Error", description: err.message || "Failed to assign karigar", variant: "destructive" });
@@ -423,6 +435,9 @@ export default function JobWork() {
             await editJobworkEmb({ item_id: item.id, karigar: values.karigar || "" });
           }
           setDialog(null);
+          invalidateJobworkCache();
+          // Small delay to ensure cache invalidation propagates
+          await new Promise(resolve => setTimeout(resolve, 100));
           loadData();
         } catch (err) {
           toast({ title: "Error", description: err.message || "Failed to update karigar", variant: "destructive" });
@@ -456,6 +471,9 @@ export default function JobWork() {
             await editJobworkEmb(updates);
           }
           setDialog(null);
+          invalidateJobworkCache();
+          // Small delay to ensure cache invalidation propagates
+          await new Promise(resolve => setTimeout(resolve, 100));
           loadData();
         } catch (err) {
           toast({ title: "Error", description: err.message || "Failed to update embroidery details", variant: "destructive" });
@@ -479,6 +497,9 @@ export default function JobWork() {
           if (!skips.emb_customer && values.emb_customer) updates.emb_customer_amount = parseFloat(values.emb_customer);
           await moveJobworkEmb(updates);
           setDialog(null);
+          invalidateJobworkCache();
+          // Small delay to ensure cache invalidation propagates
+          await new Promise(resolve => setTimeout(resolve, 100));
           loadData();
         } catch (err) {
           toast({ title: "Error", description: err.message || "Failed to finish embroidery", variant: "destructive" });

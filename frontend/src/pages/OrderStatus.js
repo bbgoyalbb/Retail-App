@@ -128,6 +128,8 @@ export default function OrderStatus() {
       toast({ title: "Delivery date updated", description: `Order #${editingDelivery.order_no}` });
       setEditingDelivery(null);
       invalidateOrderStatusCache();
+      // Small delay to ensure cache invalidation propagates
+      await new Promise(resolve => setTimeout(resolve, 100));
       loadData();
     } catch (e) {
       toast({ title: "Error", description: "Failed to update delivery date", variant: "destructive" });
