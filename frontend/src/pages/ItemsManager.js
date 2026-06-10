@@ -918,7 +918,7 @@ export default function ItemsManager() {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover/row:opacity-100 transition-all sm:translate-x-2 group-hover/row:translate-x-0" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-1 opacity-100 transition-all" onClick={e => e.stopPropagation()}>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; savedPage.current = itemsPage; setTailoringGroup(group); }} aria-label="Open tailoring"><Scissors size={14} weight="bold" aria-hidden="true"/></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; savedPage.current = itemsPage; setAddonGroup(group); }} aria-label="Open add-ons"><Tag size={14} weight="bold" aria-hidden="true"/></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => { setShowFormatDialog(group.ref); }} aria-label="View invoice"><Printer size={14} weight="bold" aria-hidden="true"/></Button>

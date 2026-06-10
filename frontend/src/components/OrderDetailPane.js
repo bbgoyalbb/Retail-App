@@ -160,7 +160,7 @@ function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDel
                       ))}
                       
                       {!item.cancelled && (
-                        <div className="flex items-center gap-2 pt-3 border-t border-border/40 border-dashed mt-2 opacity-0 group-hover/item:opacity-100 transition-all translate-y-1 group-hover/item:translate-y-0">
+                        <div className="flex items-center gap-2 pt-3 border-t border-border/40 border-dashed mt-2 transition-all">
                           <Button 
                             variant="secondary" 
                             size="sm" 
@@ -287,7 +287,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
                         </div>
                       </div>
                       {!item.cancelled && (
-                        <div className="flex items-center gap-1 mt-2 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 mt-2 transition-opacity">
                           <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/10" onClick={() => onEdit("items",[item],"item")} aria-label="Edit item"><PencilSimple size={12} aria-hidden="true"/></Button>
                           <Button variant="ghost" size="icon" className="h-6 w-6 text-warning hover:bg-warning/10" onClick={() => onCancelItem(item)} aria-label="Cancel item"><X size={12} aria-hidden="true"/></Button>
                           <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10" onClick={() => onDeleteItem(item)} aria-label="Delete item"><Trash size={12} aria-hidden="true"/></Button>
@@ -324,7 +324,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
                           )}
                         </div>
                         {!item.cancelled && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1 opacity-0 group-hover/row:opacity-100" onClick={() => onEdit("tailoring",[item],"item")} aria-label="Edit tailoring"><PencilSimple size={12} aria-hidden="true"/></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1" onClick={() => onEdit("tailoring",[item],"item")} aria-label="Edit tailoring"><PencilSimple size={12} aria-hidden="true"/></Button>
                         )}
                       </div>
                     </div>
@@ -357,7 +357,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
                           )}
                         </div>
                         {!item.cancelled && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1 opacity-0 group-hover/row:opacity-100" onClick={() => onEdit("embroidery",[item],"item")} aria-label="Edit embroidery"><PencilSimple size={12} aria-hidden="true"/></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1" onClick={() => onEdit("embroidery",[item],"item")} aria-label="Edit embroidery"><PencilSimple size={12} aria-hidden="true"/></Button>
                         )}
                       </div>
                     </div>
@@ -385,7 +385,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
                           )}
                         </div>
                         {!item.cancelled && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1 opacity-0 group-hover/row:opacity-100" onClick={() => onEdit("addon",[item],"item")} aria-label="Edit add-on"><PencilSimple size={12} aria-hidden="true"/></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 -mt-1" onClick={() => onEdit("addon",[item],"item")} aria-label="Edit add-on"><PencilSimple size={12} aria-hidden="true"/></Button>
                         )}
                       </div>
                     </div>
