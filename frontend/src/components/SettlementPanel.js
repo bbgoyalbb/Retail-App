@@ -156,21 +156,37 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
   const handleSubmit = async () => {
     if (totalAlloc <= 0)          { setMessage({ type: "error", text: "Allocate at least some amount" }); return; }
     if (selectedModes.length === 0) { setMessage({ type: "error", text: "Select at least one payment mode" }); return; }
-    setSaving(true);
+
+    const freshPayTotal = parseFloat(freshPay) || 0;
+    let remainingFresh = freshPayTotal;
+    const orderedFresh = {};
     const eligible = orders.filter(o => {
       const a = allotments[o.ref] || {};
       return ["fabric","tailoring","embroidery","addon","advance"].some(k => parseFloat(a[k]) > 0);
     });
+
+    eligible.forEach(o => {
+      const a = allotments[o.ref] || {};
+      const orderAlloc = ["fabric","tailoring","embroidery","addon","advance"].reduce(
+        (sum, k) => sum + (parseFloat(a[k]) || 0), 0
+      );
+      const assigned = Math.min(orderAlloc, remainingFresh);
+      orderedFresh[o.ref] = assigned;
+      remainingFresh -= assigned;
+    });
+
+    setSaving(true);
     setSavingProgress({ done: 0, total: eligible.length });
     const results = await Promise.allSettled(
       eligible.map(o => {
         const a = allotments[o.ref] || {};
+        const freshForOrder = orderedFresh[o.ref] || 0;
         return processSettlement({
           customer_name: o.name,
           ref: o.ref,
           payment_date: payDate,
           payment_modes: selectedModes,
-          fresh_payment: parseFloat(freshPay) || 0,
+          fresh_payment: freshForOrder,
           use_advance: useAdvance,
           allot_fabric:     parseFloat(a.fabric)    || 0,
           allot_tailoring:  parseFloat(a.tailoring) || 0,
