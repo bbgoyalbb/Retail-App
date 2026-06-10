@@ -15,14 +15,14 @@ from data_quality import round_money, determine_payment_status, build_payment_mo
 import auth as auth_module
 from auth import audit_log
 from .models import AddOnRequest, TAILORING_RATES, TailoringOrderRequest, SplitItem, SplitTailoringRequest, merge_settings
-from constants import TAILORING_STATUS, EMBROIDERY_STATUS
+from constants import TAILORING_STATUS, EMBROIDERY_STATUS, tailoring_status_values, embroidery_status_values
 
 router = APIRouter()
 
 @router.get("/tailoring/awaiting")
 async def get_awaiting_orders(db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user_dep)):
     pipeline = [
-        {"$match": {"tailoring_status": TAILORING_STATUS["Awaiting Order"], "cancelled": {"$ne": True}}},
+        {"$match": {"tailoring_status": {"$in": tailoring_status_values("Awaiting Order")}, "cancelled": {"$ne": True}}},
         {"$group": {
             "_id": {"name": "$name", "ref": "$ref"},
             "items": {"$push": {

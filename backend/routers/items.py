@@ -14,7 +14,7 @@ from data_quality import round_money, determine_payment_status, build_payment_mo
 import auth as auth_module
 from auth import audit_log
 from .models import ItemCreateRequest, ItemUpdateRequest, BulkDeleteRequest, GroupCreateRequest, GroupUpdateRequest
-from constants import TAILORING_STATUS, EMBROIDERY_STATUS
+from constants import TAILORING_STATUS, EMBROIDERY_STATUS, tailoring_status_values, embroidery_status_values
 
 router = APIRouter()
 
@@ -222,9 +222,9 @@ async def search_items(
 
     if status and status != "All":
         if status in [TAILORING_STATUS["Pending"], TAILORING_STATUS["Stitched"], TAILORING_STATUS["Delivered"], TAILORING_STATUS["Awaiting Order"], "N/A"]:
-            filters.append({"tailoring_status": status})
+            filters.append({"tailoring_status": {"$in": tailoring_status_values(status)}})
         elif status in [EMBROIDERY_STATUS["Required"], EMBROIDERY_STATUS["In Progress"], EMBROIDERY_STATUS["Finished"], "Not Required"]:
-            filters.append({"embroidery_status": status})
+            filters.append({"embroidery_status": {"$in": embroidery_status_values(status)}})
 
     if payment_status and payment_status != "All":
         if payment_status == "Settled":

@@ -16,7 +16,7 @@ from data_quality import round_money, determine_payment_status, build_payment_mo
 import auth as auth_module
 from auth import audit_log
 from .models import ADDON_ITEMS, ARTICLE_TYPES, BillLineItem, CreateBillRequest, PAYMENT_MODES, TAILORING_RATES, validate_date
-from constants import TAILORING_STATUS, EMBROIDERY_STATUS
+from constants import TAILORING_STATUS, EMBROIDERY_STATUS, tailoring_status_values, embroidery_status_values
 
 router = APIRouter()
 
@@ -41,10 +41,10 @@ async def get_dashboard(db: AsyncIOMotorDatabase = Depends(get_db), current_user
         "emb_pending":  [{"$match": {"embroidery_amount": {"$gt": 0}, "embroidery_pay_mode": _ns}}, {"$group": {"_id": None, "t": {"$sum": "$embroidery_pending"}}}],
         "addon_pending":[{"$match": {"addon_amount":      {"$gt": 0}, "addon_pay_mode":      _ns}}, {"$group": {"_id": None, "t": {"$sum": "$addon_pending"}}}],
         "revenue":      [{"$group": {"_id": None, "t": {"$sum": {"$add": ["$fabric_received", "$tailoring_received", "$embroidery_received", "$addon_received"]}}}}],
-        "tail_pend_ct": [{"$match": {"tailoring_status": TAILORING_STATUS["Pending"]}},     {"$count": "n"}],
-        "tail_stit_ct": [{"$match": {"tailoring_status": TAILORING_STATUS["Stitched"]}},    {"$count": "n"}],
-        "emb_req_ct":   [{"$match": {"embroidery_status": EMBROIDERY_STATUS["Required"]}},   {"$count": "n"}],
-        "emb_prog_ct":  [{"$match": {"embroidery_status": EMBROIDERY_STATUS["In Progress"]}},{"$count": "n"}],
+        "tail_pend_ct": [{"$match": {"tailoring_status": {"$in": tailoring_status_values("Pending")}}},     {"$count": "n"}],
+        "tail_stit_ct": [{"$match": {"tailoring_status": {"$in": tailoring_status_values("Stitched")}}},    {"$count": "n"}],
+        "emb_req_ct":   [{"$match": {"embroidery_status": {"$in": embroidery_status_values("Required")}}},   {"$count": "n"}],
+        "emb_prog_ct":  [{"$match": {"embroidery_status": {"$in": embroidery_status_values("In Progress")}}},{"$count": "n"}],
         "trend":        [{"$match": {"date": {"$in": days}}}, {"$group": {"_id": "$date", "t": {"$sum": {"$add": ["$fabric_received", "$tailoring_received", "$embroidery_received", "$addon_received"]}}}}],
         "customers":    [{"$group": {"_id": "$name"}}],
         "total_ct":     [{"$count": "n"}],
@@ -52,7 +52,7 @@ async def get_dashboard(db: AsyncIOMotorDatabase = Depends(get_db), current_user
         "today_collected_items": [{"$match": {"date": today}}, {"$group": {"_id": None,
             "t": {"$sum": {"$add": ["$fabric_received", "$tailoring_received", "$embroidery_received", "$addon_received"]}}
         }}],
-        "overdue_orders": [{"$match": {"delivery_date": {"$lt": today, "$gt": ""}, "tailoring_status": {"$in": [TAILORING_STATUS["Pending"], TAILORING_STATUS["Stitched"]]}}}, {"$count": "n"}],
+        "overdue_orders": [{"$match": {"delivery_date": {"$lt": today, "$gt": ""}, "tailoring_status": {"$in": tailoring_status_values(["Pending", "Stitched"])}}}, {"$count": "n"}],
     }}]
 
     cutoff_90d = (date.today() - timedelta(days=90)).isoformat()

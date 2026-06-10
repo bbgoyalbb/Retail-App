@@ -8,7 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from .deps import get_db, get_current_user_dep
 from auth import audit_log
 from .models import OrderDeliverRequest
-from constants import TAILORING_STATUS
+from constants import TAILORING_STATUS, tailoring_status_values, embroidery_status_values
 
 router = APIRouter()
 
@@ -58,12 +58,18 @@ async def get_order_status(
             "customers":           {"$addToSet": "$name"},
             "refs":                {"$addToSet": "$ref"},
             "item_count":          {"$sum": 1},
-            "tailoring_pending":   {"$sum": {"$cond": [{"$eq": ["$tailoring_status",  "Pending"]},     1, 0]}},
-            "tailoring_stitched":  {"$sum": {"$cond": [{"$eq": ["$tailoring_status",  "Stitched"]},    1, 0]}},
-            "tailoring_delivered": {"$sum": {"$cond": [{"$eq": ["$tailoring_status",  "Delivered"]},   1, 0]}},
-            "emb_required":        {"$sum": {"$cond": [{"$eq": ["$embroidery_status", "Required"]},    1, 0]}},
-            "emb_in_progress":     {"$sum": {"$cond": [{"$eq": ["$embroidery_status", "In Progress"]}, 1, 0]}},
-            "emb_finished":        {"$sum": {"$cond": [{"$eq": ["$embroidery_status", "Finished"]},    1, 0]}},
+            "tailoring_pending":   {"$sum": {"$cond": [
+                {"$in": ["$tailoring_status", tailoring_status_values("Pending")]}, 1, 0]}},
+            "tailoring_stitched":  {"$sum": {"$cond": [
+                {"$in": ["$tailoring_status", tailoring_status_values("Stitched")]}, 1, 0]}},
+            "tailoring_delivered": {"$sum": {"$cond": [
+                {"$in": ["$tailoring_status", tailoring_status_values("Delivered")]}, 1, 0]}},
+            "emb_required":        {"$sum": {"$cond": [
+                {"$in": ["$embroidery_status", embroidery_status_values("Required")]}, 1, 0]}},
+            "emb_in_progress":     {"$sum": {"$cond": [
+                {"$in": ["$embroidery_status", embroidery_status_values("In Progress")]}, 1, 0]}},
+            "emb_finished":        {"$sum": {"$cond": [
+                {"$in": ["$embroidery_status", embroidery_status_values("Finished")]}, 1, 0]}},
             "order_total":         {"$sum": {"$add": ["$fabric_amount", "$tailoring_amount", "$embroidery_amount", "$addon_amount"]}},
             "latest_bill_date":    {"$max": "$date"},
             "latest_delivery_date":{"$max": {"$cond": [{"$not": [{"$in": ["$delivery_date", ["N/A", "", None]]}]}, "$delivery_date", None]}},
@@ -101,7 +107,7 @@ async def mark_order_delivered(
     """Mark all Pending/Stitched items in an order as Delivered."""
     order_no = req.order_no.strip()
     result = await db.items.update_many(
-        {"order_no": order_no, "cancelled": {"$ne": True}, "tailoring_status": {"$in": [TAILORING_STATUS['Pending'], TAILORING_STATUS['Stitched']]}},
+        {"order_no": order_no, "cancelled": {"$ne": True}, "tailoring_status": {"$in": tailoring_status_values([TAILORING_STATUS['Pending'], TAILORING_STATUS['Stitched']])}},
         {"$set": {"tailoring_status": TAILORING_STATUS['Delivered']}},
     )
     if result.modified_count == 0:

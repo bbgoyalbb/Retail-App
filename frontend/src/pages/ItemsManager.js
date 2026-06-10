@@ -354,6 +354,8 @@ export default function ItemsManager() {
 
   // Load data (grouped list mode)
   const loadData = useCallback(async (page = 1) => {
+    const preserveScroll = page === itemsPage;
+    const currentScrollTop = scrollRef.current?.scrollTop || 0;
     if (page === 1) setLoading(true); else setLoadingMore(true);
     try {
       const params = { limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE, summary: true };
@@ -363,18 +365,27 @@ export default function ItemsManager() {
       setAllItems(prev => page === 1 ? newItems : [...prev, ...newItems]);
       setHasMoreItems((page * PAGE_SIZE) < total);
       setItemsPage(page);
-      if (page === 1) {
-        const uniqueRefs = [...new Set(newItems.map(i => i.ref).filter(Boolean))];
-        const advRes = uniqueRefs.length > 0 ? await getAdvances({ refs: uniqueRefs }) : { data: [] };
-        setAdvances(advRes.data || []);
+
+      const uniqueRefs = [...new Set(newItems.map(i => i.ref).filter(Boolean))];
+      if (uniqueRefs.length > 0) {
+        const advRes = await getAdvances({ refs: uniqueRefs });
+        setAdvances(prev => {
+          const existingMap = new Map(prev.map(a => [a.id, a]));
+          (advRes.data || []).forEach(a => existingMap.set(a.id, a));
+          return Array.from(existingMap.values());
+        });
       }
     } catch {
-      // Use a local error handler instead of toast dependency
       console.error("Failed to load data");
     } finally {
       setLoading(false); setLoadingMore(false);
+      if (preserveScroll) {
+        setTimeout(() => {
+          if (scrollRef.current) scrollRef.current.scrollTop = currentScrollTop;
+        }, 0);
+      }
     }
-  }, []); // Remove toast dependency to prevent infinite re-renders
+  }, [itemsPage]); // Remove toast dependency to prevent infinite re-renders
 
   useEffect(() => { loadData(1); }, [loadData]);
 
@@ -413,6 +424,20 @@ export default function ItemsManager() {
     () => Array.from(selectedRefs).map(ref => grouped[ref] || searchGrouped[ref]).filter(Boolean),
     [selectedRefs, grouped, searchGrouped]
   );
+
+  useEffect(() => {
+    const selectedRefsNeeded = Array.from(new Set(selectedGroups.map(g => g.ref).filter(Boolean)));
+    const missingRefs = selectedRefsNeeded.filter(ref => !advances.some(a => a.ref === ref));
+    if (!missingRefs.length) return;
+
+    getAdvances({ refs: missingRefs.join(",") })
+      .then(res => {
+        const existingMap = new Map(advances.map(a => [a.id, a]));
+        (res.data || []).forEach(a => existingMap.set(a.id, a));
+        setAdvances(Array.from(existingMap.values()));
+      })
+      .catch(() => {});
+  }, [selectedGroups, advances]);
 
   // Select / deselect
   const selectRef = (ref, multi = false) => {
@@ -563,7 +588,7 @@ export default function ItemsManager() {
           return Array.from(existingMap.values());
         });
       }
-      loadData(1);
+      loadData(itemsPage);
       return;
     }
     // Items
@@ -597,22 +622,22 @@ export default function ItemsManager() {
         return Array.from(existingMap.values());
       });
     }
-    loadData(1);
-  };
-
-  const cancelEdit = () => {
-    setSelectedSection(null); setEditData({}); setOriginalData({}); setEditItems([]); setNewItemIds([]); setShowSectionSelector(false);
-    setAdvanceData({}); setOrigAdvData({}); setNewAdvances([]); setDeletedAdvances([]);
+    loadData(itemsPage);
   };
 
   const handleDelete = async () => {
     if (!delConfirm) return;
     try {
-      if (delMode === "order") { for (const id of delConfirm.items.map(i=>i.id)) await deleteItem(id); }
-      else await deleteItem(delConfirm.id);
-      toast({ title: "Deleted", description: delMode==="order"?`Order ${delConfirm.ref} deleted`:"Item deleted" });
-    } catch { toast({ title: "Error", description: "Failed to delete", variant: "destructive" }); }
-    setDelConfirm(null); invalidateItemsCache(); invalidateCustomersCache(); loadData(1);
+      if (delMode === "order") {
+        for (const id of delConfirm.items.map(i => i.id)) await deleteItem(id);
+      } else {
+        await deleteItem(delConfirm.id);
+      }
+      toast({ title: "Deleted", description: delMode === "order" ? `Order ${delConfirm.ref} deleted` : "Item deleted" });
+    } catch {
+      toast({ title: "Error", description: "Failed to delete", variant: "destructive" });
+    }
+    setDelConfirm(null); invalidateItemsCache(); invalidateCustomersCache(); loadData(itemsPage);
   };
 
   const handleCancelOrder = async (group) => {
@@ -624,7 +649,7 @@ export default function ItemsManager() {
       description: ok===group.items.length?`Order ${group.ref} cancelled`:`${group.items.length-ok} items failed`,
       variant: ok===group.items.length?"default":"destructive"
     });
-    setCancelConfirm(null); invalidateItemsCache(); loadData(1);
+    setCancelConfirm(null); invalidateItemsCache(); loadData(itemsPage);
   };
 
   const handleCancelItem = async (item) => {
@@ -635,12 +660,40 @@ export default function ItemsManager() {
     } catch {
       toast({ title: "Error", description: "Failed to cancel article", variant: "destructive" });
     }
-    invalidateItemsCache(); loadData(1);
+    invalidateItemsCache(); loadData(itemsPage);
   };
 
-  const handleGroupChanged = () => {
+  const cancelEdit = () => {
+    setSelectedSection(null);
+    setEditData({});
+    setOriginalData({});
+    setEditItems([]);
+    setNewItemIds([]);
+    setAdvanceData({});
+    setOrigAdvData({});
+    setNewAdvances([]);
+    setDeletedAdvances([]);
+    setShowSectionSelector(false);
+  };
+
+  const refreshVisibleOrders = useCallback(async (refs = null) => {
+    const targetRefs = refs
+      ? Array.from(new Set(refs.filter(Boolean)))
+      : Array.from(selectedRefs);
+    if (targetRefs.length === 0) return;
+
+    invalidateItemsCache();
+    invalidateAdvancesCache();
+
+    await loadData(itemsPage);
+    if (isSearchMode) {
+      await runSearch();
+    }
+  }, [itemsPage, isSearchMode, loadData, runSearch, selectedRefs]);
+
+  const handleGroupChanged = async () => {
     // Refresh items data when groups are changed
-    loadData(1);
+    await refreshVisibleOrders();
   };
 
   const _sf = selectedSection ? (
@@ -736,7 +789,7 @@ export default function ItemsManager() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(1); }}
+                onClick={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(itemsPage); }}
                 className={cn("h-8 w-8 text-muted-foreground hover:text-primary transition-all", loading && "animate-spin")}
                 aria-label="Refresh orders"
               >
@@ -1267,7 +1320,7 @@ export default function ItemsManager() {
         <SettlementPanel
           orders={settlementOrders}
           onClose={() => setSettlementOrders(null)}
-          onSuccess={() => { invalidateItemsCache(); invalidateAdvancesCache(); setSelectedRefs(new Set()); loadData(1); }}
+          onSuccess={() => { invalidateItemsCache(); invalidateAdvancesCache(); setSelectedRefs(new Set()); loadData(itemsPage); }}
         />
       )}
 
@@ -1283,15 +1336,8 @@ export default function ItemsManager() {
             }, 0);
           }}
           onSuccess={async () => {
-            // Invalidate cache first to ensure fresh data is loaded
-            invalidateItemsCache();
-            // Small delay to ensure cache invalidation propagates
-            await new Promise(resolve => setTimeout(resolve, 100));
-            // Reload all pages up to the saved page to restore full list
-            for (let p = 1; p <= savedPage.current; p++) {
-              await loadData(p);
-            }
-            // Restore scroll position after all pages loaded
+            await refreshVisibleOrders([tailoringGroup.ref]);
+            // Restore scroll position after data refresh completes
             setTimeout(() => {
               if (scrollRef.current) scrollRef.current.scrollTop = savedScrollPos.current;
             }, 100);
@@ -1311,11 +1357,8 @@ export default function ItemsManager() {
             }, 0);
           }}
           onSuccess={async () => {
-            // Reload all pages up to the saved page to restore full list
-            for (let p = 1; p <= savedPage.current; p++) {
-              await loadData(p);
-            }
-            // Restore scroll position after all pages loaded
+            await refreshVisibleOrders([addonGroup.ref]);
+            // Restore scroll position after data refresh completes
             setTimeout(() => {
               if (scrollRef.current) scrollRef.current.scrollTop = savedScrollPos.current;
             }, 100);

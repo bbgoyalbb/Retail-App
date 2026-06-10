@@ -86,14 +86,13 @@ export function AddOnOverlay({ group, onClose, onSuccess }) {
 
   const handleSave = async (payload) => {
     try {
-      // In edit mode, we save each item's addons individually via API
+      // In edit mode, we save each item's addons individually via API.
+      // Always send each item payload so deletions are applied too.
       for (const itemPayload of payload) {
-        if (itemPayload.addons.length > 0) {
-          await addAddons({
-            item_id: itemPayload.item_id,
-            addons: itemPayload.addons
-          });
-        }
+        await addAddons({
+          item_id: itemPayload.item_id,
+          addons: itemPayload.addons
+        });
       }
       onSuccess();
     } catch (error) {

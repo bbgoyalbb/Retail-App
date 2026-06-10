@@ -106,15 +106,15 @@ export function AddOnConfigurator({
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Build payload - each assignment includes item_id and its addons
-      // Use original DB item ID for proper backend lookup
+      // Build payload - each assignment includes item_id and its current addons.
+      // Send empty addon lists too so backend can clear deleted add-ons.
       const payload = assignments.map(a => ({
         item_id: a._original_item_id || a.item_id,
-        addons: a.addons.filter(x => parseFloat(x.price) > 0).map(x => ({
+        addons: a.addons.map(x => ({
           name: x.name,
           price: parseFloat(x.price)
         }))
-      })).filter(a => a.addons.length > 0);
+      }));
       
       await onSave(payload);
       setMsg({ type: "success", text: "Add-ons saved!" });

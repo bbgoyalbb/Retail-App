@@ -14,6 +14,7 @@ from data_quality import round_money, determine_payment_status, build_payment_mo
 import auth as auth_module
 from auth import audit_log
 from .models import LabourDeleteRequest, LabourPaymentRequest
+from constants import tailoring_status_values, embroidery_status_values
 
 router = APIRouter()
 
@@ -27,14 +28,14 @@ async def get_labour_items(db: AsyncIOMotorDatabase = Depends(get_db), filter_ty
         if paid:
             tail_query = {
                 "cancelled": _nc,
-                "tailoring_status": {"$in": ["Stitched", "Delivered"]},
+                "tailoring_status": {"$in": tailoring_status_values(["Stitched", "Delivered"])},
                 "labour_paid": "Yes",
                 "labour_amount": {"$gt": 0},
             }
         else:
             tail_query = {
                 "cancelled": _nc,
-                "tailoring_status": {"$in": ["Stitched", "Delivered"]},
+                "tailoring_status": {"$in": tailoring_status_values(["Stitched", "Delivered"])},
                 "labour_paid": {"$in": ["N/A", "", None]},
                 "labour_amount": {"$gt": 0},
             }
@@ -44,14 +45,14 @@ async def get_labour_items(db: AsyncIOMotorDatabase = Depends(get_db), filter_ty
         if paid:
             emb_query = {
                 "cancelled": _nc,
-                "embroidery_status": "Finished",
+                "embroidery_status": {"$in": embroidery_status_values("Finished")},
                 "emb_labour_paid": "Yes",
                 "emb_labour_amount": {"$gt": 0},
             }
         else:
             emb_query = {
                 "cancelled": _nc,
-                "embroidery_status": "Finished",
+                "embroidery_status": {"$in": embroidery_status_values("Finished")},
                 "emb_labour_paid": {"$in": ["N/A", "", None]},
                 "emb_labour_amount": {"$gt": 0},
             }

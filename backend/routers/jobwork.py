@@ -14,7 +14,7 @@ import auth as auth_module
 from auth import audit_log
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from .models import AddOnRequest, EmbEditRequest, EmbMoveRequest, MoveBackRequest, StatusUpdateRequest
-from constants import TAILORING_PREV, EMB_PREV
+from constants import TAILORING_PREV, EMB_PREV, tailoring_status_values, embroidery_status_values
 
 router = APIRouter()
 
@@ -26,32 +26,30 @@ async def add_addons(req: AddOnRequest, db: AsyncIOMotorDatabase = Depends(get_d
     if item.get("cancelled"):
         raise HTTPException(status_code=400, detail="Cannot modify a cancelled item")
 
-    addon_names = []
-    total_amount = 0
-    for addon in req.addons:
-        addon_names.append(f"{addon['name']}({addon['price']})")
-        total_amount += float(addon['price'])
-
-    new_desc = ", ".join(addon_names)
-    existing_desc = item.get("addon_desc", "N/A")
-    if existing_desc and existing_desc != "N/A":
-        new_desc = f"{existing_desc} + {new_desc}"
-
-    new_total = float(item.get("addon_amount", 0)) + total_amount
+    addon_names = [f"{addon['name']}({addon['price']})" for addon in req.addons]
+    new_total = sum(float(addon['price']) for addon in req.addons) if req.addons else 0.0
+    new_desc = ", ".join(addon_names) if addon_names else "N/A"
 
     existing_received = float(item.get("addon_received", 0))
-    new_pending = round(new_total - existing_received, 2)
-    new_mode = item.get("addon_pay_mode", "Pending")
-    if existing_received > 0 and not str(new_mode).startswith("Settled"):
-        new_mode = f"Settled - {new_mode.split(' - ', 1)[1]}" if " - " in str(new_mode) else "Settled"
-    elif existing_received <= 0:
-        new_mode = "Pending"
-    await db.items.update_one({"id": req.item_id}, {"$set": {
+    new_pending = 0.0 if not req.addons else round(new_total - existing_received, 2)
+    new_mode = "N/A" if not req.addons else item.get("addon_pay_mode", "Pending")
+    if req.addons:
+        if existing_received > 0 and not str(new_mode).startswith("Settled"):
+            new_mode = f"Settled - {new_mode.split(' - ', 1)[1]}" if " - " in str(new_mode) else "Settled"
+        elif existing_received <= 0:
+            new_mode = "Pending"
+
+    update_fields = {
         "addon_desc": new_desc,
         "addon_amount": new_total,
         "addon_pay_mode": new_mode,
         "addon_pending": new_pending,
-    }})
+    }
+    if not req.addons:
+        update_fields["addon_received"] = 0
+        update_fields["addon_pay_date"] = ""
+
+    await db.items.update_one({"id": req.item_id}, {"$set": update_fields})
     await audit_log(db, "add_addons", current_user, "item", req.item_id, {"addon_amount": new_total})
     return {"message": "Add-ons saved", "addon_desc": new_desc, "addon_amount": new_total}
 
@@ -71,9 +69,9 @@ async def get_jobwork(
     query = {"cancelled": {"$ne": True}}
 
     if tab == "tailoring":
-        query["tailoring_status"] = {"$in": ["Pending", "Stitched", "Delivered"]}
+        query["tailoring_status"] = {"$in": tailoring_status_values(["Pending", "Stitched", "Delivered"])}
     else:
-        query["embroidery_status"] = {"$in": ["Required", "In Progress", "Finished"]}
+        query["embroidery_status"] = {"$in": embroidery_status_values(["Required", "In Progress", "Finished"])}
 
     if order_no and order_no != "All":
         query["order_no"] = order_no
@@ -96,7 +94,7 @@ async def get_jobwork(
         {"$match": query},
         {"$facet": {
             bucket: [
-                {"$match": {status_field: bucket}},
+                {"$match": {status_field: {"$in": tailoring_status_values(bucket) if tab == "tailoring" else embroidery_status_values(bucket)}}},
                 sort_stage,
                 {"$limit": 500},
                 proj_stage,

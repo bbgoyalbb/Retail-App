@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
-import { getDaybookPendingCount, getPublicSettings, BACKEND_URL } from "@/api";
+import { getDaybookPendingCount, invalidateDaybookPendingCache, getPublicSettings, BACKEND_URL } from "@/api";
 import { dataEvents } from "@/lib/dataEvents";
 import { NAV_CONFIG } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -59,7 +59,10 @@ export default function Sidebar({ open, setOpen }) {
   }, []);
 
   useEffect(() => {
-    const fetch = () => getDaybookPendingCount().then(r => setDaybookPending(r.data?.count || 0)).catch(() => {});
+    const fetch = () => {
+      invalidateDaybookPendingCache();
+      return getDaybookPendingCount().then(r => setDaybookPending(r.data?.count || 0)).catch(() => {});
+    };
     fetch();
     const timer = setInterval(fetch, 60000);
     const handler = () => fetch();

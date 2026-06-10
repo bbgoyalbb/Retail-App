@@ -88,14 +88,18 @@ function DaybookTable({ entries, onCategoryTally, loading, dateFilter, refFilter
 
   // Compact mode label: Cash→C, PhonePe→P, Bank/Transfer→B, etc.
   const modeCode = (mode = "") => {
-    const m = mode.toUpperCase();
-    if (m.includes("CASH")) return "C";
-    if (m.includes("PHONEPE") || m.includes("PHONE PE")) return "P";
-    if (m.includes("BANK") || m.includes("TRANSFER") || m.includes("NEFT") || m.includes("IMPS")) return "B";
-    if (m.includes("[E]")) return "E";
-    if (m.includes("[S]")) return "S";
-    return mode ? mode.slice(0, 2).toUpperCase() : "";
-  }; 
+    const parts = (mode || "").split(/[,/]+/).map(m => m.replace(/^Settled\s*-\s*/i, "").trim()).filter(Boolean);
+    const codes = parts.map(m => {
+      const upper = m.toUpperCase();
+      if (upper.includes("CASH")) return "C";
+      if (upper.includes("PHONEPE") || upper.includes("PHONE PE")) return "P";
+      if (upper.includes("BANK") || upper.includes("TRANSFER") || upper.includes("NEFT") || upper.includes("IMPS")) return "B";
+      if (upper.includes("[E]")) return "E";
+      if (upper.includes("[S]")) return "S";
+      return m ? m.slice(0, 2).toUpperCase() : "";
+    }).filter(Boolean);
+    return [...new Set(codes)].join("+");
+  };
 
   const CATS = ["fabric", "tailoring", "embroidery", "addon", "advance"];
 

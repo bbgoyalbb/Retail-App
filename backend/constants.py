@@ -5,22 +5,62 @@ Centralized status definitions to ensure consistency across the codebase.
 
 # Tailoring status values
 TAILORING_STATUS = {
-    "N/A": "Not applicable",
-    "Not Required": "Tailoring not required",
-    "Awaiting Order": "Order placed, awaiting tailoring",
-    "Pending": "Tailoring in progress",
-    "Stitched": "Stitching completed",
-    "Delivered": "Item delivered to customer",
+    "N/A": "N/A",
+    "Not Required": "Not Required",
+    "Awaiting Order": "Awaiting Order",
+    "Pending": "Pending",
+    "Stitched": "Stitched",
+    "Delivered": "Delivered",
 }
 
 # Embroidery status values
 EMBROIDERY_STATUS = {
-    "N/A": "Not applicable",
-    "Not Required": "Embroidery not required",
-    "Required": "Embroidery required",
-    "In Progress": "Embroidery in progress",
-    "Finished": "Embroidery completed",
+    "N/A": "N/A",
+    "Not Required": "Not Required",
+    "Required": "Required",
+    "In Progress": "In Progress",
+    "Finished": "Finished",
 }
+
+LEGACY_TAILORING_STATUS_VALUES = {
+    "N/A": ["Not applicable"],
+    "Not Required": ["Tailoring not required"],
+    "Awaiting Order": ["Order placed, awaiting tailoring"],
+    "Pending": ["Tailoring in progress"],
+    "Stitched": ["Stitching completed"],
+    "Delivered": ["Item delivered to customer"],
+}
+
+LEGACY_EMBROIDERY_STATUS_VALUES = {
+    "N/A": ["Not applicable"],
+    "Not Required": ["Embroidery not required"],
+    "Required": ["Embroidery required"],
+    "In Progress": ["Embroidery in progress"],
+    "Finished": ["Embroidery completed"],
+}
+
+
+def _status_query_values(statuses, legacy_map):
+    if isinstance(statuses, str):
+        statuses = [statuses]
+    values = []
+    for status in statuses:
+        if not status:
+            continue
+        if status not in values:
+            values.append(status)
+        for legacy in legacy_map.get(status, []):
+            if legacy not in values:
+                values.append(legacy)
+    return values
+
+
+def tailoring_status_values(statuses):
+    return _status_query_values(statuses, LEGACY_TAILORING_STATUS_VALUES)
+
+
+def embroidery_status_values(statuses):
+    return _status_query_values(statuses, LEGACY_EMBROIDERY_STATUS_VALUES)
 
 # Status progression for move-back operations
 TAILORING_PREV = {
