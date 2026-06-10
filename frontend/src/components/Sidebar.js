@@ -144,11 +144,11 @@ export default function Sidebar({ open, setOpen }) {
       <aside
         data-testid="sidebar"
         className={`
-          fixed lg:static inset-y-0 left-0 z-40 bg-[var(--surface)] border-r border-[var(--border-subtle)]
+          fixed md:static inset-y-0 left-0 z-40 bg-[var(--surface)] border-r border-[var(--border-subtle)]
           flex flex-col flex-shrink-0
-          transition-transform duration-150 lg:transition-[width,transform] lg:duration-150
-          ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          ${collapsed ? 'lg:w-[60px]' : 'w-[240px]'}
+          transition-transform duration-150 md:transition-[width,transform] md:duration-150
+          ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${collapsed ? 'w-[60px]' : 'w-[240px]'}
         `}
         style={{ willChange: 'transform, width' }}
       >
@@ -252,7 +252,7 @@ export default function Sidebar({ open, setOpen }) {
             </button>
             <button
               onClick={toggleCollapse}
-              className="hidden lg:flex flex-1 items-center justify-center gap-2 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)] rounded-sm transition-colors"
+              className="hidden md:flex flex-1 items-center justify-center gap-2 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)] rounded-sm transition-colors"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {collapsed
