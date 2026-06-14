@@ -1,9 +1,13 @@
+const path = require('path');
+
 module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^@/(.*)$': '<rootDir>/src/$1',
   },
+  moduleDirectories: ['node_modules', path.resolve(__dirname, '..', 'node_modules')],
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
   },

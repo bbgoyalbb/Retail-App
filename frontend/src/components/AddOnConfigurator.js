@@ -16,7 +16,8 @@ export function AddOnConfigurator({
   mode = "create", // "create" (NewBill) or "edit" (Item Manager)
   customerName,
   title = "Article Add-ons",
-  saveButtonText = mode === "create" ? "Confirm Add-ons" : "Update Add-ons"
+  saveButtonText = mode === "create" ? "Confirm Add-ons" : "Update Add-ons",
+  settingsLoader = getSettings
 }) {
   const [assignments, setAssignments] = useState([]);
   const [addonOptions, setAddonOptions] = useState([]);
@@ -26,13 +27,13 @@ export function AddOnConfigurator({
 
   // Load settings once on mount.
   useEffect(() => {
-    getSettings().then(res => {
+    settingsLoader().then(res => {
       const s = res.data || {};
       if (Array.isArray(s.addon_items) && s.addon_items.length > 0) {
         setAddonOptions(s.addon_items);
       }
     }).catch(() => setAddonOptions(["Buttons", "Tie", "Bow"]));
-  }, []);
+  }, [settingsLoader]);
 
   // Normalize items to assignments format
   useEffect(() => {

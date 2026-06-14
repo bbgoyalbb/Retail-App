@@ -18,7 +18,8 @@ export function TailoringConfigurator({
   mode = "create", // "create" (NewBill) or "edit" (Item Manager)
   customerName,
   title = "Tailoring Configuration",
-  saveButtonText = mode === "create" ? "Save Configuration" : "Confirm Assignment"
+  saveButtonText = mode === "create" ? "Save Configuration" : "Confirm Assignment",
+  settingsLoader = getSettings
 }) {
   const [assignments, setAssignments] = useState([]);
   const [splitItem, setSplitItem] = useState(null);
@@ -29,11 +30,11 @@ export function TailoringConfigurator({
 
   // Load settings once on mount.
   useEffect(() => {
-    getSettings().then(res => {
+    settingsLoader().then(res => {
       const s = res.data || {};
       if (Array.isArray(s.article_types) && s.article_types.length > 0) setArticleTypes(s.article_types);
     }).catch(() => setArticleTypes(["Shirt", "Pant", "Kurta"]));
-  }, []);
+  }, [settingsLoader]);
 
   // Normalize incoming items to assignments format.
   useEffect(() => {
