@@ -24,7 +24,7 @@ export function AddOnConfigurator({
   const [msg, setMsg] = useState(null);
   const prevItemsKey = useRef("");
 
-  // Normalize items to assignments format
+  // Load settings once on mount.
   useEffect(() => {
     getSettings().then(res => {
       const s = res.data || {};
@@ -32,7 +32,10 @@ export function AddOnConfigurator({
         setAddonOptions(s.addon_items);
       }
     }).catch(() => setAddonOptions(["Buttons", "Tie", "Bow"]));
+  }, []);
 
+  // Normalize items to assignments format
+  useEffect(() => {
     const normalized = items.map(item => {
       // Parse addon_desc string to extract individual addons
       // Format: "Buttons(100) + Tie(50)" or "Buttons(100), Tie(50)"
@@ -67,8 +70,13 @@ export function AddOnConfigurator({
         _original_item_id: item.id || item._id
       };
     });
-    setAssignments(normalized);
-  }, [items, addonOptions]); // include addonOptions since we use addonOptions[0]
+
+    const nextKey = normalized.map(a => a.item_id).join(",");
+    if (!prevItemsKey.current || prevItemsKey.current !== nextKey) {
+      setAssignments(normalized);
+      prevItemsKey.current = nextKey;
+    }
+  }, [items, addonOptions]);
 
   const updateItemAddons = (index, newAddons) => {
     const newAssignments = assignments.map((a, j) => 
