@@ -201,16 +201,16 @@ export default function ItemsManager() {
   const [message, setMessage]       = useState(null);
   const [settings, setSettings]   = useState(null);
 
-  // Pagination (Fix 2.2)
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(100);
-  const [totalItems, setTotalItems] = useState(0);
-
   // Filters
   const [nameFilter, setNameFilter] = useState("");
   const [debouncedName, setDebouncedName] = useState("");
   const [settleTab, setSettleTab]   = useState("unsettled");
   const [sortDir, setSortDir]       = useState("desc");
+
+  const [searchPage, setSearchPage] = useState(1);
+  const [searchTotal, setSearchTotal] = useState(0);
+  const [hasMoreSearch, setHasMoreSearch] = useState(false);
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false);
 
   // Full search state
   const [showFilters, setShowFilters]     = useState(false);
@@ -316,9 +316,15 @@ export default function ItemsManager() {
   const isSearchMode = !!(debouncedName || hasAdvancedFilters);
 
   // Full-search via /search API — fetches first 50 matching items
-  const runSearch = useCallback(async () => {
-    setSearchLoading(true);
-    const params = { q: debouncedName || "", limit: 50, skip: 0 };
+  const runSearch = useCallback(async (page = 1) => {
+    if (page === 1) {
+      setSearchLoading(true);
+      setSearchLoadingMore(false);
+    } else {
+      setSearchLoadingMore(true);
+    }
+
+    const params = { q: debouncedName || "", limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE };
     if (searchCustomer !== "All") params.customer = searchCustomer;
     if (searchDateFrom) params.date_from = searchDateFrom;
     if (searchDateTo) params.date_to = searchDateTo;
@@ -326,17 +332,47 @@ export default function ItemsManager() {
     if (searchPayment !== "All") params.payment_status = searchPayment;
     if (searchMinAmt) params.min_amount = parseFloat(searchMinAmt);
     if (searchMaxAmt) params.max_amount = parseFloat(searchMaxAmt);
+
     try {
       const res = await searchItems(params);
-      setSearchResults(res.data.items || []);
-    } catch { setSearchResults([]); }
-    finally { setSearchLoading(false); }
+      const items = res.data.items || [];
+      const total = res.data.total ?? items.length;
+
+      setSearchResults(prev => page === 1 ? items : [...prev, ...items]);
+      setSearchPage(page);
+      setSearchTotal(total);
+      setHasMoreSearch((page * PAGE_SIZE) < total);
+
+      const uniqueRefs = [...new Set(items.map(i => i.ref).filter(Boolean))];
+      if (uniqueRefs.length > 0) {
+        const advRes = await getAdvances({ refs: uniqueRefs });
+        setAdvances(prev => {
+          const existingMap = new Map(prev.map(a => [a.id, a]));
+          (advRes.data || []).forEach(a => existingMap.set(a.id, a));
+          return Array.from(existingMap.values());
+        });
+      }
+    } catch {
+      setSearchResults([]);
+      setSearchTotal(0);
+      setHasMoreSearch(false);
+    } finally {
+      setSearchLoading(false);
+      setSearchLoadingMore(false);
+    }
   }, [debouncedName, searchCustomer, searchDateFrom, searchDateTo, searchStatus, searchPayment, searchMinAmt, searchMaxAmt]);
 
   // Auto-run search when search mode is active
   useEffect(() => {
-    if (isSearchMode) { runSearch(); }
-    else { setSearchResults([]); }
+    if (isSearchMode) { runSearch(1); }
+    else {
+      setSearchResults([]);
+      setSearchPage(1);
+      setSearchTotal(0);
+      setHasMoreSearch(false);
+      setSearchLoading(false);
+      setSearchLoadingMore(false);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSearchMode, runSearch]);
 
@@ -344,17 +380,25 @@ export default function ItemsManager() {
     setNameFilter(""); setDebouncedName("");
     setSearchDateFrom(""); setSearchDateTo(""); setSearchStatus("All"); setSearchPayment("All");
     setSearchMinAmt(""); setSearchMaxAmt(""); setSearchCustomer("All");
-    setShowFilters(false); setSearchResults([]);
+    setShowFilters(false);
+    setSearchResults([]);
+    setSearchPage(1);
+    setSearchTotal(0);
+    setHasMoreSearch(false);
+    setSearchLoading(false);
+    setSearchLoadingMore(false);
+    setSelectedRefs(new Set());
   };
 
   const PAGE_SIZE = 150;
   const [itemsPage, setItemsPage] = useState(1);
+  const itemsPageRef = useRef(1);
   const [hasMoreItems, setHasMoreItems] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
   // Load data (grouped list mode)
   const loadData = useCallback(async (page = 1) => {
-    const preserveScroll = page === itemsPage;
+    const preserveScroll = page === itemsPageRef.current;
     const currentScrollTop = scrollRef.current?.scrollTop || 0;
     if (page === 1) setLoading(true); else setLoadingMore(true);
     try {
@@ -365,6 +409,7 @@ export default function ItemsManager() {
       setAllItems(prev => page === 1 ? newItems : [...prev, ...newItems]);
       setHasMoreItems((page * PAGE_SIZE) < total);
       setItemsPage(page);
+      itemsPageRef.current = page;
 
       const uniqueRefs = [...new Set(newItems.map(i => i.ref).filter(Boolean))];
       if (uniqueRefs.length > 0) {
@@ -385,7 +430,7 @@ export default function ItemsManager() {
         }, 0);
       }
     }
-  }, [itemsPage]); // Remove toast dependency to prevent infinite re-renders
+  }, []); // stable loadData callback
 
   useEffect(() => { loadData(1); }, [loadData]);
 
@@ -395,18 +440,17 @@ export default function ItemsManager() {
 
   const grouped = useMemo(() => buildGrouped(allItems, advances), [allItems, advances]);
   const searchGrouped = useMemo(() => buildGrouped(searchResults, advances), [searchResults, advances]);
+  const activeGroups = useMemo(() => (isSearchMode ? searchGrouped : grouped), [isSearchMode, grouped, searchGrouped]);
 
   // Pre-compute settled status per ref so the refs memo doesn't call isOrderSettled N×M times
   const settledMap = useMemo(() => {
     const m = {};
-    Object.values(grouped).forEach(g => { m[g.ref] = isOrderSettled(g); });
+    Object.values({ ...grouped, ...searchGrouped }).forEach(g => { if (g?.ref) m[g.ref] = isOrderSettled(g); });
     return m;
-  }, [grouped]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [grouped, searchGrouped]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refs = useMemo(() => {
-    const source = isSearchMode
-      ? Object.keys(searchGrouped).map(ref => grouped[ref] || searchGrouped[ref])
-      : Object.values(grouped);
+    const source = Object.values(activeGroups);
     const filtered = isSearchMode ? source.filter(Boolean) : source.filter(g => {
       if (settleTab === "unsettled") return !settledMap[g.ref];
       if (settleTab === "settled")   return settledMap[g.ref] && g.totals.total > 0;
@@ -417,12 +461,11 @@ export default function ItemsManager() {
       const cmp = String(a.date || "").localeCompare(String(b.date || ""));
       return sortDir === "desc" ? -cmp : cmp;
     });
-  }, [grouped, searchGrouped, settledMap, isSearchMode, settleTab, sortDir]);
+  }, [activeGroups, settledMap, isSearchMode, settleTab, sortDir]);
 
-  // Always look up full group from `grouped` so detail pane shows complete order data
   const selectedGroups = useMemo(
-    () => Array.from(selectedRefs).map(ref => grouped[ref] || searchGrouped[ref]).filter(Boolean),
-    [selectedRefs, grouped, searchGrouped]
+    () => Array.from(selectedRefs).map(ref => activeGroups[ref]).filter(Boolean),
+    [selectedRefs, activeGroups]
   );
 
   useEffect(() => {
@@ -687,9 +730,9 @@ export default function ItemsManager() {
 
     await loadData(itemsPage);
     if (isSearchMode) {
-      await runSearch();
+      await runSearch(searchPage);
     }
-  }, [itemsPage, isSearchMode, loadData, runSearch, selectedRefs]);
+  }, [itemsPage, isSearchMode, loadData, runSearch, selectedRefs, searchPage]);
 
   const handleGroupChanged = async () => {
     // Refresh items data when groups are changed
@@ -744,7 +787,7 @@ export default function ItemsManager() {
                 {isSearchMode ? "Search Results" : "Orders"}
               </p>
               <Badge variant="secondary" className="font-mono text-[10px] h-4.5 px-1.5 font-bold">
-                {searchLoading ? "…" : refs.length}
+                {searchLoading ? "…" : isSearchMode && searchTotal ? `${refs.length}/${searchTotal}` : refs.length}
               </Badge>
             </div>
             
@@ -930,16 +973,22 @@ export default function ItemsManager() {
               });
             })()}
 
-            {!loading && !isSearchMode && hasMoreItems && (
+            {!loading && ((isSearchMode && hasMoreSearch) || (!isSearchMode && hasMoreItems)) && (
               <div className="flex items-center justify-center px-4 py-2 border-t border-border/20">
                 <button
-                  onClick={() => loadData(itemsPage + 1)}
-                  disabled={loadingMore}
+                  onClick={() => isSearchMode ? runSearch(searchPage + 1) : loadData(itemsPage + 1)}
+                  disabled={isSearchMode ? searchLoadingMore : loadingMore}
                   className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary transition-colors disabled:opacity-40"
                 >
-                  {loadingMore
-                    ? <><ArrowsClockwise size={11} className="animate-spin" aria-hidden="true" /> Loading…</>
-                    : <><ArrowsClockwise size={11} aria-hidden="true" /> Load more orders</>}
+                  {isSearchMode ? (
+                    searchLoadingMore
+                      ? <><ArrowsClockwise size={11} className="animate-spin" aria-hidden="true" /> Loading…</>
+                      : <><ArrowsClockwise size={11} aria-hidden="true" /> Load more results</>
+                  ) : (
+                    loadingMore
+                      ? <><ArrowsClockwise size={11} className="animate-spin" aria-hidden="true" /> Loading…</>
+                      : <><ArrowsClockwise size={11} aria-hidden="true" /> Load more orders</>
+                  )}
                 </button>
               </div>
             )}
