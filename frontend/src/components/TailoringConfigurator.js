@@ -26,14 +26,16 @@ export function TailoringConfigurator({
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
 
-  // Normalize items to assignments format
+  // Load settings once on mount.
   useEffect(() => {
     getSettings().then(res => {
       const s = res.data || {};
       if (Array.isArray(s.article_types) && s.article_types.length > 0) setArticleTypes(s.article_types);
     }).catch(() => setArticleTypes(["Shirt", "Pant", "Kurta"]));
+  }, []);
 
-    // Convert incoming items to assignment format
+  // Normalize incoming items to assignments format.
+  useEffect(() => {
     const normalized = items.map(item => ({
       item_id: item.id || item._id || `temp_${Date.now()}_${Math.random()}`,
       barcode: item.barcode,
@@ -48,7 +50,7 @@ export function TailoringConfigurator({
       _original_item_id: item.id || item._id
     }));
     setAssignments(normalized);
-  }, [items, articleTypes]);
+  }, [items]);
 
   // Copy order_no and delivery_date from first selected item to all other selected items
   const copyToAll = () => {
