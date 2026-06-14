@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { X, Check, Plus, Scissors, ArrowsSplit, Package, Info, CheckCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ export function TailoringConfigurator({
   const [articleTypes, setArticleTypes] = useState([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const prevItemsKey = useRef("");
 
   // Load settings once on mount.
   useEffect(() => {
@@ -49,7 +50,11 @@ export function TailoringConfigurator({
       _original: item,
       _original_item_id: item.id || item._id
     }));
-    setAssignments(normalized);
+    const nextKey = normalized.map(a => a.item_id).join(",");
+    if (!prevItemsKey.current || prevItemsKey.current !== nextKey) {
+      setAssignments(normalized);
+      prevItemsKey.current = nextKey;
+    }
   }, [items]);
 
   // Copy order_no and delivery_date from first selected item to all other selected items

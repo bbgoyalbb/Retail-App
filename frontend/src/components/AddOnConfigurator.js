@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Plus, Trash, Tag, Package, Info, Check } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ export function AddOnConfigurator({
   const [addonOptions, setAddonOptions] = useState([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const prevItemsKey = useRef("");
 
   // Normalize items to assignments format
   useEffect(() => {
