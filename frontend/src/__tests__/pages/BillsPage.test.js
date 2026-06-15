@@ -1,27 +1,32 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import NewBill from '../../pages/NewBill';
+import { render } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
-// Mock the API
-jest.mock('../../api', () => ({
-  getItems: jest.fn(() => Promise.resolve({ data: [] })),
-  getCustomers: jest.fn(() => Promise.resolve({ data: [] }))
+jest.mock('@/hooks/use-toast', () => ({
+  __esModule: true,
+  useToast: () => ({ toast: jest.fn() }),
 }));
 
-// Mock the AuthContext
-jest.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ user: { username: 'test', role: 'admin' } })
+jest.mock('@/api', () => ({
+  __esModule: true,
+  getItems: jest.fn(() => Promise.resolve({ data: [] })),
+  getCustomers: jest.fn(() => Promise.resolve({ data: [] })),
+  getSettings: jest.fn(() => Promise.resolve({ data: {} })),
+  getNextBillRef: jest.fn(() => Promise.resolve({ data: { ref: 'REF-001' } })),
+  getInvoiceUrl: jest.fn(() => Promise.resolve({ data: { url: '/invoice.pdf' } })),
+  invalidateCustomersCache: jest.fn(),
 }));
 
 describe('NewBill', () => {
   test('should render new bill component', () => {
+    const { default: NewBill } = require('../../pages/NewBill');
+
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <NewBill />
-      </BrowserRouter>
+      </MemoryRouter>
     );
-    // NewBill should render without errors
+
     expect(document.body).toBeInTheDocument();
   });
 });
