@@ -64,6 +64,9 @@ module.exports = {
     configure: {
       moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
+        '^react-router-dom$': path.resolve(__dirname, '..', 'node_modules', 'react-router-dom', 'dist', 'index.js'),
+        '^react-router/dom$': path.resolve(__dirname, '..', 'node_modules', 'react-router', 'dist', 'development', 'dom-export.js'),
+        '^react-router$': path.resolve(__dirname, '..', 'node_modules', 'react-router', 'dist', 'development', 'index.js'),
       },
       moduleDirectories: ['node_modules', path.resolve(__dirname, '..', 'node_modules')],
     },

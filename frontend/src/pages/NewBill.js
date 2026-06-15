@@ -831,6 +831,7 @@ function TailoringModal({ items, setItems, customerName, articleTypes, onClose }
       const total = Math.round((price - price * discount / 100) * qty);
       // Generate unique ID for split pieces to ensure they're tracked separately
       const uniqueId = a.item_id || `${lookupId}_split_${idx}_${Date.now()}`;
+      const enabled = Boolean(a.selected);
       return {
         ...existing,
         id: uniqueId, // Use assignment's unique ID, not the original
@@ -838,11 +839,11 @@ function TailoringModal({ items, setItems, customerName, articleTypes, onClose }
         qty: qty,
         total: total, // Recalculated based on new qty
         tailoring: {
-          enabled: true,
-          article_type: a.article_type,
-          embroidery_status: a.embroidery_status,
-          order_no: a.order_no,
-          delivery_date: a.delivery_date
+          enabled,
+          article_type: enabled ? a.article_type : "N/A",
+          embroidery_status: enabled ? a.embroidery_status : "Not Required",
+          order_no: enabled ? a.order_no : "",
+          delivery_date: enabled ? a.delivery_date : ""
         }
       };
     });

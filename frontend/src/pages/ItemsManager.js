@@ -723,7 +723,6 @@ export default function ItemsManager() {
     const targetRefs = refs
       ? Array.from(new Set(refs.filter(Boolean)))
       : Array.from(selectedRefs);
-    if (targetRefs.length === 0) return;
 
     invalidateItemsCache();
     invalidateAdvancesCache();
@@ -731,6 +730,15 @@ export default function ItemsManager() {
     await loadData(itemsPage);
     if (isSearchMode) {
       await runSearch(searchPage);
+    }
+
+    if (targetRefs.length > 0) {
+      const advRes = await getAdvances({ refs: targetRefs });
+      setAdvances(prev => {
+        const existingMap = new Map(prev.map(a => [a.id, a]));
+        (advRes.data || []).forEach(a => existingMap.set(a.id, a));
+        return Array.from(existingMap.values());
+      });
     }
   }, [itemsPage, isSearchMode, loadData, runSearch, selectedRefs, searchPage]);
 

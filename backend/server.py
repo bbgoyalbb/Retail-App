@@ -152,6 +152,8 @@ async def lifespan(app: FastAPI):
     await db.items.create_index("order_no")
     await db.items.create_index("karigar")
     await db.items.create_index("cancelled")
+    await db.items.create_index([("cancelled", ASCENDING), ("date", DESCENDING)])
+    await db.items.create_index([("cancelled", ASCENDING), ("name", ASCENDING)])
 
     await db.items.create_index([(  "tailoring_status", ASCENDING), ("date",            DESCENDING)])
     await db.items.create_index([(  "ref",              ASCENDING), ("fabric_pay_mode",  ASCENDING)])

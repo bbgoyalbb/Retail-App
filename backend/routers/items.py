@@ -198,16 +198,19 @@ async def search_items(
     filters = [{"cancelled": {"$ne": True}}]
 
     if q:
-        escaped = safe_regex(q)
-        filters.append({"$or": [
-            {"name": {"$regex": escaped, "$options": "i"}},
-            {"barcode": {"$regex": escaped, "$options": "i"}},
-            {"ref": {"$regex": escaped, "$options": "i"}},
-            {"article_type": {"$regex": escaped, "$options": "i"}},
-            {"order_no": {"$regex": escaped, "$options": "i"}},
-            {"karigar": {"$regex": escaped, "$options": "i"}},
-            {"addon_desc": {"$regex": escaped, "$options": "i"}},
-        ]})
+        if len(q.strip()) >= 3 and not re.search(r"[\\^$.|?*+()\[\]{}]", q):
+            filters.append({"$text": {"$search": q}})
+        else:
+            escaped = safe_regex(q)
+            filters.append({"$or": [
+                {"name": {"$regex": escaped, "$options": "i"}},
+                {"barcode": {"$regex": escaped, "$options": "i"}},
+                {"ref": {"$regex": escaped, "$options": "i"}},
+                {"article_type": {"$regex": escaped, "$options": "i"}},
+                {"order_no": {"$regex": escaped, "$options": "i"}},
+                {"karigar": {"$regex": escaped, "$options": "i"}},
+                {"addon_desc": {"$regex": escaped, "$options": "i"}},
+            ]})
 
     if customer and customer != "All":
         filters.append({"name": customer})

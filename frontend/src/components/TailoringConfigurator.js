@@ -46,7 +46,7 @@ export function TailoringConfigurator({
       embroidery_status: item.tailoring?.embroidery_status || item.embroidery_status || "Not Required",
       order_no: item.tailoring?.order_no || "",
       delivery_date: item.tailoring?.delivery_date || "",
-      selected: true,
+      selected: mode === "create" ? Boolean(item.tailoring?.enabled) : true,
       // Keep reference to original item for callbacks
       _original: item,
       _original_item_id: item.id || item._id
