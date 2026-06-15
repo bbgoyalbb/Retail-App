@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Plus, Trash, PencilSimple } from "@phosphor-icons/react";
@@ -12,29 +12,44 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  const initialSelectionIds = useMemo(
+    () => initialItems.map((i) => i._id || i.id),
+    [initialItems]
+  );
+  const initialSelectionKey = initialSelectionIds.join("|");
+  const openInitializedRef = useRef(false);
+
   useEffect(() => {
-    if (open) {
-      if (mode === "edit" && groupId) {
-        // Load group details inline to avoid dependency array issues
-        (async () => {
-          try {
-            setLoading(true);
-            const groupData = await getGroup(groupId);
-            setGroupName(groupData.group_name || "");
-            setSelectedItemIds(groupData.items.map(i => i._id || i.id));
-          } catch (error) {
-            console.error("Failed to load group:", error);
-          } finally {
-            setLoading(false);
-          }
-        })();
-      } else {
-        setGroupName("");
-        setSelectedItemIds(initialItems.map(i => i._id || i.id));
-      }
+    if (!open) {
+      openInitializedRef.current = false;
+      return;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode, groupId, initialItems]);
+
+    if (openInitializedRef.current) {
+      return;
+    }
+
+    openInitializedRef.current = true;
+
+    if (mode === "edit" && groupId) {
+      // Load group details once when the dialog opens in edit mode.
+      (async () => {
+        try {
+          setLoading(true);
+          const groupData = await getGroup(groupId);
+          setGroupName(groupData.group_name || "");
+          setSelectedItemIds(groupData.items.map((i) => i._id || i.id));
+        } catch (error) {
+          console.error("Failed to load group:", error);
+        } finally {
+          setLoading(false);
+        }
+      })();
+    } else {
+      setGroupName("");
+      setSelectedItemIds(initialSelectionIds);
+    }
+  }, [open, mode, groupId, initialSelectionKey]);
 
   // loadGroupDetails is now inlined in the useEffect above
 

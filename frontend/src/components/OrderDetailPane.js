@@ -461,12 +461,13 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
 
   const handleCreateGroup = () => {
     // Since we don't have item selection in OrderDetailPane, show all items for grouping
+    // but do not preselect all articles when creating a new group.
     if (allItems.length === 0) {
       alert("No articles available to group");
       return;
     }
 
-    setSelectedItemIds(allItems.map(i => i._id || i.id));
+    setSelectedItemIds([]);
     setGroupDialogMode("create");
     setEditingGroupId(null);
     setShowGroupDialog(true);
@@ -597,7 +598,7 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
         onClose={handleGroupDialogClose}
         mode={groupDialogMode}
         groupId={editingGroupId}
-        initialItems={selectedItemIds.map(id => allItems.find(i => i.barcode === id)).filter(Boolean)}
+        initialItems={selectedItemIds.map(id => allItems.find(i => (i._id || i.id) === id)).filter(Boolean)}
         allItems={allItems}
       />
 

@@ -93,3 +93,5 @@ credentials.json
 *.key
 *.crt
 .credentials
+tracked_files.txt
+nul
