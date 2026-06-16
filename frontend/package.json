@@ -35,7 +35,7 @@
     "dompurify": "^3.4.5",
     "html5-qrcode": "^2.3.8",
     "prop-types": "^15.8.1",
-    "react": "^19.0.0",
+    "react": "^19.2.7",
     "react-day-picker": "9.6.7",
     "react-dom": "^19.0.0",
     "react-is": "^19.2.6",
@@ -91,7 +91,7 @@
     "@testing-library/user-event": "^14.5.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.9.1",
-    "@types/react": "^19.2.15",
+    "@types/react": "^19.2.16",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.20",
     "eslint": "9.23.0",
@@ -110,7 +110,7 @@
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "resolutions": {
-    "react": "^19.0.0",
+    "react": "^19.2.7",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
