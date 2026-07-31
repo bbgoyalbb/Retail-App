@@ -401,11 +401,14 @@ export default function ItemsManager() {
     const preserveScroll = page === itemsPageRef.current;
     const currentScrollTop = scrollRef.current?.scrollTop || 0;
     if (page === 1) setLoading(true); else setLoadingMore(true);
+    
     try {
       const params = { limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE, summary: true };
+      
       const itemsRes = await getItems(params);
       const newItems = itemsRes.data.items || [];
       const total = itemsRes.data.total ?? newItems.length;
+      
       setAllItems(prev => page === 1 ? newItems : [...prev, ...newItems]);
       setHasMoreItems((page * PAGE_SIZE) < total);
       setItemsPage(page);
@@ -430,7 +433,7 @@ export default function ItemsManager() {
         }, 0);
       }
     }
-  }, []); // stable loadData callback
+  }, []); // No dependencies to avoid recreation
 
   useEffect(() => { loadData(1); }, [loadData]);
 

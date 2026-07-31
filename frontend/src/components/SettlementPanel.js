@@ -158,22 +158,46 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
     if (selectedModes.length === 0) { setMessage({ type: "error", text: "Select at least one payment mode" }); return; }
 
     const freshPayTotal = parseFloat(freshPay) || 0;
-    let remainingFresh = freshPayTotal;
     const orderedFresh = {};
+    const orderedAdvance = {};
     const eligible = orders.filter(o => {
       const a = allotments[o.ref] || {};
       return ["fabric","tailoring","embroidery","addon","advance"].some(k => parseFloat(a[k]) > 0);
     });
 
-    eligible.forEach(o => {
-      const a = allotments[o.ref] || {};
-      const orderAlloc = ["fabric","tailoring","embroidery","addon","advance"].reduce(
-        (sum, k) => sum + (parseFloat(a[k]) || 0), 0
-      );
-      const assigned = Math.min(orderAlloc, remainingFresh);
-      orderedFresh[o.ref] = assigned;
-      remainingFresh -= assigned;
-    });
+    // Fix: Distribute fresh payment and advance proportionally based on order allocations
+    if (eligible.length > 0) {
+      const totalEligibleAlloc = eligible.reduce((sum, o) => {
+        const a = allotments[o.ref] || {};
+        return sum + ["fabric","tailoring","embroidery","addon","advance"].reduce(
+          (s, k) => s + (parseFloat(a[k]) || 0), 0
+        );
+      }, 0);
+
+      let runningFresh = 0;
+      let runningAdvance = 0;
+      const advancePool = useAdvance ? aggBalances.advance : 0;
+
+      eligible.forEach((o, idx) => {
+        const a = allotments[o.ref] || {};
+        const orderAlloc = ["fabric","tailoring","embroidery","addon","advance"].reduce(
+          (sum, k) => sum + (parseFloat(a[k]) || 0), 0
+        );
+        const freshShare = idx === eligible.length - 1
+          ? freshPayTotal - runningFresh
+          : Math.round((orderAlloc / totalEligibleAlloc) * freshPayTotal);
+        runningFresh += freshShare;
+        orderedFresh[o.ref] = freshShare;
+
+        const advanceShare = idx === eligible.length - 1
+          ? advancePool - runningAdvance
+          : Math.round((orderAlloc / totalEligibleAlloc) * advancePool);
+        runningAdvance += advanceShare;
+        orderedAdvance[o.ref] = advanceShare;
+      });
+    } else {
+      eligible.forEach(o => { orderedFresh[o.ref] = 0; orderedAdvance[o.ref] = 0; });
+    }
 
     setSaving(true);
     setSavingProgress({ done: 0, total: eligible.length });
@@ -181,6 +205,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
       eligible.map(o => {
         const a = allotments[o.ref] || {};
         const freshForOrder = orderedFresh[o.ref] || 0;
+        const advanceForOrder = orderedAdvance[o.ref] || 0;
         return processSettlement({
           customer_name: o.name,
           ref: o.ref,
@@ -188,6 +213,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
           payment_modes: selectedModes,
           fresh_payment: freshForOrder,
           use_advance: useAdvance,
+          advance_amount: advanceForOrder,
           allot_fabric:     parseFloat(a.fabric)    || 0,
           allot_tailoring:  parseFloat(a.tailoring) || 0,
           allot_embroidery: parseFloat(a.embroidery)|| 0,

@@ -103,6 +103,7 @@ class SettlementRequest(BaseModel):
     payment_modes: List[str]
     fresh_payment: float = 0
     use_advance: bool = False
+    advance_amount: float = 0  # Specific advance amount to use for this order
     allot_fabric: float = 0
     allot_tailoring: float = 0
     allot_embroidery: float = 0

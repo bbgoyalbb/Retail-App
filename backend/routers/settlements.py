@@ -61,13 +61,15 @@ async def process_settlement(req: SettlementRequest, db: AsyncIOMotorDatabase = 
     current_balances = await get_settlement_balances(db=db, ref=req.ref, current_user=current_user)
 
     available_advance = round_money(current_balances["advance"])
-    advance_to_use = 0.0
-    if req.use_advance:
-        advance_to_use = min(available_advance, max(0.0, round_money(total_allocated - fresh_payment)))
+    # Fix: Use the specific advance_amount provided by frontend instead of calculating
+    advance_to_use = round_money(req.advance_amount) if req.use_advance else 0.0
 
-    if fresh_payment + advance_to_use < total_allocated - 0.01:
+    # Fix: Remove payment shortfall check when use_advance is true
+    # The frontend distributes fresh payment and advance proportionally, so some orders may get 0 fresh payment
+    # but should still be settled using their allocated advance
+    if not req.use_advance and fresh_payment < total_allocated - 0.01:
         raise HTTPException(status_code=400,
-            detail=f"Payment shortfall: allocated ₹{total_allocated:.2f} but only ₹{fresh_payment + advance_to_use:.2f} available")
+            detail=f"Payment shortfall: allocated ₹{total_allocated:.2f} but only ₹{fresh_payment:.2f} available")
 
     # Over-payment is allowed: excess is distributed pro-rata and pending goes negative.
     # Pool-match is validated on the frontend as a warning, not a hard block here.
@@ -79,7 +81,8 @@ async def process_settlement(req: SettlementRequest, db: AsyncIOMotorDatabase = 
 
     def collect_pro_rata(pay_mode_field, pay_date_field, received_field, pending_field, total_to_pay):
         amount_field = pending_field.replace("_pending", "_amount")
-        eligible = [i for i in all_items if round_money(i.get(amount_field, 0)) > 0 and not str(i.get(pay_mode_field, "")).startswith("Settled")]
+        # Fix: Include items with pending amount > 0 even if amount_field is 0 (for fabric-only items)
+        eligible = [i for i in all_items if (round_money(i.get(amount_field, 0)) > 0 or round_money(i.get(pending_field, 0)) > 0) and not str(i.get(pay_mode_field, "")).startswith("Settled")]
         if not eligible:
             return
 

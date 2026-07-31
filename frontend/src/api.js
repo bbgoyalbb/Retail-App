@@ -101,15 +101,8 @@ let _itemsCache = null;
 let _itemsCacheTime = 0;
 let _itemsCacheKey = "";
 export const getItems = (params) => {
-  const key = JSON.stringify(params || {});
-  const now = Date.now();
-  if (_itemsCache && key === _itemsCacheKey && now - _itemsCacheTime < CACHE_TTL.ITEMS) {
-    return Promise.resolve(_itemsCache);
-  }
+  // Temporarily disable caching to ensure fresh data for debugging pagination issue
   return api.get("/items", { params }).then(res => {
-    _itemsCache = res;
-    _itemsCacheKey = key;
-    _itemsCacheTime = Date.now();
     return res;
   });
 };

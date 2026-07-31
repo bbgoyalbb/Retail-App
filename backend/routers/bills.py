@@ -156,6 +156,7 @@ async def get_items(
     skip: int = 0,
     summary: bool = False,
     include_cancelled: bool = False,
+    complete_refs: Optional[str] = None,  # Comma-separated list of refs to fetch completely
     current_user: dict = Depends(get_current_user_dep),
 ):
     query = {}
@@ -187,7 +188,29 @@ async def get_items(
                   "addon_desc", "karigar"]:
             projection[f] = 1
 
-    items = warn_if_capped(await db.items.find(query, projection).sort("date", -1).skip(skip).limit(limit).to_list(limit), limit, "GET /items")
+    # Get paginated results
+    paginated_items = warn_if_capped(await db.items.find(query, projection).sort("date", -1).skip(skip).limit(limit).to_list(limit), limit, "GET /items")
+    
+    # Auto-complete: fetch complete data for all refs in paginated results to ensure accurate totals
+    refs_in_page = [item["ref"] for item in paginated_items if item.get("ref")]
+    if refs_in_page:
+        complete_query = query.copy()
+        complete_query["ref"] = {"$in": refs_in_page}
+        complete_items = await db.items.find(complete_query, projection).sort("date", -1).to_list(2000)
+        
+        # Merge: replace any paginated items with complete versions, and add any missing complete items
+        complete_ids = {item["id"] for item in complete_items}
+        merged_items = complete_items.copy()
+        
+        # Add paginated items that are not in the complete set
+        for paginated_item in paginated_items:
+            if paginated_item["id"] not in complete_ids:
+                merged_items.append(paginated_item)
+        
+        items = merged_items
+    else:
+        items = paginated_items
+    
     # Skip expensive count_documents when result fits in one page — common case
     if skip == 0 and len(items) < limit:
         total = len(items)
