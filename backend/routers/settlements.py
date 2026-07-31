@@ -61,8 +61,9 @@ async def process_settlement(req: SettlementRequest, db: AsyncIOMotorDatabase = 
     current_balances = await get_settlement_balances(db=db, ref=req.ref, current_user=current_user)
 
     available_advance = round_money(current_balances["advance"])
-    # Fix: Use the specific advance_amount provided by frontend instead of calculating
-    advance_to_use = round_money(req.advance_amount) if req.use_advance else 0.0
+    # Fix: Use the specific advance_amount provided by frontend without additional rounding
+    # Frontend already handles distribution correctly, so use the exact amount
+    advance_to_use = req.advance_amount if req.use_advance else 0.0
 
     # Fix: Remove payment shortfall check when use_advance is true
     # The frontend distributes fresh payment and advance proportionally, so some orders may get 0 fresh payment
