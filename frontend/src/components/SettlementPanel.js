@@ -191,7 +191,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
 
         const advanceShare = idx === eligible.length - 1
           ? advancePool - runningAdvance
-          : Math.round((orderAlloc / totalEligibleAlloc) * advancePool);
+          : Math.floor((orderAlloc / totalEligibleAlloc) * advancePool);
         runningAdvance += advanceShare;
         orderedAdvance[o.ref] = advanceShare;
       });
