@@ -347,9 +347,16 @@ export default function ItemsManager() {
       if (uniqueRefs.length > 0) {
         const advRes = await getAdvances({ refs: uniqueRefs });
         setAdvances(prev => {
-          const existingMap = new Map(prev.map(a => [a.id, a]));
-          (advRes.data || []).forEach(a => existingMap.set(a.id, a));
-          return Array.from(existingMap.values());
+          if (page === 1) {
+            // On first page, replace advances with fresh data for current refs only
+            const currentRefSet = new Set(uniqueRefs);
+            return (advRes.data || []).filter(a => currentRefSet.has(a.ref));
+          } else {
+            // On pagination, merge advances
+            const existingMap = new Map(prev.map(a => [a.id, a]));
+            (advRes.data || []).forEach(a => existingMap.set(a.id, a));
+            return Array.from(existingMap.values());
+          }
         });
       }
     } catch {
@@ -485,12 +492,14 @@ export default function ItemsManager() {
 
     getAdvances({ refs: missingRefs.join(",") })
       .then(res => {
-        const existingMap = new Map(advances.map(a => [a.id, a]));
-        (res.data || []).forEach(a => existingMap.set(a.id, a));
-        setAdvances(Array.from(existingMap.values()));
+        setAdvances(prev => {
+          const existingMap = new Map(prev.map(a => [a.id, a]));
+          (res.data || []).forEach(a => existingMap.set(a.id, a));
+          return Array.from(existingMap.values());
+        });
       })
       .catch(() => {});
-  }, [selectedGroups, advances]);
+  }, [selectedGroups]);
 
   // Select / deselect
   const selectRef = (ref, multi = false) => {
@@ -641,7 +650,7 @@ export default function ItemsManager() {
           return Array.from(existingMap.values());
         });
       }
-      loadData(itemsPage);
+      loadData(itemsPage, true);
       return;
     }
     // Items
@@ -737,7 +746,7 @@ export default function ItemsManager() {
     invalidateItemsCache();
     invalidateAdvancesCache();
 
-    await loadData(itemsPage);
+    await loadData(itemsPage, true);
     if (isSearchMode) {
       await runSearch(searchPage);
     }
@@ -1387,7 +1396,7 @@ export default function ItemsManager() {
         <SettlementPanel
           orders={settlementOrders}
           onClose={() => setSettlementOrders(null)}
-          onSuccess={() => { invalidateItemsCache(); invalidateAdvancesCache(); setSelectedRefs(new Set()); loadData(itemsPage); }}
+          onSuccess={() => { invalidateItemsCache(); invalidateAdvancesCache(); setSelectedRefs(new Set()); loadData(itemsPage, true); }}
         />
       )}
 
