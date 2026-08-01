@@ -37,9 +37,9 @@ const SECTIONS = {
       { key: "price", label: "Price", type: "number" },
       { key: "qty", label: "Quantity", type: "number", step: 0.1 },
       { key: "discount", label: "Discount %", type: "number", step: 0.01 },
-      { key: "fabric_amount", label: "Fabric Amount", type: "number", computed: true },
+      { key: "fabric_amount", label: "Fabric Amount", type: "number" },
       { key: "fabric_received", label: "Fabric Received", type: "number" },
-      { key: "fabric_pending", label: "Fabric Pending", type: "number", computed: true },
+      { key: "fabric_pending", label: "Fabric Pending", type: "number" },
       { key: "fabric_pay_date", label: "Fabric Pay Date", type: "date" },
       { key: "fabric_pay_mode", label: "Fabric Pay Mode", type: "text" },
       { key: "tally_fabric", label: "Tally Fabric", type: "checkbox" },
@@ -54,7 +54,7 @@ const SECTIONS = {
       { key: "tailoring_status", label: "Tailoring Status", type: "select", options: ["N/A","Awaiting Order","Pending","Stitched","Delivered"] },
       { key: "tailoring_amount", label: "Tailoring Amount", type: "number" },
       { key: "tailoring_received", label: "Tailoring Received", type: "number" },
-      { key: "tailoring_pending", label: "Tailoring Pending", type: "number", computed: true },
+      { key: "tailoring_pending", label: "Tailoring Pending", type: "number" },
       { key: "tailoring_pay_date", label: "Tailoring Pay Date", type: "date" },
       { key: "tailoring_pay_mode", label: "Tailoring Pay Mode", type: "text" },
       { key: "labour_amount", label: "Labour Amount", type: "number" },
@@ -71,7 +71,7 @@ const SECTIONS = {
       { key: "karigar", label: "Karigar", type: "select", dynamicOptions: "karigars" },
       { key: "embroidery_amount", label: "Embroidery Amount", type: "number" },
       { key: "embroidery_received", label: "Embroidery Received", type: "number" },
-      { key: "embroidery_pending", label: "Embroidery Pending", type: "number", computed: true },
+      { key: "embroidery_pending", label: "Embroidery Pending", type: "number" },
       { key: "embroidery_pay_date", label: "Embroidery Pay Date", type: "date" },
       { key: "embroidery_pay_mode", label: "Embroidery Pay Mode", type: "text" },
       { key: "emb_labour_amount", label: "Emb. Labour Amount", type: "number" },
@@ -82,12 +82,12 @@ const SECTIONS = {
     ],
   },
   addon: {
-    label: "Add-on", description: "Add-on accessory details",
+    label: "Add-on", description: "Additional services and charges",
     fields: [
       { key: "addon_desc", label: "Add-on Description", type: "text" },
       { key: "addon_amount", label: "Add-on Amount", type: "number" },
       { key: "addon_received", label: "Add-on Received", type: "number" },
-      { key: "addon_pending", label: "Add-on Pending", type: "number", computed: true },
+      { key: "addon_pending", label: "Add-on Pending", type: "number" },
       { key: "addon_pay_date", label: "Add-on Pay Date", type: "date" },
       { key: "addon_pay_mode", label: "Add-on Pay Mode", type: "text" },
       { key: "tally_addon", label: "Tally Add-on", type: "checkbox" },
@@ -545,9 +545,14 @@ export default function ItemsManager() {
         it.fabric_amount = computeFabric(parseFloat(it.price)||0, parseFloat(it.qty)||0, parseFloat(it.discount)||0);
       if (["fabric_amount","fabric_received","price","qty","discount"].includes(key))
         it.fabric_pending = computePending(parseFloat(it.fabric_amount)||0, parseFloat(it.fabric_received)||0);
-      if (key === "article_type" && tailoringRates[value]) {
-        it.tailoring_amount = parseFloat(tailoringRates[value].tailoring) || 0;
-        it.labour_amount    = parseFloat(tailoringRates[value].labour)    || 0;
+      if (key === "article_type") {
+        if (value === "N/A" || !tailoringRates[value]) {
+          it.tailoring_amount = 0;
+          it.labour_amount = 0;
+        } else {
+          it.tailoring_amount = parseFloat(tailoringRates[value].tailoring) || 0;
+          it.labour_amount = parseFloat(tailoringRates[value].labour) || 0;
+        }
       }
       if (["tailoring_amount","tailoring_received","article_type"].includes(key))
         it.tailoring_pending = computePending(parseFloat(it.tailoring_amount)||0, parseFloat(it.tailoring_received)||0);
