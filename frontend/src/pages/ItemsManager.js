@@ -416,7 +416,7 @@ export default function ItemsManager() {
       const newItems = itemsRes.data.items || [];
       const total = itemsRes.data.total ?? newItems.length;
 
-      setAllItems(prev => page === 1 ? newItems : [...prev, ...newItems]);
+      setAllItems(prev => (forceRefresh || page === 1) ? newItems : [...prev, ...newItems]);
       setHasMoreItems((page * PAGE_SIZE) < total);
       setItemsPage(page);
       itemsPageRef.current = page;
@@ -676,7 +676,7 @@ export default function ItemsManager() {
     // Refresh items for affected refs to update OrderDetailPane instantly
     if (affectedRefs.size > 0) {
       const refArray = Array.from(affectedRefs);
-      const itemsRes = await getItems({ refs: refArray.join(",") });
+      const itemsRes = await getItems({ refs: refArray.join(","), summary: true });
       const freshItems = itemsRes.data.items || [];
       setAllItems(prev => {
         const existingMap = new Map(prev.map(i => [i.id, i]));

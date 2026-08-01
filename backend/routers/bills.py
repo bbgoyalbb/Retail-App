@@ -148,6 +148,7 @@ async def get_items(
     db: AsyncIOMotorDatabase = Depends(get_db),
     name: Optional[str] = None,
     ref: Optional[str] = None,
+    refs: Optional[str] = None,  # Comma-separated list of refs
     date: Optional[str] = None,
     tailoring_status: Optional[str] = None,
     embroidery_status: Optional[str] = None,
@@ -164,6 +165,10 @@ async def get_items(
         query["name"] = name
     if ref:
         query["ref"] = ref
+    if refs:
+        ref_list = [r.strip() for r in refs.split(",") if r.strip()]
+        if ref_list:
+            query["ref"] = {"$in": ref_list}
     if date:
         query["date"] = date
     if tailoring_status:
