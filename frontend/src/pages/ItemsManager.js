@@ -679,6 +679,8 @@ export default function ItemsManager() {
     } else { toast({ title:"Partial Success", description:`${fail} failed, ${ok} saved`, variant: "destructive" }); }
     invalidateItemsCache();
     loadData(itemsPage, true);
+    // Trigger OrderDetailPane refresh
+    handleGroupChanged();
   };
 
   const handleDelete = async () => {
