@@ -227,6 +227,7 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
     # Advance rows inside Payment Details (negative = reduces balance due)
     # Filter out cancelled advance entries (positive + negative with same ref and value)
     adv_pay_rows = ""
+    filtered_advances = []
     if advances:
         # Group advances by ref and amount to identify cancelled pairs
         advance_groups = {}
@@ -244,7 +245,6 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
                 advance_groups[key]["negative"].append(a)
 
         # Only show advances that don't have matching cancelled pairs
-        filtered_advances = []
         for key, group in advance_groups.items():
             pos_count = len(group["positive"])
             neg_count = len(group["negative"])
@@ -268,7 +268,7 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
 
     total_rcvd_all = fabric_rcvd + tail_rcvd + emb_rcvd + ao_rcvd
     # Calculate net advance from filtered advances
-    net_advance_total = sum(float(a.get("amount", 0)) for a in filtered_advances) if advances else 0
+    net_advance_total = sum(float(a.get("amount", 0)) for a in filtered_advances)
     # Subtotal balance: sum only unsettled sections, then subtract net advance credit
     unsettled_pending = 0.0
     all_settled = True
