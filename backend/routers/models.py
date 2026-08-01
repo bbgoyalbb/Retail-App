@@ -129,6 +129,10 @@ class ItemUpdateRequest(BaseModel):
     qty: Optional[float] = None
     discount: Optional[float] = None
     fabric_amount: Optional[float] = None
+    fabric_received: Optional[float] = None
+    fabric_pending: Optional[float] = None
+    fabric_pay_mode: Optional[str] = None
+    fabric_pay_date: Optional[str] = None
     ref: Optional[str] = None
     name: Optional[str] = None
     date: Optional[str] = None
@@ -137,17 +141,31 @@ class ItemUpdateRequest(BaseModel):
     order_no: Optional[str] = None
     delivery_date: Optional[str] = None
     tailoring_amount: Optional[float] = None
+    tailoring_received: Optional[float] = None
+    tailoring_pending: Optional[float] = None
+    tailoring_pay_mode: Optional[str] = None
+    tailoring_pay_date: Optional[str] = None
+    labour_amount: Optional[float] = None
+    labour_paid: Optional[str] = None
+    labour_pay_date: Optional[str] = None
+    labour_payment_mode: Optional[str] = None
     embroidery_status: Optional[str] = None
+    karigar: Optional[str] = None
     embroidery_amount: Optional[float] = None
+    embroidery_received: Optional[float] = None
+    embroidery_pending: Optional[float] = None
+    embroidery_pay_mode: Optional[str] = None
+    embroidery_pay_date: Optional[str] = None
+    emb_labour_amount: Optional[float] = None
+    emb_labour_paid: Optional[str] = None
+    emb_labour_date: Optional[str] = None
+    emb_labour_payment_mode: Optional[str] = None
     addon_desc: Optional[str] = None
     addon_amount: Optional[float] = None
     addon_received: Optional[float] = None
     addon_pending: Optional[float] = None
     addon_pay_mode: Optional[str] = None
     addon_pay_date: Optional[str] = None
-    fabric_pay_mode: Optional[str] = None
-    fabric_pay_date: Optional[str] = None
-    fabric_pending: Optional[float] = None
 
 class BulkDeleteRequest(BaseModel):
     item_ids: List[str] = Field(..., min_length=1, description="List of item IDs to delete")
