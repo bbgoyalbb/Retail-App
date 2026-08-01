@@ -225,9 +225,39 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
     pay_rows_html += pay_row("Add-on",     ao_amt_total,   ao_rcvd,     ao_pay_date,     ao_pay_mode,     ao_pay_mode)
 
     # Advance rows inside Payment Details (negative = reduces balance due)
+    # Filter out cancelled advance entries (positive + negative with same ref and value)
     adv_pay_rows = ""
     if advances:
+        # Group advances by ref and amount to identify cancelled pairs
+        advance_groups = {}
         for a in advances:
+            amt_a = float(a.get("amount", 0))
+            if amt_a == 0:
+                continue
+            ref = a.get("ref", "")
+            key = (ref, abs(amt_a))
+            if key not in advance_groups:
+                advance_groups[key] = {"positive": [], "negative": []}
+            if amt_a > 0:
+                advance_groups[key]["positive"].append(a)
+            else:
+                advance_groups[key]["negative"].append(a)
+
+        # Only show advances that don't have matching cancelled pairs
+        filtered_advances = []
+        for key, group in advance_groups.items():
+            pos_count = len(group["positive"])
+            neg_count = len(group["negative"])
+            # If counts match, all advances are cancelled out
+            if pos_count == neg_count:
+                continue
+            # Otherwise, include the excess entries
+            if pos_count > neg_count:
+                filtered_advances.extend(group["positive"][neg_count:])
+            elif neg_count > pos_count:
+                filtered_advances.extend(group["negative"][pos_count:])
+
+        for a in filtered_advances:
             amt_a = float(a.get("amount", 0))
             if amt_a == 0:
                 continue
@@ -237,6 +267,8 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
             adv_pay_rows += f'<tr class="adv-pay-row"><td>Advance ({adv_mode})</td><td class="r"></td><td class="r adv-credit">{sign}₹{fmt(abs(amt_a))}</td><td class="r">{adv_date}</td><td>{adv_mode}</td><td class="r adv-credit">{sign}₹{fmt(abs(amt_a))}</td></tr>'
 
     total_rcvd_all = fabric_rcvd + tail_rcvd + emb_rcvd + ao_rcvd
+    # Calculate net advance from filtered advances
+    net_advance_total = sum(float(a.get("amount", 0)) for a in filtered_advances) if advances else 0
     # Subtotal balance: sum only unsettled sections, then subtract net advance credit
     unsettled_pending = 0.0
     all_settled = True
@@ -252,7 +284,7 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
             all_settled = False
             unsettled_pending += _amt - _rcvd
     # Subtract advance credit from balance due
-    net_pending_after_adv = unsettled_pending - adv_total
+    net_pending_after_adv = unsettled_pending - net_advance_total
     grand_bal_cls = "bal-ok" if (all_settled or net_pending_after_adv <= 0) else "bal-due"
     grand_bal_str = "✓ Settled" if (all_settled or net_pending_after_adv <= 0) else f"₹{fmt(net_pending_after_adv)}"
 
@@ -651,6 +683,14 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
       <tbody>
         {pay_rows_html}
         {adv_pay_rows}
+        <tr style="background: #f0f0f0; border-top: 1.5px solid #ccc;">
+          <td style="padding: 8px; font-size: 9px; font-weight: 700; color: #333;">Subtotal</td>
+          <td class="r" style="padding: 8px; font-size: 10px; font-weight: 700; color: #333;">₹{fmt(total_fabric + total_tailoring + total_embroidery + total_addon)}</td>
+          <td class="r" style="padding: 8px; font-size: 10px; font-weight: 700; color: #333;">₹{fmt(fabric_rcvd + tail_rcvd + emb_rcvd + ao_rcvd)}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
         <tr>
           <td colspan="5"><strong>Balance Due</strong></td>
           <td class="r {grand_bal_cls}"><strong>{grand_bal_str}</strong></td>
@@ -757,7 +797,6 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
                 # Calculate total for the group
                 group_total = 0.0
                 article_types = []
-                addons = []
                 for item in group_items:
                     fab_amt = float(item.get("fabric_amount", 0))
                     tail_amt = float(item.get("tailoring_amount", 0))
@@ -769,18 +808,12 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
                     if art_type and art_type != "—":
                         article_types.append(html_mod.escape(str(art_type)))
 
-                    addon_desc = item.get("addon_desc", "")
-                    if addon_desc and addon_desc != "N/A":
-                        addons.append(html_mod.escape(str(addon_desc)))
-
                 article_types_str = ", ".join(sorted(set(article_types))) if article_types else "—"
-                addons_str = ", ".join(sorted(set(addons))) if addons else ""
-                addons_display = f" ({addons_str})" if addons_str else ""
 
                 article_rows += f"""
             <tr>
               <td>{group_name}</td>
-              <td>{article_types_str}{addons_display}</td>
+              <td>{article_types_str}</td>
               <td class="r"><strong>₹{fmt(group_total)}</strong></td>
             </tr>"""
 
@@ -788,21 +821,16 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
             for item in customer_data["ungrouped"]:
                 barcode = html_mod.escape(str(item.get("barcode", "N/A")))
                 article_type = html_mod.escape(str(item.get("article_type", "—") or "—"))
-                addon_desc = item.get("addon_desc", "")
                 fab_amt = float(item.get("fabric_amount", 0))
                 tail_amt = float(item.get("tailoring_amount", 0))
                 emb_amt = float(item.get("embroidery_amount", 0))
                 ao_amt = float(item.get("addon_amount", 0))
                 article_total = fab_amt + tail_amt + emb_amt + ao_amt
 
-                addons_display = ""
-                if addon_desc and addon_desc != "N/A":
-                    addons_display = f" ({html_mod.escape(str(addon_desc))})"
-
                 article_rows += f"""
             <tr>
               <td>{barcode}</td>
-              <td>{article_type}{addons_display}</td>
+              <td>{article_type}</td>
               <td class="r"><strong>₹{fmt(article_total)}</strong></td>
             </tr>"""
 
@@ -1080,6 +1108,14 @@ async def generate_invoice(request: Request, db: AsyncIOMotorDatabase = Depends(
       <tbody>
         {pay_rows_html}
         {adv_pay_rows}
+        <tr style="background: #f0f0f0; border-top: 1.5px solid #ccc;">
+          <td style="padding: 8px; font-size: 9px; font-weight: 700; color: #333;">Subtotal</td>
+          <td class="r" style="padding: 8px; font-size: 10px; font-weight: 700; color: #333;">₹{fmt(fabric_amt_db + tail_amt_total + emb_amt_total + ao_amt_total)}</td>
+          <td class="r" style="padding: 8px; font-size: 10px; font-weight: 700; color: #333;">₹{fmt(fabric_rcvd + tail_rcvd + emb_rcvd + ao_rcvd)}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
         <tr>
           <td colspan="5"><strong>Balance Due</strong></td>
           <td class="r {grand_bal_cls}"><strong>{grand_bal_str}</strong></td>
