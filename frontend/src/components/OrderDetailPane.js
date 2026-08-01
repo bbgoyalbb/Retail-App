@@ -64,10 +64,7 @@ function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDel
       {selectedGroups.map(group => {
         const refAdvances = advances.filter(a => a.ref === group.ref);
         const totalAdvance = refAdvances.reduce((s, a) => s + a.amount, 0);
-        const isSettled = group.totals.total > 0 && group.items.every(item =>
-          [[item.fabric_amount, item.fabric_pay_mode],[item.tailoring_amount, item.tailoring_pay_mode],[item.embroidery_amount, item.embroidery_pay_mode],[item.addon_amount, item.addon_pay_mode]]
-          .every(([amt, mode]) => !amt || Number(amt) === 0 || String(mode || "").startsWith("Settled"))
-        );
+        const isSettled = group.totals.total > 0 && (group.totals.pending - totalAdvance) <= 0;
 
         return (
           <div key={group.ref} className="space-y-4">
@@ -224,9 +221,9 @@ function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDel
                       </Badge>
                     : <span className={cn(
                         "font-mono font-black text-xl tracking-tighter",
-                        group.totals.pending < 0 ? "text-destructive" : "text-warning"
+                        (group.totals.pending - totalAdvance) < 0 ? "text-destructive" : "text-warning"
                       )}>
-                        ₹{fmt(group.totals.pending)}
+                        ₹{fmt(group.totals.pending - totalAdvance)}
                       </span>
                   }
                 </div>
@@ -245,10 +242,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
       {selectedGroups.map(group => {
         const refAdvances = advances.filter(a => a.ref === group.ref);
         const totalAdvance = refAdvances.reduce((s,a) => s + a.amount, 0);
-        const isSettled = group.totals.total > 0 && group.items.every(item =>
-          [[item.fabric_amount, item.fabric_pay_mode],[item.tailoring_amount, item.tailoring_pay_mode],[item.embroidery_amount, item.embroidery_pay_mode],[item.addon_amount, item.addon_pay_mode]]
-          .every(([amt, mode]) => !amt || Number(amt) === 0 || String(mode || "").startsWith("Settled"))
-        );
+        const isSettled = group.totals.total > 0 && (group.totals.pending - totalAdvance) <= 0;
 
         return (
           <div key={group.ref} className="space-y-4">
@@ -433,7 +427,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground">{isSettled ? "Status" : "Outstanding"}</span>
                     {isSettled
                       ? <Badge variant="success" className="font-black uppercase tracking-tighter text-[10px] px-1.5 py-0">Settled</Badge>
-                      : <span className={cn("font-mono font-black text-sm", group.totals.pending < 0 ? "text-destructive" : "text-warning")}>₹{fmt(group.totals.pending)}</span>
+                      : <span className={cn("font-mono font-black text-sm", (group.totals.pending - totalAdvance) < 0 ? "text-destructive" : "text-warning")}>₹{fmt(group.totals.pending - totalAdvance)}</span>
                     }
                   </div>
                 </CardContent>
