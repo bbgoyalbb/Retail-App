@@ -678,7 +678,7 @@ export default function ItemsManager() {
       else { toast({ title:"Success", description:`${ok} items saved` }); }
     } else { toast({ title:"Partial Success", description:`${fail} failed, ${ok} saved`, variant: "destructive" }); }
     invalidateItemsCache();
-    loadData(itemsPage, true);
+    loadData(1, true);
     // Trigger OrderDetailPane refresh
     handleGroupChanged();
   };
