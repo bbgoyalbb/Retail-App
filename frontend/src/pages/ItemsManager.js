@@ -543,7 +543,7 @@ export default function ItemsManager() {
       const it = u[itemId];
       if (["price","qty","discount"].includes(key))
         it.fabric_amount = computeFabric(parseFloat(it.price)||0, parseFloat(it.qty)||0, parseFloat(it.discount)||0);
-      if (["fabric_amount","fabric_received","price","qty","discount"].includes(key))
+      if (["fabric_amount","fabric_received","price","qty","discount"].includes(key) && key !== "fabric_pending")
         it.fabric_pending = computePending(parseFloat(it.fabric_amount)||0, parseFloat(it.fabric_received)||0);
       if (key === "article_type") {
         if (value === "N/A" || !tailoringRates[value]) {
@@ -554,11 +554,11 @@ export default function ItemsManager() {
           it.labour_amount = parseFloat(tailoringRates[value].labour) || 0;
         }
       }
-      if (["tailoring_amount","tailoring_received","article_type"].includes(key))
+      if (["tailoring_amount","tailoring_received","article_type"].includes(key) && key !== "tailoring_pending")
         it.tailoring_pending = computePending(parseFloat(it.tailoring_amount)||0, parseFloat(it.tailoring_received)||0);
-      if (["embroidery_amount","embroidery_received"].includes(key))
+      if (["embroidery_amount","embroidery_received"].includes(key) && key !== "embroidery_pending")
         it.embroidery_pending = computePending(parseFloat(it.embroidery_amount)||0, parseFloat(it.embroidery_received)||0);
-      if (["addon_amount","addon_received"].includes(key))
+      if (["addon_amount","addon_received"].includes(key) && key !== "addon_pending")
         it.addon_pending = computePending(parseFloat(it.addon_amount)||0, parseFloat(it.addon_received)||0);
       if (key === "labour_paid" && value === "Yes" && !it.labour_pay_date)
         it.labour_pay_date = new Date().toISOString().split("T")[0];
