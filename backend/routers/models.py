@@ -133,6 +133,7 @@ class ItemUpdateRequest(BaseModel):
     fabric_pending: Optional[float] = None
     fabric_pay_mode: Optional[str] = None
     fabric_pay_date: Optional[str] = None
+    tally_fabric: Optional[bool] = None
     ref: Optional[str] = None
     name: Optional[str] = None
     date: Optional[str] = None
@@ -145,6 +146,7 @@ class ItemUpdateRequest(BaseModel):
     tailoring_pending: Optional[float] = None
     tailoring_pay_mode: Optional[str] = None
     tailoring_pay_date: Optional[str] = None
+    tally_tailoring: Optional[bool] = None
     labour_amount: Optional[float] = None
     labour_paid: Optional[str] = None
     labour_pay_date: Optional[str] = None
@@ -156,6 +158,7 @@ class ItemUpdateRequest(BaseModel):
     embroidery_pending: Optional[float] = None
     embroidery_pay_mode: Optional[str] = None
     embroidery_pay_date: Optional[str] = None
+    tally_embroidery: Optional[bool] = None
     emb_labour_amount: Optional[float] = None
     emb_labour_paid: Optional[str] = None
     emb_labour_date: Optional[str] = None
@@ -166,6 +169,7 @@ class ItemUpdateRequest(BaseModel):
     addon_pending: Optional[float] = None
     addon_pay_mode: Optional[str] = None
     addon_pay_date: Optional[str] = None
+    tally_addon: Optional[bool] = None
 
 class BulkDeleteRequest(BaseModel):
     item_ids: List[str] = Field(..., min_length=1, description="List of item IDs to delete")
