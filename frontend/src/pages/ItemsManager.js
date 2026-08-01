@@ -397,18 +397,18 @@ export default function ItemsManager() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   // Load data (grouped list mode)
-  const loadData = useCallback(async (page = 1) => {
+  const loadData = useCallback(async (page = 1, forceRefresh = false) => {
     const preserveScroll = page === itemsPageRef.current;
     const currentScrollTop = scrollRef.current?.scrollTop || 0;
     if (page === 1) setLoading(true); else setLoadingMore(true);
-    
+
     try {
       const params = { limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE, summary: true };
-      
+
       const itemsRes = await getItems(params);
       const newItems = itemsRes.data.items || [];
       const total = itemsRes.data.total ?? newItems.length;
-      
+
       setAllItems(prev => page === 1 ? newItems : [...prev, ...newItems]);
       setHasMoreItems((page * PAGE_SIZE) < total);
       setItemsPage(page);
@@ -418,9 +418,16 @@ export default function ItemsManager() {
       if (uniqueRefs.length > 0) {
         const advRes = await getAdvances({ refs: uniqueRefs });
         setAdvances(prev => {
-          const existingMap = new Map(prev.map(a => [a.id, a]));
-          (advRes.data || []).forEach(a => existingMap.set(a.id, a));
-          return Array.from(existingMap.values());
+          if (forceRefresh || page === 1) {
+            // On force refresh or first page, replace advances with fresh data for current refs only
+            const currentRefSet = new Set(uniqueRefs);
+            return (advRes.data || []).filter(a => currentRefSet.has(a.ref));
+          } else {
+            // On pagination, merge advances
+            const existingMap = new Map(prev.map(a => [a.id, a]));
+            (advRes.data || []).forEach(a => existingMap.set(a.id, a));
+            return Array.from(existingMap.values());
+          }
         });
       }
     } catch {
@@ -660,7 +667,7 @@ export default function ItemsManager() {
     // Refresh items for affected refs to update OrderDetailPane instantly
     if (affectedRefs.size > 0) {
       const refArray = Array.from(affectedRefs);
-      const itemsRes = await getItems({ ref: refArray[0] });
+      const itemsRes = await getItems({ refs: refArray.join(",") });
       const freshItems = itemsRes.data.items || [];
       setAllItems(prev => {
         const existingMap = new Map(prev.map(i => [i.id, i]));
@@ -668,7 +675,7 @@ export default function ItemsManager() {
         return Array.from(existingMap.values());
       });
     }
-    loadData(itemsPage);
+    loadData(itemsPage, true);
   };
 
   const handleDelete = async () => {
@@ -683,7 +690,7 @@ export default function ItemsManager() {
     } catch {
       toast({ title: "Error", description: "Failed to delete", variant: "destructive" });
     }
-    setDelConfirm(null); invalidateItemsCache(); invalidateCustomersCache(); loadData(itemsPage);
+    setDelConfirm(null); invalidateItemsCache(); invalidateCustomersCache(); loadData(itemsPage, true);
   };
 
   const handleCancelOrder = async (group) => {
@@ -695,7 +702,7 @@ export default function ItemsManager() {
       description: ok===group.items.length?`Order ${group.ref} cancelled`:`${group.items.length-ok} items failed`,
       variant: ok===group.items.length?"default":"destructive"
     });
-    setCancelConfirm(null); invalidateItemsCache(); loadData(itemsPage);
+    setCancelConfirm(null); invalidateItemsCache(); loadData(itemsPage, true);
   };
 
   const handleCancelItem = async (item) => {
@@ -706,7 +713,7 @@ export default function ItemsManager() {
     } catch {
       toast({ title: "Error", description: "Failed to cancel article", variant: "destructive" });
     }
-    invalidateItemsCache(); loadData(itemsPage);
+    invalidateItemsCache(); loadData(itemsPage, true);
   };
 
   const cancelEdit = () => {
@@ -843,7 +850,7 @@ export default function ItemsManager() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(itemsPage); }}
+                onClick={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(1, true); }}
                 className={cn("h-8 w-8 text-muted-foreground hover:text-primary transition-all", loading && "animate-spin")}
                 aria-label="Refresh orders"
               >
