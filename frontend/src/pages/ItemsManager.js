@@ -673,17 +673,6 @@ export default function ItemsManager() {
       else { toast({ title:"Success", description:`${ok} items saved` }); }
     } else { toast({ title:"Partial Success", description:`${fail} failed, ${ok} saved`, variant: "destructive" }); }
     invalidateItemsCache();
-    // Refresh items for affected refs to update OrderDetailPane instantly
-    if (affectedRefs.size > 0) {
-      const refArray = Array.from(affectedRefs);
-      const itemsRes = await getItems({ refs: refArray.join(","), summary: true });
-      const freshItems = itemsRes.data.items || [];
-      setAllItems(prev => {
-        const existingMap = new Map(prev.map(i => [i.id, i]));
-        freshItems.forEach(i => existingMap.set(i.id, i));
-        return Array.from(existingMap.values());
-      });
-    }
     loadData(itemsPage, true);
   };
 
