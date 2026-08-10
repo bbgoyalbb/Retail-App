@@ -405,7 +405,7 @@ export default function ItemsManager() {
 
   // Load data (grouped list mode)
   const loadData = useCallback(async (page = 1, forceRefresh = false) => {
-    const preserveScroll = page === itemsPageRef.current;
+    const preserveScroll = forceRefresh && page === itemsPageRef.current;
     const currentScrollTop = scrollRef.current?.scrollTop || 0;
     if (page === 1) setLoading(true); else setLoadingMore(true);
 
@@ -756,6 +756,9 @@ export default function ItemsManager() {
       ? Array.from(new Set(refs.filter(Boolean)))
       : Array.from(selectedRefs);
 
+    // Save current scroll position before refresh
+    const savedScroll = scrollRef.current?.scrollTop || 0;
+
     invalidateItemsCache();
     invalidateAdvancesCache();
 
@@ -772,6 +775,11 @@ export default function ItemsManager() {
         return Array.from(existingMap.values());
       });
     }
+
+    // Restore scroll position after refresh completes
+    setTimeout(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = savedScroll;
+    }, 0);
   }, [itemsPage, isSearchMode, loadData, runSearch, selectedRefs, searchPage]);
 
   const handleGroupChanged = async () => {
@@ -1414,7 +1422,7 @@ export default function ItemsManager() {
         <SettlementPanel
           orders={settlementOrders}
           onClose={() => setSettlementOrders(null)}
-          onSuccess={() => { invalidateItemsCache(); invalidateAdvancesCache(); setSelectedRefs(new Set()); loadData(itemsPage, true); }}
+          onSuccess={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(itemsPage, true); }}
         />
       )}
 
