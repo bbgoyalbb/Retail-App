@@ -416,7 +416,16 @@ export default function ItemsManager() {
       const newItems = itemsRes.data.items || [];
       const total = itemsRes.data.total ?? newItems.length;
 
-      setAllItems(prev => (forceRefresh || page === 1) ? newItems : [...prev, ...newItems]);
+      setAllItems(prev => {
+        if (forceRefresh || page === 1) {
+          return newItems;
+        } else {
+          // Deduplicate by item id to prevent double-counting
+          const existingIds = new Set(prev.map(i => i.id));
+          const uniqueNewItems = newItems.filter(i => !existingIds.has(i.id));
+          return [...prev, ...uniqueNewItems];
+        }
+      });
       setHasMoreItems((page * PAGE_SIZE) < total);
       setItemsPage(page);
       itemsPageRef.current = page;
@@ -990,6 +999,11 @@ export default function ItemsManager() {
                           <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">
                             ₹{fmt(group.totals.total)} TOTAL
                           </span>
+                          {group.items[0]?.created_at && (
+                            <span className="text-[8px] font-medium text-muted-foreground/30 uppercase tracking-wider">
+                              {new Date(group.items[0].created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-1 opacity-100 transition-all" onClick={e => e.stopPropagation()}>
