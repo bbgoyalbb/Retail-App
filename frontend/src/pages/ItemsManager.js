@@ -1007,9 +1007,9 @@ export default function ItemsManager() {
                           <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">
                             ₹{fmt(group.totals.total)} TOTAL
                           </span>
-                          {(group.items[0]?.created_at || group.date) && (
+                          {group.items[0]?.created_at && (
                             <span className="text-[8px] font-medium text-muted-foreground/30 uppercase tracking-wider">
-                              {new Date(group.items[0]?.created_at || group.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(group.items[0].created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}
                         </div>
