@@ -247,9 +247,13 @@ async def search_items(
 
     query = {"$and": filters} if len(filters) > 1 else (filters[0] if filters else {})
 
-    items = await db.items.find(query, {"_id": 0}).sort("date", -1).skip(skip).limit(limit).to_list(limit)
+    items = await db.items.find(query).sort("date", -1).skip(skip).limit(limit).to_list(limit)
     for item in items:
         item["payment_status"] = determine_payment_status(item.get("fabric_pending", 0), item.get("fabric_received", 0))
+        # Extract creation timestamp from ObjectId if created_at is not present
+        if not item.get("created_at") and item.get("_id"):
+            item["created_at"] = item["_id"].generation_time.isoformat()
+        item.pop("_id", None)
     total = await db.items.count_documents(query)
     return {"items": items, "total": total}
 
