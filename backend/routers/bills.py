@@ -216,9 +216,9 @@ async def get_items(
     else:
         items = paginated_items
 
-    # Extract creation timestamp from ObjectId for items without created_at
+    # Extract creation timestamp from ObjectId for all items
     for item in items:
-        if not item.get("created_at") and item.get("_id"):
+        if item.get("_id"):
             item["created_at"] = item["_id"].generation_time.isoformat()
         item.pop("_id", None)
 

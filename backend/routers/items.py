@@ -164,7 +164,6 @@ async def create_item(req: ItemCreateRequest, db: AsyncIOMotorDatabase = Depends
         "tally_tailoring": req.tally_tailoring or False,
         "tally_embroidery": req.tally_embroidery or False,
         "tally_addon": req.tally_addon or False,
-        "created_at": datetime.now(timezone.utc).isoformat(),
     }
     
     await db.items.insert_one(doc)
@@ -250,8 +249,8 @@ async def search_items(
     items = await db.items.find(query).sort("date", -1).skip(skip).limit(limit).to_list(limit)
     for item in items:
         item["payment_status"] = determine_payment_status(item.get("fabric_pending", 0), item.get("fabric_received", 0))
-        # Extract creation timestamp from ObjectId if created_at is not present
-        if not item.get("created_at") and item.get("_id"):
+        # Extract creation timestamp from ObjectId
+        if item.get("_id"):
             item["created_at"] = item["_id"].generation_time.isoformat()
         item.pop("_id", None)
     total = await db.items.count_documents(query)
