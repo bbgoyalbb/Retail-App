@@ -100,14 +100,39 @@ cd /d "%ROOT%frontend"
 set GENERATE_SOURCEMAP=false
 :: Suppress Node.js deprecation warnings (fs.F_OK, url.parse, etc.)
 set NODE_OPTIONS=--no-deprecation
-:: Clear old builds to ensure a fresh state
-if exist "build" rmdir /s /q "build"
-call yarn install
-call yarn build
-if errorlevel 1 (
-    echo [ERROR] React build failed! Check npm errors above.
-    pause
-    exit /b 1
+
+:: Skip yarn install if node_modules exists and package.json hasn't changed
+if exist "node_modules" (
+    echo [2/4] node_modules found, skipping yarn install (use --force to reinstall)
+) else (
+    echo [2/4] Installing dependencies...
+    call yarn install
+)
+
+:: Check if build exists and is recent (within last hour)
+set "REBUILD_NEEDED=1"
+if exist "build" (
+    for /f "delims=" %%a in ('powershell -Command "(Get-Item 'build' -ErrorAction SilentlyContinue).LastWriteTime"') do set "BUILD_TIME=%%a"
+    for /f "delims=" %%a in ('powershell -Command "(Get-ChildItem 'src' -Recurse -ErrorAction SilentlyContinue ^| Sort-Object LastWriteTime -Descending ^| Select-Object -First 1).LastWriteTime"') do set "SRC_TIME=%%a"
+    if defined BUILD_TIME if defined SRC_TIME (
+        powershell -Command "if ([datetime]'!BUILD_TIME!' -gt [datetime]'!SRC_TIME!') { exit 0 } else { exit 1 }" >nul 2>&1
+        if !errorlevel! equ 0 (
+            echo [2/4] Build is up-to-date, skipping rebuild (use --force to rebuild)
+            set "REBUILD_NEEDED=0"
+        )
+    )
+)
+
+if "%REBUILD_NEEDED%"=="1" (
+    :: Clear old builds to ensure a fresh state
+    if exist "build" rmdir /s /q "build"
+    echo [2/4] Running yarn build...
+    call yarn build
+    if errorlevel 1 (
+        echo [ERROR] React build failed! Check npm errors above.
+        pause
+        exit /b 1
+    )
 )
 echo [2/4] Build complete!
 echo [2/4] Build is served directly from frontend\build (no copy needed)
@@ -151,8 +176,19 @@ timeout /t 3 /nobreak >nul
 echo.
 
 :: ---- Step 5: Regenerate SSL cert + Start backend ----
-echo [5/5] Regenerating SSL certificate for current IP...
-"%PYTHON%" "%ROOT%backend\gen_cert.py"
+:: Check if SSL cert exists and matches current IP
+set "REGEN_CERT=1"
+if exist "%ROOT%backend\ssl.crt" (
+    for /f "delims=" %%a in ('powershell -Command "(certutil -dump '%ROOT%backend\ssl.crt' 2^>^&1 ^| Select-String 'CN=' ^| Select-Object -First 1) -replace '.*CN=([^,]+).*','$1'"') do set "CERT_IP=%%a"
+    if "!CERT_IP!"=="!IP!" (
+        echo [5/5] SSL certificate already matches current IP !IP!, skipping regeneration
+        set "REGEN_CERT=0"
+    )
+)
+if "%REGEN_CERT%"=="1" (
+    echo [5/5] Regenerating SSL certificate for current IP !IP!...
+    "%PYTHON%" "%ROOT%backend\gen_cert.py"
+)
 echo [5/5] Starting FastAPI production server on 0.0.0.0:%BACKEND_PORT%...
 echo.
 echo ==========================================
