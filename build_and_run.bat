@@ -1,8 +1,12 @@
 @echo off
+:: Check for --force flag
+set "FORCE_BUILD=0"
+if "%1"=="--force" set "FORCE_BUILD=1"
+
 :: ---- Self-elevate to Administrator if not already ----
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs -ArgumentList '%*'"
     exit /b
 )
 setlocal EnableDelayedExpansion
@@ -102,7 +106,11 @@ set GENERATE_SOURCEMAP=false
 set NODE_OPTIONS=--no-deprecation
 
 :: Skip yarn install if node_modules exists and package.json hasn't changed
-if exist "node_modules" (
+if "%FORCE_BUILD%"=="1" (
+    echo [2/4] Force reinstall requested (--force flag)
+    echo [2/4] Installing dependencies...
+    call yarn install
+) else if exist "node_modules" (
     echo [2/4] node_modules found, skipping yarn install (use --force to reinstall)
 ) else (
     echo [2/4] Installing dependencies...
@@ -111,7 +119,10 @@ if exist "node_modules" (
 
 :: Check if build exists and is recent (within last hour)
 set "REBUILD_NEEDED=1"
-if exist "build" (
+if "%FORCE_BUILD%"=="1" (
+    echo [2/4] Force rebuild requested (--force flag)
+    set "REBUILD_NEEDED=1"
+) else if exist "build" (
     for /f "delims=" %%a in ('powershell -Command "(Get-Item 'build' -ErrorAction SilentlyContinue).LastWriteTime"') do set "BUILD_TIME=%%a"
     for /f "delims=" %%a in ('powershell -Command "(Get-ChildItem 'src' -Recurse -ErrorAction SilentlyContinue ^| Sort-Object LastWriteTime -Descending ^| Select-Object -First 1).LastWriteTime"') do set "SRC_TIME=%%a"
     if defined BUILD_TIME if defined SRC_TIME (
