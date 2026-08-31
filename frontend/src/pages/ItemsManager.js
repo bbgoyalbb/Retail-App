@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation } from "react-router-dom";
+import { VariableSizeList as List } from "react-window";
 import {
   getItems, getItem, getAdvances, updateItem, deleteItem, createItem,
   updateAdvance, createAdvance, deleteAdvance, invalidateItemsCache,
@@ -24,6 +25,83 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+
+// Virtual list row component
+const Row = ({ index, style, data }) => {
+  const { group, showDate, isSelected, selectRef, listRef, setTailoringGroup, setAddonGroup, setShowFormatDialog } = data[index];
+  const isCancelled = group.items.every(i => i.cancelled);
+  const orderNos = [...new Set(group.items.map(i=>i.order_no).filter(o=>o&&o!=="N/A"))];
+
+  return (
+    <div style={style}>
+      {showDate && (
+        <div className="sticky top-0 z-10">
+          <div className="px-5 py-3 bg-muted/50 border-y border-border/50 shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-primary/80" />
+              <p className="text-[10px] uppercase tracking-[0.35em] font-black text-primary/80">
+                {group.date || "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      <div
+        className={cn(
+          "group/row border-b border-border/40 cursor-pointer transition-all duration-200 relative",
+          isSelected 
+            ? "bg-primary/[0.03] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary shadow-sm" 
+            : "hover:bg-muted/30 border-l-4 border-l-transparent"
+        )}
+        onClick={e => selectRef(group.ref, e.ctrlKey || e.metaKey || e.shiftKey)}
+      >
+        <div className="flex items-center gap-4 px-5 py-4">
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className={cn(
+              "text-xs font-bold uppercase tracking-wide truncate",
+              isCancelled ? "line-through text-muted-foreground/50" : "text-foreground group-hover/row:text-primary transition-colors"
+            )}>
+              {group.name}
+            </p>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="font-mono text-[9px] h-4 px-1.5 font-bold text-primary border-primary/20 bg-primary/5">
+                {group.ref}
+              </Badge>
+              {orderNos.length > 0 && (
+                <span className="font-mono text-[9px] font-black text-muted-foreground/40 leading-none">
+                  #{orderNos[0]}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            <span className={cn(
+              "font-mono text-[11px] font-black tracking-tighter",
+              group.totals.pending > 0 ? "text-warning" : group.totals.pending < 0 ? "text-destructive" : "text-success"
+            )}>
+              {group.totals.pending !== 0 ? `₹${fmt(group.totals.pending)}` : "SETTLED"}
+            </span>
+            <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+              ₹{fmt(group.totals.total)} TOTAL
+            </span>
+            {group.items[0]?.created_at && (
+              <span className="text-[8px] font-medium text-muted-foreground/30 uppercase tracking-wider">
+                {new Date(group.items[0].created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 opacity-100 transition-all" onClick={e => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => { const savedScrollPos = listRef.current?.state?.scrollOffset || 0; setTailoringGroup(group); }} aria-label="Open tailoring"><Scissors size={14} weight="bold" aria-hidden="true"/></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { const savedScrollPos = listRef.current?.state?.scrollOffset || 0; setAddonGroup(group); }} aria-label="Open add-ons"><Tag size={14} weight="bold" aria-hidden="true"/></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => { setShowFormatDialog(group.ref); }} aria-label="View invoice"><Printer size={14} weight="bold" aria-hidden="true"/></Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ─── Section config ───────────────────────────────────────────
 const SECTIONS = {
@@ -230,6 +308,7 @@ export default function ItemsManager() {
   const [selectedRefs, setSelectedRefs] = useState(new Set());
   const [detailOpen, setDetailOpen]     = useState(false); // mobile toggle
   const scrollRef = useRef(null); // Ref for scrollable order list
+  const listRef = useRef(null); // Ref for react-window List
   const savedScrollPos = useRef(0); // Save scroll position before modal opens
 
   // Close detail pane when no orders are selected
@@ -869,7 +948,7 @@ export default function ItemsManager() {
             </div>
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="flex-1 overflow-hidden custom-scrollbar">
             {loading && (
               <div className="p-4 space-y-3">
                 {Array.from({length:8}).map((_,i)=>(
@@ -904,85 +983,37 @@ export default function ItemsManager() {
               </div>
             )}
 
-            {!loading && (() => {
+            {!loading && refs.length > 0 && (() => {
               let lastDate = null;
-              return refs.map(group => {
-                const isCancelled = group.items.every(i => i.cancelled);
-                const isSelected  = selectedRefs.has(group.ref);
-                const orderNos    = [...new Set(group.items.map(i=>i.order_no).filter(o=>o&&o!=="N/A"))];
-                const showDiv     = group.date !== lastDate;
+              const itemData = refs.map(group => {
+                const showDate = group.date !== lastDate;
                 lastDate = group.date;
-
-                return (
-                  <React.Fragment key={group.ref}>
-                    {showDiv && (
-                      <div className="sticky top-0 z-10">
-                        <div className="px-5 py-3 bg-muted/50 border-y border-border/50 shadow-sm">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-primary/80" />
-                            <p className="text-[10px] uppercase tracking-[0.35em] font-black text-primary/80">
-                              {group.date || "—"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    <div
-                      className={cn(
-                        "group/row border-b border-border/40 cursor-pointer transition-all duration-200 relative",
-                        isSelected 
-                          ? "bg-primary/[0.03] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary shadow-sm" 
-                          : "hover:bg-muted/30 border-l-4 border-l-transparent"
-                      )}
-                      onClick={e => selectRef(group.ref, e.ctrlKey || e.metaKey || e.shiftKey)}
-                    >
-                      <div className="flex items-center gap-4 px-5 py-4">
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <p className={cn(
-                            "text-xs font-bold uppercase tracking-wide truncate",
-                            isCancelled ? "line-through text-muted-foreground/50" : "text-foreground group-hover/row:text-primary transition-colors"
-                          )}>
-                            {group.name}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="font-mono text-[9px] h-4 px-1.5 font-bold text-primary border-primary/20 bg-primary/5">
-                              {group.ref}
-                            </Badge>
-                            {orderNos.length > 0 && (
-                              <span className="font-mono text-[9px] font-black text-muted-foreground/40 leading-none">
-                                #{orderNos[0]}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                          <span className={cn(
-                            "font-mono text-[11px] font-black tracking-tighter",
-                            group.totals.pending > 0 ? "text-warning" : group.totals.pending < 0 ? "text-destructive" : "text-success"
-                          )}>
-                            {group.totals.pending !== 0 ? `₹${fmt(group.totals.pending)}` : "SETTLED"}
-                          </span>
-                          <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">
-                            ₹{fmt(group.totals.total)} TOTAL
-                          </span>
-                          {group.items[0]?.created_at && (
-                            <span className="text-[8px] font-medium text-muted-foreground/30 uppercase tracking-wider">
-                              {new Date(group.items[0].created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-1 opacity-100 transition-all" onClick={e => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; setTailoringGroup(group); }} aria-label="Open tailoring"><Scissors size={14} weight="bold" aria-hidden="true"/></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; setAddonGroup(group); }} aria-label="Open add-ons"><Tag size={14} weight="bold" aria-hidden="true"/></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => { setShowFormatDialog(group.ref); }} aria-label="View invoice"><Printer size={14} weight="bold" aria-hidden="true"/></Button>
-                        </div>
-                      </div>
-                    </div>
-                  </React.Fragment>
-                );
+                return {
+                  group,
+                  showDate,
+                  isSelected: selectedRefs.has(group.ref),
+                  selectRef,
+                  listRef,
+                  setTailoringGroup,
+                  setAddonGroup,
+                  setShowFormatDialog
+                };
               });
+
+              const getItemSize = (index) => itemData[index].showDate ? 120 : 80;
+
+              return (
+                <List
+                  ref={listRef}
+                  height={scrollRef.current?.clientHeight || 600}
+                  itemCount={refs.length}
+                  itemSize={getItemSize}
+                  itemData={itemData}
+                  width="100%"
+                >
+                  {Row}
+                </List>
+              );
             })()}
           </div>
         </div>
