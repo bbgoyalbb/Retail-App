@@ -492,7 +492,7 @@ export default function ItemsManager() {
   // Load data (grouped list mode) - load all orders at once
   const loadData = useCallback(async (forceRefresh = false) => {
     const preserveScroll = forceRefresh;
-    const currentScrollTop = scrollRef.current?.scrollTop || 0;
+    const currentScrollOffset = listRef.current?.state?.scrollOffset || 0;
     setLoading(true);
 
     try {
@@ -514,7 +514,7 @@ export default function ItemsManager() {
       setLoading(false);
       if (preserveScroll) {
         setTimeout(() => {
-          if (scrollRef.current) scrollRef.current.scrollTop = currentScrollTop;
+          if (listRef.current) listRef.current.scrollTo(currentScrollOffset);
         }, 0);
       }
     }
