@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 
 // Virtual list row component
 const Row = ({ index, style, data }) => {
-  const { group, showDate, isSelected, selectRef, setTailoringGroup, setAddonGroup, setShowFormatDialog } = data[index];
+  const { group, showDate, isSelected, selectRef, setTailoringGroup, setAddonGroup, setShowFormatDialog, listRef, savedScrollPos } = data[index];
   const isCancelled = group.items.every(i => i.cancelled);
   const orderNos = [...new Set(group.items.map(i=>i.order_no).filter(o=>o&&o!=="N/A"))];
 
@@ -93,8 +93,8 @@ const Row = ({ index, style, data }) => {
           </div>
 
           <div className="flex items-center gap-1 opacity-100 transition-all" onClick={e => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => setTailoringGroup(group)} aria-label="Open tailoring"><Scissors size={14} weight="bold" aria-hidden="true"/></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => setAddonGroup(group)} aria-label="Open add-ons"><Tag size={14} weight="bold" aria-hidden="true"/></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => { savedScrollPos.current = listRef.current?.state?.scrollOffset || 0; setTailoringGroup(group); }} aria-label="Open tailoring"><Scissors size={14} weight="bold" aria-hidden="true"/></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { savedScrollPos.current = listRef.current?.state?.scrollOffset || 0; setAddonGroup(group); }} aria-label="Open add-ons"><Tag size={14} weight="bold" aria-hidden="true"/></Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => setShowFormatDialog(group.ref)} aria-label="View invoice"><Printer size={14} weight="bold" aria-hidden="true"/></Button>
           </div>
         </div>
@@ -307,9 +307,9 @@ export default function ItemsManager() {
   const [sidebarOpen, setSidebarOpen]   = useState(false);
   const [selectedRefs, setSelectedRefs] = useState(new Set());
   const [detailOpen, setDetailOpen]     = useState(false); // mobile toggle
-  const scrollRef = useRef(null); // Ref for scrollable order list
+  const scrollRef = useRef(null); // Ref for scrollable order list container
   const listRef = useRef(null); // Ref for react-window List
-  const savedScrollPos = useRef(0); // Save scroll position before modal opens
+  const savedScrollPos = useRef(0); // Save scroll position before modal opens (using listRef)
   const [listHeight, setListHeight] = useState(600); // Height for virtual list
 
   // Measure container height for virtual list
@@ -809,7 +809,7 @@ export default function ItemsManager() {
       : Array.from(selectedRefs);
 
     // Save current scroll position before refresh
-    const savedScroll = scrollRef.current?.scrollTop || 0;
+    const savedScroll = listRef.current?.state?.scrollOffset || 0;
 
     invalidateItemsCache();
     invalidateAdvancesCache();
@@ -830,7 +830,7 @@ export default function ItemsManager() {
 
     // Restore scroll position after refresh completes
     setTimeout(() => {
-      if (scrollRef.current) scrollRef.current.scrollTop = savedScroll;
+      if (listRef.current) listRef.current.scrollTo(savedScroll);
     }, 0);
   }, [isSearchMode, loadData, runSearch, selectedRefs, searchPage]);
 
@@ -1009,7 +1009,9 @@ export default function ItemsManager() {
                   selectRef,
                   setTailoringGroup,
                   setAddonGroup,
-                  setShowFormatDialog
+                  setShowFormatDialog,
+                  listRef,
+                  savedScrollPos
                 };
               });
 
@@ -1417,14 +1419,14 @@ export default function ItemsManager() {
             setTailoringGroup(null);
             // Restore scroll position after modal closes
             setTimeout(() => {
-              if (scrollRef.current) scrollRef.current.scrollTop = savedScrollPos.current;
+              if (listRef.current) listRef.current.scrollTo(savedScrollPos.current);
             }, 0);
           }}
           onSuccess={async () => {
             await refreshVisibleOrders([tailoringGroup.ref]);
             // Restore scroll position after data refresh completes
             setTimeout(() => {
-              if (scrollRef.current) scrollRef.current.scrollTop = savedScrollPos.current;
+              if (listRef.current) listRef.current.scrollTo(savedScrollPos.current);
             }, 100);
           }}
         />
@@ -1438,14 +1440,14 @@ export default function ItemsManager() {
             setAddonGroup(null);
             // Restore scroll position after modal closes
             setTimeout(() => {
-              if (scrollRef.current) scrollRef.current.scrollTop = savedScrollPos.current;
+              if (listRef.current) listRef.current.scrollTo(savedScrollPos.current);
             }, 0);
           }}
           onSuccess={async () => {
             await refreshVisibleOrders([addonGroup.ref]);
             // Restore scroll position after data refresh completes
             setTimeout(() => {
-              if (scrollRef.current) scrollRef.current.scrollTop = savedScrollPos.current;
+              if (listRef.current) listRef.current.scrollTo(savedScrollPos.current);
             }, 100);
           }}
         />
