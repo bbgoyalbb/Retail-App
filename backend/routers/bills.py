@@ -204,7 +204,8 @@ async def get_items(
     if refs_in_page:
         complete_query = query.copy()
         complete_query["ref"] = {"$in": refs_in_page}
-        complete_items = await db.items.find(complete_query, projection).sort("date", -1).to_list(2000)
+        complete_limit = None if limit == 0 else 2000
+        complete_items = await db.items.find(complete_query, projection).sort("date", -1).to_list(complete_limit)
 
         # Merge: replace any paginated items with complete versions, and add any missing complete items
         complete_ids = {item["id"] for item in complete_items}
