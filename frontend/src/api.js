@@ -102,6 +102,7 @@ let _itemsCacheTime = 0;
 let _itemsCacheKey = "";
 export const getItems = (params) => {
   // Temporarily disable caching to ensure fresh data for debugging pagination issue
+  console.log("getItems called with params:", params);
   return api.get("/items", { params }).then(res => {
     return res;
   });
