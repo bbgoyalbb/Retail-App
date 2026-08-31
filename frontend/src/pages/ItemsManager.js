@@ -233,6 +233,8 @@ export default function ItemsManager() {
   const savedScrollPos = useRef(0); // Save scroll position before modal opens
   const savedPage = useRef(1); // Save current page number before modal opens
   const sentinelRef = useRef(null); // Ref for infinite scroll sentinel element
+  const loadDataRef = useRef(null);
+  const runSearchRef = useRef(null);
 
   // Close detail pane when no orders are selected
   useEffect(() => {
@@ -250,9 +252,9 @@ export default function ItemsManager() {
       (entries) => {
         if (entries[0].isIntersecting) {
           if (isSearchMode && hasMoreSearch && !searchLoadingMore) {
-            runSearch(searchPage + 1);
+            runSearchRef.current?.(searchPage + 1);
           } else if (!isSearchMode && hasMoreItems && !loadingMore) {
-            loadData(itemsPage + 1);
+            loadDataRef.current?.(itemsPage + 1);
           }
         }
       },
@@ -261,7 +263,7 @@ export default function ItemsManager() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [isSearchMode, hasMoreSearch, hasMoreItems, searchLoadingMore, loadingMore, searchPage, itemsPage, runSearch, loadData]);
+  }, [isSearchMode, hasMoreSearch, hasMoreItems, searchLoadingMore, loadingMore, searchPage, itemsPage]);
 
   // Overlays
   const [settlementOrders, setSettlementOrders] = useState(null);
@@ -392,6 +394,11 @@ export default function ItemsManager() {
     }
   }, [debouncedName, searchCustomer, searchDateFrom, searchDateTo, searchStatus, searchPayment, searchMinAmt, searchMaxAmt]);
 
+  // Store runSearch in ref to avoid dependency issues
+  useEffect(() => {
+    runSearchRef.current = runSearch;
+  }, [runSearch]);
+
   // Auto-run search when search mode is active
   useEffect(() => {
     if (isSearchMode) { runSearch(1); }
@@ -485,6 +492,11 @@ export default function ItemsManager() {
       }
     }
   }, []); // No dependencies to avoid recreation
+
+  // Store loadData in ref to avoid dependency issues
+  useEffect(() => {
+    loadDataRef.current = loadData;
+  }, [loadData]);
 
   useEffect(() => { loadData(1); }, [loadData]);
 
