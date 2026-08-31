@@ -232,8 +232,6 @@ export default function ItemsManager() {
   const scrollRef = useRef(null); // Ref for scrollable order list
   const savedScrollPos = useRef(0); // Save scroll position before modal opens
   const savedPage = useRef(1); // Save current page number before modal opens
-  const loadDataRef = useRef(null);
-  const runSearchRef = useRef(null);
 
   // Close detail pane when no orders are selected
   useEffect(() => {
@@ -241,29 +239,6 @@ export default function ItemsManager() {
       setDetailOpen(false);
     }
   }, [selectedRefs, detailOpen]);
-
-  // Infinite scroll using scroll event listener
-  useEffect(() => {
-    const scrollContainer = scrollRef.current;
-    if (!scrollContainer) return;
-
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-      const scrollThreshold = 200; // Load more when 200px from bottom
-      const isNearBottom = scrollTop + clientHeight >= scrollHeight - scrollThreshold;
-
-      if (isNearBottom) {
-        if (isSearchMode && hasMoreSearch && !searchLoadingMore) {
-          runSearchRef.current?.(searchPage + 1);
-        } else if (!isSearchMode && hasMoreItems && !loadingMore) {
-          loadDataRef.current?.(itemsPage + 1);
-        }
-      }
-    };
-
-    scrollContainer.addEventListener('scroll', handleScroll);
-    return () => scrollContainer.removeEventListener('scroll', handleScroll);
-  }, [isSearchMode, hasMoreSearch, hasMoreItems, searchLoadingMore, loadingMore, searchPage, itemsPage]);
 
   // Overlays
   const [settlementOrders, setSettlementOrders] = useState(null);
@@ -394,11 +369,6 @@ export default function ItemsManager() {
     }
   }, [debouncedName, searchCustomer, searchDateFrom, searchDateTo, searchStatus, searchPayment, searchMinAmt, searchMaxAmt]);
 
-  // Store runSearch in ref to avoid dependency issues
-  useEffect(() => {
-    runSearchRef.current = runSearch;
-  }, [runSearch]);
-
   // Auto-run search when search mode is active
   useEffect(() => {
     if (isSearchMode) { runSearch(1); }
@@ -430,7 +400,6 @@ export default function ItemsManager() {
   const PAGE_SIZE = 150;
   const [itemsPage, setItemsPage] = useState(1);
   const itemsPageRef = useRef(1);
-  const loadedPagesRef = useRef(new Set([1])); // Track all loaded pages
   const [hasMoreItems, setHasMoreItems] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -449,12 +418,8 @@ export default function ItemsManager() {
 
       setAllItems(prev => {
         if (forceRefresh || page === 1) {
-          // On force refresh or first page, reset loaded pages and replace items
-          loadedPagesRef.current = new Set([page]);
           return newItems;
         } else {
-          // Track loaded pages for infinite scroll
-          loadedPagesRef.current.add(page);
           // Deduplicate by item id to prevent double-counting
           const existingIds = new Set(prev.map(i => i.id));
           const uniqueNewItems = newItems.filter(i => !existingIds.has(i.id));
@@ -492,11 +457,6 @@ export default function ItemsManager() {
       }
     }
   }, []); // No dependencies to avoid recreation
-
-  // Store loadData in ref to avoid dependency issues
-  useEffect(() => {
-    loadDataRef.current = loadData;
-  }, [loadData]);
 
   useEffect(() => { loadData(1); }, [loadData]);
 
@@ -1057,10 +1017,23 @@ export default function ItemsManager() {
               });
             })()}
 
-            {/* Loading indicator for infinite scroll */}
-            {((isSearchMode && searchLoadingMore) || (!isSearchMode && loadingMore)) && (
-              <div className="flex items-center justify-center px-4 py-3">
-                <ArrowsClockwise size={14} className="animate-spin text-primary/60" aria-hidden="true" />
+            {!loading && ((isSearchMode && hasMoreSearch) || (!isSearchMode && hasMoreItems)) && (
+              <div className="flex items-center justify-center px-4 py-2 border-t border-border/20">
+                <button
+                  onClick={() => isSearchMode ? runSearch(searchPage + 1) : loadData(itemsPage + 1)}
+                  disabled={isSearchMode ? searchLoadingMore : loadingMore}
+                  className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary transition-colors disabled:opacity-40"
+                >
+                  {isSearchMode ? (
+                    searchLoadingMore
+                      ? <><ArrowsClockwise size={11} className="animate-spin" aria-hidden="true" /> Loading…</>
+                      : <><ArrowsClockwise size={11} aria-hidden="true" /> Load more results</>
+                  ) : (
+                    loadingMore
+                      ? <><ArrowsClockwise size={11} className="animate-spin" aria-hidden="true" /> Loading…</>
+                      : <><ArrowsClockwise size={11} aria-hidden="true" /> Load more orders</>
+                  )}
+                </button>
               </div>
             )}
           </div>
