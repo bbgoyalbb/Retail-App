@@ -465,10 +465,9 @@ export default function ItemsManager() {
 
   useEffect(() => {
     const selectedRefsNeeded = Array.from(new Set(selectedGroups.map(g => g.ref).filter(Boolean)));
-    const missingRefs = selectedRefsNeeded.filter(ref => !advances.some(a => a.ref === ref));
-    if (!missingRefs.length) return;
+    if (!selectedRefsNeeded.length) return;
 
-    getAdvances({ refs: missingRefs.join(",") })
+    getAdvances({ refs: selectedRefsNeeded.join(",") })
       .then(res => {
         setAdvances(prev => {
           const existingMap = new Map(prev.map(a => [a.id, a]));
