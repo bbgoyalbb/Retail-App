@@ -232,7 +232,6 @@ export default function ItemsManager() {
   const scrollRef = useRef(null); // Ref for scrollable order list
   const savedScrollPos = useRef(0); // Save scroll position before modal opens
   const savedPage = useRef(1); // Save current page number before modal opens
-  const sentinelRef = useRef(null); // Ref for infinite scroll sentinel element
   const loadDataRef = useRef(null);
   const runSearchRef = useRef(null);
 
@@ -243,26 +242,27 @@ export default function ItemsManager() {
     }
   }, [selectedRefs, detailOpen]);
 
-  // Infinite scroll using Intersection Observer
+  // Infinite scroll using scroll event listener
   useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          if (isSearchMode && hasMoreSearch && !searchLoadingMore) {
-            runSearchRef.current?.(searchPage + 1);
-          } else if (!isSearchMode && hasMoreItems && !loadingMore) {
-            loadDataRef.current?.(itemsPage + 1);
-          }
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      const scrollThreshold = 200; // Load more when 200px from bottom
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - scrollThreshold;
+
+      if (isNearBottom) {
+        if (isSearchMode && hasMoreSearch && !searchLoadingMore) {
+          runSearchRef.current?.(searchPage + 1);
+        } else if (!isSearchMode && hasMoreItems && !loadingMore) {
+          loadDataRef.current?.(itemsPage + 1);
         }
-      },
-      { root: scrollRef.current, rootMargin: '200px', threshold: 0.1 }
-    );
+      }
+    };
 
-    observer.observe(sentinel);
-    return () => observer.disconnect();
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
   }, [isSearchMode, hasMoreSearch, hasMoreItems, searchLoadingMore, loadingMore, searchPage, itemsPage]);
 
   // Overlays
@@ -1056,11 +1056,6 @@ export default function ItemsManager() {
                 );
               });
             })()}
-
-            {/* Infinite scroll sentinel */}
-            {!loading && ((isSearchMode && hasMoreSearch) || (!isSearchMode && hasMoreItems)) && (
-              <div ref={sentinelRef} className="h-1" />
-            )}
 
             {/* Loading indicator for infinite scroll */}
             {((isSearchMode && searchLoadingMore) || (!isSearchMode && loadingMore)) && (
