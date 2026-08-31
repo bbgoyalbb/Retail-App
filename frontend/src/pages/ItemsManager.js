@@ -232,6 +232,7 @@ export default function ItemsManager() {
   const scrollRef = useRef(null); // Ref for scrollable order list
   const savedScrollPos = useRef(0); // Save scroll position before modal opens
   const savedPage = useRef(1); // Save current page number before modal opens
+  const sentinelRef = useRef(null); // Ref for infinite scroll sentinel element
 
   // Close detail pane when no orders are selected
   useEffect(() => {
@@ -239,6 +240,28 @@ export default function ItemsManager() {
       setDetailOpen(false);
     }
   }, [selectedRefs, detailOpen]);
+
+  // Infinite scroll using Intersection Observer
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          if (isSearchMode && hasMoreSearch && !searchLoadingMore) {
+            runSearch(searchPage + 1);
+          } else if (!isSearchMode && hasMoreItems && !loadingMore) {
+            loadData(itemsPage + 1);
+          }
+        }
+      },
+      { root: scrollRef.current, rootMargin: '200px', threshold: 0.1 }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [isSearchMode, hasMoreSearch, hasMoreItems, searchLoadingMore, loadingMore, searchPage, itemsPage, runSearch, loadData]);
 
   // Overlays
   const [settlementOrders, setSettlementOrders] = useState(null);
@@ -1017,23 +1040,15 @@ export default function ItemsManager() {
               });
             })()}
 
+            {/* Infinite scroll sentinel */}
             {!loading && ((isSearchMode && hasMoreSearch) || (!isSearchMode && hasMoreItems)) && (
-              <div className="flex items-center justify-center px-4 py-2 border-t border-border/20">
-                <button
-                  onClick={() => isSearchMode ? runSearch(searchPage + 1) : loadData(itemsPage + 1)}
-                  disabled={isSearchMode ? searchLoadingMore : loadingMore}
-                  className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary transition-colors disabled:opacity-40"
-                >
-                  {isSearchMode ? (
-                    searchLoadingMore
-                      ? <><ArrowsClockwise size={11} className="animate-spin" aria-hidden="true" /> Loading…</>
-                      : <><ArrowsClockwise size={11} aria-hidden="true" /> Load more results</>
-                  ) : (
-                    loadingMore
-                      ? <><ArrowsClockwise size={11} className="animate-spin" aria-hidden="true" /> Loading…</>
-                      : <><ArrowsClockwise size={11} aria-hidden="true" /> Load more orders</>
-                  )}
-                </button>
+              <div ref={sentinelRef} className="h-1" />
+            )}
+
+            {/* Loading indicator for infinite scroll */}
+            {((isSearchMode && searchLoadingMore) || (!isSearchMode && loadingMore)) && (
+              <div className="flex items-center justify-center px-4 py-3">
+                <ArrowsClockwise size={14} className="animate-spin text-primary/60" aria-hidden="true" />
               </div>
             )}
           </div>
