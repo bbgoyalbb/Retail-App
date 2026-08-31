@@ -423,6 +423,7 @@ export default function ItemsManager() {
   const PAGE_SIZE = 150;
   const [itemsPage, setItemsPage] = useState(1);
   const itemsPageRef = useRef(1);
+  const loadedPagesRef = useRef(new Set([1])); // Track all loaded pages
   const [hasMoreItems, setHasMoreItems] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -441,8 +442,12 @@ export default function ItemsManager() {
 
       setAllItems(prev => {
         if (forceRefresh || page === 1) {
+          // On force refresh or first page, reset loaded pages and replace items
+          loadedPagesRef.current = new Set([page]);
           return newItems;
         } else {
+          // Track loaded pages for infinite scroll
+          loadedPagesRef.current.add(page);
           // Deduplicate by item id to prevent double-counting
           const existingIds = new Set(prev.map(i => i.id));
           const uniqueNewItems = newItems.filter(i => !existingIds.has(i.id));
