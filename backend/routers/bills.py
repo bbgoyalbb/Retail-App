@@ -153,7 +153,7 @@ async def get_items(
     tailoring_status: Optional[str] = None,
     embroidery_status: Optional[str] = None,
     order_no: Optional[str] = None,
-    limit: int = Query(1000, le=2000),
+    limit: int = Query(10000, le=50000),
     skip: int = 0,
     summary: bool = False,
     include_cancelled: bool = False,
@@ -193,8 +193,11 @@ async def get_items(
                   "addon_desc", "karigar"]:
             projection[f] = 1
 
-    # Get paginated results
-    paginated_items = warn_if_capped(await db.items.find(query, projection).sort("date", -1).skip(skip).limit(limit).to_list(limit), limit, "GET /items")
+    # Get paginated results (if limit=0, fetch all)
+    if limit == 0:
+        paginated_items = await db.items.find(query, projection).sort("date", -1).skip(skip).to_list(length=None)
+    else:
+        paginated_items = warn_if_capped(await db.items.find(query, projection).sort("date", -1).skip(skip).limit(limit).to_list(limit), limit, "GET /items")
 
     # Auto-complete: fetch complete data for all refs in paginated results to ensure accurate totals
     refs_in_page = [item["ref"] for item in paginated_items if item.get("ref")]

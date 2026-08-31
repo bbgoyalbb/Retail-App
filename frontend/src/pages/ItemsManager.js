@@ -403,7 +403,7 @@ export default function ItemsManager() {
     setLoading(true);
 
     try {
-      const params = { summary: true }; // No limit, load all orders
+      const params = { limit: 0, summary: true }; // limit=0 fetches all orders
 
       const itemsRes = await getItems(params);
       const newItems = itemsRes.data.items || [];
