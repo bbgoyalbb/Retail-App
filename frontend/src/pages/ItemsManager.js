@@ -687,16 +687,7 @@ export default function ItemsManager() {
       else { toast({ title:"Success", description:`${ok} items saved` }); }
     } else { toast({ title:"Partial Success", description:`${fail} failed, ${ok} saved`, variant: "destructive" }); }
     invalidateItemsCache();
-    // Update specific items in allItems instead of full refresh to maintain pagination
-    const updatedIds = Object.keys(editData).filter(id => !newItemIds.includes(id));
-    if (updatedIds.length > 0) {
-      const updatedItems = await Promise.all(updatedIds.map(id => getItem(id)));
-      setAllItems(prev => {
-        const updatedMap = new Map(updatedItems.map(i => [i.id, i]));
-        return prev.map(item => updatedMap.has(item.id) ? updatedMap.get(item.id) : item);
-      });
-    }
-    // Trigger OrderDetailPane refresh
+    // Trigger full refresh to ensure data consistency
     handleGroupChanged();
   };
 
