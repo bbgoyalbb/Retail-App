@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 
 // Virtual list row component
 const Row = ({ index, style, data }) => {
-  const { group, showDate, isSelected, selectRef, listRef, setTailoringGroup, setAddonGroup, setShowFormatDialog } = data[index];
+  const { group, showDate, isSelected, selectRef, setTailoringGroup, setAddonGroup, setShowFormatDialog } = data[index];
   const isCancelled = group.items.every(i => i.cancelled);
   const orderNos = [...new Set(group.items.map(i=>i.order_no).filter(o=>o&&o!=="N/A"))];
 
@@ -93,9 +93,9 @@ const Row = ({ index, style, data }) => {
           </div>
 
           <div className="flex items-center gap-1 opacity-100 transition-all" onClick={e => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => { const savedScrollPos = listRef.current?.state?.scrollOffset || 0; setTailoringGroup(group); }} aria-label="Open tailoring"><Scissors size={14} weight="bold" aria-hidden="true"/></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { const savedScrollPos = listRef.current?.state?.scrollOffset || 0; setAddonGroup(group); }} aria-label="Open add-ons"><Tag size={14} weight="bold" aria-hidden="true"/></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => { setShowFormatDialog(group.ref); }} aria-label="View invoice"><Printer size={14} weight="bold" aria-hidden="true"/></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => setTailoringGroup(group)} aria-label="Open tailoring"><Scissors size={14} weight="bold" aria-hidden="true"/></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => setAddonGroup(group)} aria-label="Open add-ons"><Tag size={14} weight="bold" aria-hidden="true"/></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => setShowFormatDialog(group.ref)} aria-label="View invoice"><Printer size={14} weight="bold" aria-hidden="true"/></Button>
           </div>
         </div>
       </div>
@@ -310,6 +310,20 @@ export default function ItemsManager() {
   const scrollRef = useRef(null); // Ref for scrollable order list
   const listRef = useRef(null); // Ref for react-window List
   const savedScrollPos = useRef(0); // Save scroll position before modal opens
+  const [listHeight, setListHeight] = useState(600); // Height for virtual list
+
+  // Measure container height for virtual list
+  useEffect(() => {
+    const measureHeight = () => {
+      if (scrollRef.current) {
+        setListHeight(scrollRef.current.clientHeight);
+      }
+    };
+
+    measureHeight();
+    window.addEventListener('resize', measureHeight);
+    return () => window.removeEventListener('resize', measureHeight);
+  }, []);
 
   // Close detail pane when no orders are selected
   useEffect(() => {
@@ -948,7 +962,7 @@ export default function ItemsManager() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden custom-scrollbar">
+          <div ref={scrollRef} className="flex-1 overflow-hidden custom-scrollbar">
             {loading && (
               <div className="p-4 space-y-3">
                 {Array.from({length:8}).map((_,i)=>(
@@ -993,7 +1007,6 @@ export default function ItemsManager() {
                   showDate,
                   isSelected: selectedRefs.has(group.ref),
                   selectRef,
-                  listRef,
                   setTailoringGroup,
                   setAddonGroup,
                   setShowFormatDialog
@@ -1005,7 +1018,7 @@ export default function ItemsManager() {
               return (
                 <List
                   ref={listRef}
-                  height={scrollRef.current?.clientHeight || 600}
+                  height={listHeight}
                   itemCount={refs.length}
                   itemSize={getItemSize}
                   itemData={itemData}
