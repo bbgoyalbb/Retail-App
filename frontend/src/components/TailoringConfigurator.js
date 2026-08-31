@@ -56,7 +56,7 @@ export function TailoringConfigurator({
       setAssignments(normalized);
       prevItemsKey.current = nextKey;
     }
-  }, [items]);
+  }, [items, mode]);
 
   // Copy order_no and delivery_date from first selected item to all other selected items
   const copyToAll = () => {

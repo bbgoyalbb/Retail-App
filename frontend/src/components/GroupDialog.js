@@ -49,7 +49,7 @@ export default function GroupDialog({ open, onClose, mode = "create", groupId = 
       setGroupName("");
       setSelectedItemIds(initialSelectionIds);
     }
-  }, [open, mode, groupId, initialSelectionKey]);
+  }, [open, mode, groupId, initialSelectionKey, initialSelectionIds]);
 
   // loadGroupDetails is now inlined in the useEffect above
 
