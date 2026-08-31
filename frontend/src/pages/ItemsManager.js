@@ -231,7 +231,6 @@ export default function ItemsManager() {
   const [detailOpen, setDetailOpen]     = useState(false); // mobile toggle
   const scrollRef = useRef(null); // Ref for scrollable order list
   const savedScrollPos = useRef(0); // Save scroll position before modal opens
-  const savedPage = useRef(1); // Save current page number before modal opens
 
   // Close detail pane when no orders are selected
   useEffect(() => {
@@ -397,68 +396,38 @@ export default function ItemsManager() {
     setSelectedRefs(new Set());
   };
 
-  const PAGE_SIZE = 150;
-  const [itemsPage, setItemsPage] = useState(1);
-  const itemsPageRef = useRef(1);
-  const [hasMoreItems, setHasMoreItems] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  // Load data (grouped list mode)
-  const loadData = useCallback(async (page = 1, forceRefresh = false) => {
-    const preserveScroll = forceRefresh && page === itemsPageRef.current;
+  // Load data (grouped list mode) - load all orders at once
+  const loadData = useCallback(async (forceRefresh = false) => {
+    const preserveScroll = forceRefresh;
     const currentScrollTop = scrollRef.current?.scrollTop || 0;
-    if (page === 1) setLoading(true); else setLoadingMore(true);
+    setLoading(true);
 
     try {
-      const params = { limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE, summary: true };
+      const params = { summary: true }; // No limit, load all orders
 
       const itemsRes = await getItems(params);
       const newItems = itemsRes.data.items || [];
-      const total = itemsRes.data.total ?? newItems.length;
 
-      setAllItems(prev => {
-        if (forceRefresh || page === 1) {
-          return newItems;
-        } else {
-          // Deduplicate by item id to prevent double-counting
-          const existingIds = new Set(prev.map(i => i.id));
-          const uniqueNewItems = newItems.filter(i => !existingIds.has(i.id));
-          return [...prev, ...uniqueNewItems];
-        }
-      });
-      setHasMoreItems((page * PAGE_SIZE) < total);
-      setItemsPage(page);
-      itemsPageRef.current = page;
+      setAllItems(newItems);
 
       const uniqueRefs = [...new Set(newItems.map(i => i.ref).filter(Boolean))];
       if (uniqueRefs.length > 0) {
         const advRes = await getAdvances({ refs: uniqueRefs });
-        setAdvances(prev => {
-          if (forceRefresh || page === 1) {
-            // On force refresh or first page, replace advances with fresh data for current refs only
-            const currentRefSet = new Set(uniqueRefs);
-            return (advRes.data || []).filter(a => currentRefSet.has(a.ref));
-          } else {
-            // On pagination, merge advances
-            const existingMap = new Map(prev.map(a => [a.id, a]));
-            (advRes.data || []).forEach(a => existingMap.set(a.id, a));
-            return Array.from(existingMap.values());
-          }
-        });
+        setAdvances(advRes.data || []);
       }
     } catch {
       console.error("Failed to load data");
     } finally {
-      setLoading(false); setLoadingMore(false);
+      setLoading(false);
       if (preserveScroll) {
         setTimeout(() => {
           if (scrollRef.current) scrollRef.current.scrollTop = currentScrollTop;
         }, 0);
       }
     }
-  }, []); // No dependencies to avoid recreation
+  }, []);
 
-  useEffect(() => { loadData(1); }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   useEffect(() => {
     getPublicSettings().then(res => setSettings(res.data)).catch(() => setSettings({ karigars: [] }));
@@ -664,7 +633,7 @@ export default function ItemsManager() {
           return Array.from(existingMap.values());
         });
       }
-      loadData(itemsPage, true);
+      loadData(true);
       return;
     }
     // Items
@@ -703,7 +672,7 @@ export default function ItemsManager() {
     } catch {
       toast({ title: "Error", description: "Failed to delete", variant: "destructive" });
     }
-    setDelConfirm(null); invalidateItemsCache(); invalidateCustomersCache(); loadData(itemsPage, true);
+    setDelConfirm(null); invalidateItemsCache(); invalidateCustomersCache(); loadData(true);
   };
 
   const handleCancelOrder = async (group) => {
@@ -715,7 +684,7 @@ export default function ItemsManager() {
       description: ok===group.items.length?`Order ${group.ref} cancelled`:`${group.items.length-ok} items failed`,
       variant: ok===group.items.length?"default":"destructive"
     });
-    setCancelConfirm(null); invalidateItemsCache(); loadData(itemsPage, true);
+    setCancelConfirm(null); invalidateItemsCache(); loadData(true);
   };
 
   const handleCancelItem = async (item) => {
@@ -726,7 +695,7 @@ export default function ItemsManager() {
     } catch {
       toast({ title: "Error", description: "Failed to cancel article", variant: "destructive" });
     }
-    invalidateItemsCache(); loadData(itemsPage, true);
+    invalidateItemsCache(); loadData(true);
   };
 
   const cancelEdit = () => {
@@ -753,7 +722,7 @@ export default function ItemsManager() {
     invalidateItemsCache();
     invalidateAdvancesCache();
 
-    await loadData(itemsPage, true);
+    await loadData(true);
     if (isSearchMode) {
       await runSearch(searchPage);
     }
@@ -771,7 +740,7 @@ export default function ItemsManager() {
     setTimeout(() => {
       if (scrollRef.current) scrollRef.current.scrollTop = savedScroll;
     }, 0);
-  }, [itemsPage, isSearchMode, loadData, runSearch, selectedRefs, searchPage]);
+  }, [isSearchMode, loadData, runSearch, selectedRefs, searchPage]);
 
   const handleGroupChanged = async () => {
     // Refresh items data when groups are changed
@@ -871,7 +840,7 @@ export default function ItemsManager() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(1, true); }}
+                onClick={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(true); }}
                 className={cn("h-8 w-8 text-muted-foreground hover:text-primary transition-all", loading && "animate-spin")}
                 aria-label="Refresh orders"
               >
@@ -1006,8 +975,8 @@ export default function ItemsManager() {
                         </div>
 
                         <div className="flex items-center gap-1 opacity-100 transition-all" onClick={e => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; savedPage.current = itemsPage; setTailoringGroup(group); }} aria-label="Open tailoring"><Scissors size={14} weight="bold" aria-hidden="true"/></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; savedPage.current = itemsPage; setAddonGroup(group); }} aria-label="Open add-ons"><Tag size={14} weight="bold" aria-hidden="true"/></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; setTailoringGroup(group); }} aria-label="Open tailoring"><Scissors size={14} weight="bold" aria-hidden="true"/></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { savedScrollPos.current = scrollRef.current?.scrollTop || 0; setAddonGroup(group); }} aria-label="Open add-ons"><Tag size={14} weight="bold" aria-hidden="true"/></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => { setShowFormatDialog(group.ref); }} aria-label="View invoice"><Printer size={14} weight="bold" aria-hidden="true"/></Button>
                         </div>
                       </div>
@@ -1016,26 +985,6 @@ export default function ItemsManager() {
                 );
               });
             })()}
-
-            {!loading && ((isSearchMode && hasMoreSearch) || (!isSearchMode && hasMoreItems)) && (
-              <div className="flex items-center justify-center px-4 py-2 border-t border-border/20">
-                <button
-                  onClick={() => isSearchMode ? runSearch(searchPage + 1) : loadData(itemsPage + 1)}
-                  disabled={isSearchMode ? searchLoadingMore : loadingMore}
-                  className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary transition-colors disabled:opacity-40"
-                >
-                  {isSearchMode ? (
-                    searchLoadingMore
-                      ? <><ArrowsClockwise size={11} className="animate-spin" aria-hidden="true" /> Loading…</>
-                      : <><ArrowsClockwise size={11} aria-hidden="true" /> Load more results</>
-                  ) : (
-                    loadingMore
-                      ? <><ArrowsClockwise size={11} className="animate-spin" aria-hidden="true" /> Loading…</>
-                      : <><ArrowsClockwise size={11} aria-hidden="true" /> Load more orders</>
-                  )}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>{/* end BODY */}
@@ -1413,7 +1362,7 @@ export default function ItemsManager() {
         <SettlementPanel
           orders={settlementOrders}
           onClose={() => setSettlementOrders(null)}
-          onSuccess={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(itemsPage, true); }}
+          onSuccess={() => { invalidateItemsCache(); invalidateAdvancesCache(); loadData(true); }}
         />
       )}
 
