@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import { VariableSizeList as List } from "react-window";
+import { List } from "react-window";
 import {
   getItems, getItem, getAdvances, updateItem, deleteItem, createItem,
   updateAdvance, createAdvance, deleteAdvance, invalidateItemsCache,
@@ -28,9 +28,34 @@ import { cn } from "@/lib/utils";
 
 // Virtual list row component
 const Row = ({ index, style, data }) => {
+  try {
+    if (!data || !Array.isArray(data) || !data[index]) {
+      try {
+        console.error('ItemsManager.Row: missing data for index', index, 'dataLength', Array.isArray(data) ? data.length : undefined);
+        window.__DIAG__ = Object.assign(window.__DIAG__ || {}, { itemsManagerRowMissing: { index, dataLength: Array.isArray(data) ? data.length : undefined, time: Date.now() } });
+      } catch (e) {}
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
+
   const { group, showDate, isSelected, selectRef, setTailoringGroup, setAddonGroup, setShowFormatDialog, listRef, savedScrollPos } = data[index];
-  const isCancelled = group.items.every(i => i.cancelled);
-  const orderNos = [...new Set(group.items.map(i=>i.order_no).filter(o=>o&&o!=="N/A"))];
+  const safeGroup = {
+    ref: group?.ref,
+    name: group?.name,
+    date: group?.date,
+    items: Array.isArray(group?.items) ? group.items : [],
+    totals: {
+      total: group?.totals?.total || 0,
+      pending: group?.totals?.pending || 0,
+      received: group?.totals?.received || 0,
+    }
+  };
+  if (!group) return null;
+
+  const isCancelled = group.items.every(i => i?.cancelled);
+  const orderNos = [...new Set(group.items.map(i=>i?.order_no).filter(o=>o&&o!=="N/A"))];
 
   return (
     <div style={style}>
@@ -40,7 +65,7 @@ const Row = ({ index, style, data }) => {
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-primary/80" />
               <p className="text-[10px] uppercase tracking-[0.35em] font-black text-primary/80">
-                {group.date || "—"}
+                {safeGroup.date || "—"}
               </p>
             </div>
           </div>
@@ -57,15 +82,15 @@ const Row = ({ index, style, data }) => {
       >
         <div className="flex items-center gap-4 px-5 py-4">
           <div className="min-w-0 flex-1 space-y-1">
-            <p className={cn(
+              <p className={cn(
               "text-xs font-bold uppercase tracking-wide truncate",
               isCancelled ? "line-through text-muted-foreground/50" : "text-foreground group-hover/row:text-primary transition-colors"
             )}>
-              {group.name}
+              {safeGroup.name}
             </p>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="font-mono text-[9px] h-4 px-1.5 font-bold text-primary border-primary/20 bg-primary/5">
-                {group.ref}
+                <Badge variant="outline" className="font-mono text-[9px] h-4 px-1.5 font-bold text-primary border-primary/20 bg-primary/5">
+                {safeGroup.ref}
               </Badge>
               {orderNos.length > 0 && (
                 <span className="font-mono text-[9px] font-black text-muted-foreground/40 leading-none">
@@ -76,18 +101,18 @@ const Row = ({ index, style, data }) => {
           </div>
 
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
-            <span className={cn(
+              <span className={cn(
               "font-mono text-[11px] font-black tracking-tighter",
-              group.totals.pending > 0 ? "text-warning" : group.totals.pending < 0 ? "text-destructive" : "text-success"
+              safeGroup.totals.pending > 0 ? "text-warning" : safeGroup.totals.pending < 0 ? "text-destructive" : "text-success"
             )}>
-              {group.totals.pending !== 0 ? `₹${fmt(group.totals.pending)}` : "SETTLED"}
+              {safeGroup.totals.pending !== 0 ? `₹${fmt(safeGroup.totals.pending)}` : "SETTLED"}
             </span>
             <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">
-              ₹{fmt(group.totals.total)} TOTAL
+              ₹{fmt(safeGroup.totals.total)} TOTAL
             </span>
-            {group.items[0]?.created_at && (
+            {safeGroup.items[0]?.created_at && (
               <span className="text-[8px] font-medium text-muted-foreground/30 uppercase tracking-wider">
-                {new Date(group.items[0].created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                {new Date(safeGroup.items[0].created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
           </div>
@@ -233,19 +258,28 @@ const computeFabric = (price, qty, disc) =>
 const computePending = (total, received) => Math.round((total - (received || 0)) * 100) / 100;
 
 // ─── Pure helpers (module-level — stable references, no React deps) ───────────
-const isOrderSettled = (group) => group.items.every(item => {
-  const checks = [
-    [item.fabric_amount,     item.fabric_pay_mode],
-    [item.tailoring_amount,  item.tailoring_pay_mode],
-    [item.embroidery_amount, item.embroidery_pay_mode],
-    [item.addon_amount,      item.addon_pay_mode],
-  ];
-  return checks.every(([amt, mode]) => !amt || Number(amt) === 0 || String(mode || "").startsWith("Settled"));
-});
+const isOrderSettled = (group) => {
+  if (!group || !Array.isArray(group.items) || group.items.length === 0) return true;
 
-const buildGrouped = (items, advList) => {
+  return group.items.every(item => {
+    if (!item) return true;
+    const checks = [
+      [item.fabric_amount,     item.fabric_pay_mode],
+      [item.tailoring_amount,  item.tailoring_pay_mode],
+      [item.embroidery_amount, item.embroidery_pay_mode],
+      [item.addon_amount,      item.addon_pay_mode],
+    ];
+    return checks.every(([amt, mode]) => !amt || Number(amt) === 0 || String(mode || "").startsWith("Settled"));
+  });
+};
+
+const buildGrouped = (items = [], advList = []) => {
   const g = {};
-  items.forEach(item => {
+  const safeItems = Array.isArray(items) ? items : [];
+  const safeAdvances = Array.isArray(advList) ? advList : [];
+
+  safeItems.forEach(item => {
+    if (!item || !item.ref) return;
     if (!g[item.ref]) g[item.ref] = {
       ref: item.ref, name: item.name, date: item.date, items: [],
       totals: { fabric: 0, tailoring: 0, embroidery: 0, addon: 0, advance: 0, total: 0, received: 0, pending: 0 },
@@ -263,7 +297,11 @@ const buildGrouped = (items, advList) => {
     if (!String(item.embroidery_pay_mode || "").startsWith("Settled")) gr.totals.pending += item.embroidery_pending || 0;
     if (!String(item.addon_pay_mode || "").startsWith("Settled"))      gr.totals.pending += item.addon_pending || 0;
   });
-  advList.forEach(adv => { if (g[adv.ref]) g[adv.ref].totals.advance += adv.amount || 0; });
+
+  safeAdvances.forEach(adv => {
+    if (!adv || !adv.ref || !g[adv.ref]) return;
+    g[adv.ref].totals.advance += adv.amount || 0;
+  });
   return g;
 };
 
@@ -311,18 +349,24 @@ export default function ItemsManager() {
   const listRef = useRef(null); // Ref for react-window List
   const savedScrollPos = useRef(0); // Save scroll position before modal opens (using listRef)
   const [listHeight, setListHeight] = useState(600); // Height for virtual list
+  const [listWidth, setListWidth] = useState(0); // Width for virtual list (px)
 
   // Measure container height for virtual list
   useEffect(() => {
     const measureHeight = () => {
       if (scrollRef.current) {
         setListHeight(scrollRef.current.clientHeight);
+        setListWidth(scrollRef.current.clientWidth || 0);
       }
     };
 
-    measureHeight();
+    // Initial measurement with a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(measureHeight, 100);
     window.addEventListener('resize', measureHeight);
-    return () => window.removeEventListener('resize', measureHeight);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', measureHeight);
+    };
   }, []);
 
   // Close detail pane when no orders are selected
@@ -533,16 +577,18 @@ export default function ItemsManager() {
   // Pre-compute settled status per ref so the refs memo doesn't call isOrderSettled N×M times
   const settledMap = useMemo(() => {
     const m = {};
-    Object.values({ ...grouped, ...searchGrouped }).forEach(g => { if (g?.ref) m[g.ref] = isOrderSettled(g); });
+    const merged = { ...(grouped || {}), ...(searchGrouped || {}) };
+    Object.values(merged || {}).forEach(g => { if (g?.ref) m[g.ref] = isOrderSettled(g); });
     return m;
   }, [grouped, searchGrouped]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refs = useMemo(() => {
-    const source = Object.values(activeGroups);
+    const source = Object.values(activeGroups || {});
     const filtered = isSearchMode ? source.filter(Boolean) : source.filter(g => {
+      if (!g || !g.ref) return false;
       if (settleTab === "unsettled") return !settledMap[g.ref];
       if (settleTab === "settled")   return settledMap[g.ref] && g.totals.total > 0;
-      if (settleTab === "awaiting")  return g.items.some(i => i.tailoring_status === "Awaiting Order");
+      if (settleTab === "awaiting")  return Array.isArray(g.items) && g.items.some(i => i?.tailoring_status === "Awaiting Order");
       return true;
     });
     return filtered.sort((a, b) => {
@@ -570,6 +616,20 @@ export default function ItemsManager() {
       })
       .catch(() => {});
   }, [selectedGroups]);
+
+  // Diagnostic snapshot for ErrorBoundary to aid debugging in production
+  useEffect(() => {
+    try {
+      const mergedAll = { ...(grouped || {}), ...(searchGrouped || {}) };
+      window.__DIAG__ = {
+        pathname: window.location.pathname,
+        mergedKeys: Object.keys(mergedAll || {}).slice(0, 50),
+        activeGroupKeys: Object.keys(activeGroups || {}).slice(0, 50),
+        allItemsLength: Array.isArray(allItems) ? allItems.length : 0,
+        advancesLength: Array.isArray(advances) ? advances.length : 0,
+      };
+    } catch (e) { /* ignore */ }
+  }, [grouped, searchGrouped, activeGroups, allItems, advances]);
 
   // Select / deselect
   const selectRef = (ref, multi = false) => {
@@ -997,7 +1057,7 @@ export default function ItemsManager() {
               </div>
             )}
 
-            {!loading && refs.length > 0 && (() => {
+            {!loading && Array.isArray(refs) && refs.length > 0 && (() => {
               let lastDate = null;
               const itemData = refs.map(group => {
                 const showDate = group.date !== lastDate;
@@ -1015,7 +1075,34 @@ export default function ItemsManager() {
                 };
               });
 
-              const getItemSize = (index) => itemData[index].showDate ? 120 : 80;
+              // Defensive checks: ensure itemData matches refs length
+              if (!Array.isArray(itemData) || itemData.length !== refs.length) {
+                console.error("ItemsManager: itemData/ref length mismatch", { refsLength: refs.length, itemDataLength: itemData?.length });
+                window.__DIAG__ = Object.assign(window.__DIAG__ || {}, { itemsManagerMismatch: { refsLength: refs.length, itemDataLength: itemData?.length, pathname: window.location.pathname } });
+                return null;
+              }
+
+              // Don't attempt to render react-window List until we have valid dimensions
+              if (!listWidth || listWidth <= 0 || !listHeight || listHeight <= 0) {
+                // Defer render until measurement completes
+                return null;
+              }
+
+              const getItemSize = (index) => {
+                if (!itemData[index]) {
+                  console.error('ItemsManager.getItemSize: missing itemData at index', index, 'itemDataLength', itemData?.length);
+                  return 80; // fallback size
+                }
+                return itemData[index].showDate ? 120 : 80;
+              };
+
+              const getItemKey = (index) => {
+                if (!itemData[index]?.group?.ref) {
+                  console.error('ItemsManager.getItemKey: missing group ref at index', index);
+                  return `fallback-${index}`;
+                }
+                return itemData[index].group.ref;
+              };
 
               return (
                 <List
@@ -1024,7 +1111,8 @@ export default function ItemsManager() {
                   itemCount={refs.length}
                   itemSize={getItemSize}
                   itemData={itemData}
-                  width="100%"
+                  itemKey={getItemKey}
+                  width={listWidth}
                 >
                   {Row}
                 </List>
