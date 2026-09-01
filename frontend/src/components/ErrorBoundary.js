@@ -15,13 +15,15 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, info) {
     console.error("ErrorBoundary caught:", error, info);
     try {
+      const diag = window.__DIAG__ || null;
       submitBugReport({
         title: `Auto: ${error?.message || "Unknown error"}`,
-        description: `${error?.toString()}\n\nComponent Stack:\n${info?.componentStack || ""}`,
+        description: `${error?.toString()}\n\nComponent Stack:\n${info?.componentStack || ""}\n\nDiagnostics:\n${diag ? JSON.stringify(diag) : "(none)"}`,
         page: window.location.pathname + window.location.search,
         userAgent: navigator.userAgent,
         consoleLogs: [],
         timestamp: new Date().toISOString(),
+        diagnostics: diag,
       }).catch(() => {});
     } catch {}
   }

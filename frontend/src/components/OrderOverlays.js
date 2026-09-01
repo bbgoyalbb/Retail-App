@@ -9,9 +9,9 @@ export function TailoringOverlay({ group, onClose, onSuccess }) {
   const { toast } = useToast();
 
   // Normalize group.items to the format expected by TailoringConfigurator
-  const items = group.items.filter(i =>
-    !i.order_no || i.order_no === "N/A" || i.tailoring_status === "Awaiting Order"
-  );
+  const items = Array.isArray(group?.items)
+    ? group.items.filter(i => !i.order_no || i.order_no === "N/A" || i.tailoring_status === "Awaiting Order")
+    : [];
 
   const handleSplit = async ({ item_id, splits }) => {
     try {
@@ -46,7 +46,7 @@ export function TailoringOverlay({ group, onClose, onSuccess }) {
       });
 
       // Call API for each group
-      for (const g of Object.values(groups)) {
+      for (const g of Object.values(groups || {})) {
         await assignTailoring({
           item_ids: g.items.map(i => i.item_id),
           order_no: g.order_no,

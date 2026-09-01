@@ -1,14 +1,7 @@
 @echo off
-:: Check for --force flag
+:: Minimal flags: support --force only to reinstall deps
 set "FORCE_BUILD=0"
-if "%1"=="--force" set "FORCE_BUILD=1"
-
-:: ---- Self-elevate to Administrator if not already ----
-net session >nul 2>&1
-if %errorlevel% neq 0 (
-    powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs -ArgumentList '%*'"
-    exit /b
-)
+if "%~1"=="--force" set "FORCE_BUILD=1"
 setlocal EnableDelayedExpansion
 set "ROOT=%~dp0"
 set "BACKEND_PORT=8001"
@@ -105,13 +98,27 @@ set GENERATE_SOURCEMAP=false
 :: Suppress Node.js deprecation warnings (fs.F_OK, url.parse, etc.)
 set NODE_OPTIONS=--no-deprecation
 
-:: Skip yarn install if node_modules exists and package.json hasn't changed
-if "%FORCE_BUILD%"=="1" (
-    echo [2/4] Force reinstall requested (--force flag)
-    echo [2/4] Installing dependencies...
-    call yarn install
-) else if exist "node_modules" (
-    echo [2/4] node_modules found, skipping yarn install (use --force to reinstall)
+:: Remove stale generated files so the app is rebuilt from a clean state.
+if exist "build" rmdir /s /q "build"
+if exist ".cache" rmdir /s /q ".cache"
+if exist "coverage" rmdir /s /q "coverage"
+if exist "%ROOT%frontend\build" rmdir /s /q "%ROOT%frontend\build"
+if exist "%ROOT%frontend\.cache" rmdir /s /q "%ROOT%frontend\.cache"
+if exist "%ROOT%frontend\coverage" rmdir /s /q "%ROOT%frontend\coverage"
+if exist "%ROOT%backend\static\uploads" (
+    for /d %%d in ("%ROOT%backend\static\uploads\*") do if exist "%%d" rmdir /s /q "%%d"
+    del /f /q "%ROOT%backend\static\uploads\*" >nul 2>&1
+)
+
+:: Install dependencies if node_modules missing or --force specified
+if exist "node_modules" (
+    if "%FORCE_BUILD%"=="1" (
+        echo [2/4] Reinstall requested (--force flag)
+        echo [2/4] Installing dependencies...
+        call yarn install
+    ) else (
+        echo [2/4] node_modules found, skipping yarn install (use --force to reinstall)
+    )
 ) else (
     echo [2/4] Installing dependencies...
     call yarn install
@@ -137,6 +144,8 @@ if "%FORCE_BUILD%"=="1" (
 if "%REBUILD_NEEDED%"=="1" (
     :: Clear old builds to ensure a fresh state
     if exist "build" rmdir /s /q "build"
+    if exist ".cache" rmdir /s /q ".cache"
+    if exist "coverage" rmdir /s /q "coverage"
     echo [2/4] Running yarn build...
     call yarn build
     if errorlevel 1 (
@@ -187,6 +196,12 @@ timeout /t 3 /nobreak >nul
 echo.
 
 :: ---- Step 5: Regenerate SSL cert + Start backend ----
+:: Remove stale generated backend artifacts so the environment starts clean.
+if exist "%ROOT%backend\ssl.crt" del /f /q "%ROOT%backend\ssl.crt"
+if exist "%ROOT%backend\ssl.key" del /f /q "%ROOT%backend\ssl.key"
+for /r "%ROOT%backend" %%d in (__pycache__ .pytest_cache) do if exist "%%d" rmdir /s /q "%%d"
+for /r "%ROOT%backend" %%f in (*.pyc *.pyo) do del /f /q "%%f"
+
 :: Check if SSL cert exists and matches current IP
 set "REGEN_CERT=1"
 if exist "%ROOT%backend\ssl.crt" (

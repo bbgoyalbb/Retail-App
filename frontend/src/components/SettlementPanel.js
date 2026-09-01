@@ -76,7 +76,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
   }, [orders.map(o => o.ref).join(",")]);
 
   // ── Aggregated totals ──
-  const aggBalances = useMemo(() => Object.values(refBalances).reduce(
+  const aggBalances = useMemo(() => Object.values(refBalances || {}).reduce(
     (acc, b) => ({
       fabric:     acc.fabric     + (b.fabric     || 0),
       tailoring:  acc.tailoring  + (b.tailoring  || 0),
@@ -88,7 +88,7 @@ export default function SettlementPanel({ orders: ordersProp, billRef, customer,
   ), [refBalances]);
   const totalPending = aggBalances.fabric + aggBalances.tailoring + aggBalances.embroidery + aggBalances.addon;
   const totalPool    = (parseFloat(freshPay) || 0) + (useAdvance ? aggBalances.advance : 0);
-  const totalAlloc   = useMemo(() => Object.values(allotments).reduce((sum, a) =>
+  const totalAlloc   = useMemo(() => Object.values(allotments || {}).reduce((sum, a) =>
     sum + (parseFloat(a.fabric) || 0) + (parseFloat(a.tailoring) || 0) +
           (parseFloat(a.embroidery) || 0) + (parseFloat(a.addon) || 0) + (parseFloat(a.advance) || 0), 0),
   [allotments]);

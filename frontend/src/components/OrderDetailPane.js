@@ -62,24 +62,39 @@ function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDel
   return (
     <div className="space-y-8 pb-4">
       {selectedGroups.map(group => {
-        const refAdvances = advances.filter(a => a.ref === group.ref);
-        const totalAdvance = refAdvances.reduce((s, a) => s + a.amount, 0);
-        const isSettled = group.totals.total > 0 && (group.totals.pending - totalAdvance) <= 0;
+        const safeGroup = {
+          ref: group?.ref,
+          name: group?.name,
+          date: group?.date,
+          items: Array.isArray(group?.items) ? group.items : [],
+          totals: {
+            total: group?.totals?.total || 0,
+            pending: group?.totals?.pending || 0,
+            received: group?.totals?.received || 0,
+            fabric: group?.totals?.fabric || 0,
+            tailoring: group?.totals?.tailoring || 0,
+            embroidery: group?.totals?.embroidery || 0,
+            addon: group?.totals?.addon || 0,
+          }
+        };
+        const refAdvances = advances.filter(a => a.ref === safeGroup.ref);
+        const totalAdvance = refAdvances.reduce((s, a) => s + (a.amount || 0), 0);
+        const isSettled = safeGroup.totals.total > 0 && (safeGroup.totals.pending - totalAdvance) <= 0;
 
         return (
-          <div key={group.ref} className="space-y-4">
-            {selectedGroups.length > 1 && (
+          <div key={safeGroup.ref} className="space-y-4">
+              {selectedGroups.length > 1 && (
               <div className="flex items-center gap-3 px-1">
                 <Badge variant="outline" className="font-mono text-[11px] font-bold text-primary border-primary/20 bg-primary/5 px-2 py-0.5">
-                  {group.ref}
+                  {safeGroup.ref}
                 </Badge>
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] truncate">{group.name}</span>
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] truncate">{safeGroup.name}</span>
                 <div className="flex-1 border-t border-border/40 border-dashed" />
               </div>
             )}
 
             <div className="grid grid-cols-1 gap-4">
-              {group.items.map(item => {
+              {safeGroup.items.map(item => {
                 const itemTotal = (item.fabric_amount||0) + (item.tailoring_amount||0) + (item.embroidery_amount||0) + (item.addon_amount||0);
                 const itemPending =
                   (!String(item.fabric_pay_mode||"").startsWith("Settled") ? (item.fabric_pending||0) : 0) +
@@ -201,11 +216,11 @@ function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDel
               <CardContent className="p-4 space-y-2.5">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground">Order Value</span>
-                  <span className="font-mono font-black text-sm">₹{fmt(group.totals.total)}</span>
+                  <span className="font-mono font-black text-sm">₹{fmt(safeGroup.totals.total)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground">Received</span>
-                  <span className="font-mono font-black text-success text-sm">₹{fmt(group.totals.received)}</span>
+                  <span className="font-mono font-black text-success text-sm">₹{fmt(safeGroup.totals.received)}</span>
                 </div>
                 {totalAdvance > 0 && (
                   <div className="flex justify-between items-center">
@@ -221,9 +236,9 @@ function ArticleWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDel
                       </Badge>
                     : <span className={cn(
                         "font-mono font-black text-xl tracking-tighter",
-                        (group.totals.pending - totalAdvance) < 0 ? "text-destructive" : "text-warning"
+                        (safeGroup.totals.pending - totalAdvance) < 0 ? "text-destructive" : "text-warning"
                       )}>
-                        ₹{fmt(group.totals.pending - totalAdvance)}
+                        ₹{fmt(safeGroup.totals.pending - totalAdvance)}
                       </span>
                   }
                 </div>
@@ -240,28 +255,43 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
   return (
     <div className="space-y-6 pb-4">
       {selectedGroups.map(group => {
-        const refAdvances = advances.filter(a => a.ref === group.ref);
-        const totalAdvance = refAdvances.reduce((s,a) => s + a.amount, 0);
-        const isSettled = group.totals.total > 0 && (group.totals.pending - totalAdvance) <= 0;
+        const safeGroup = {
+          ref: group?.ref,
+          name: group?.name,
+          date: group?.date,
+          items: Array.isArray(group?.items) ? group.items : [],
+          totals: {
+            total: group?.totals?.total || 0,
+            pending: group?.totals?.pending || 0,
+            received: group?.totals?.received || 0,
+            fabric: group?.totals?.fabric || 0,
+            tailoring: group?.totals?.tailoring || 0,
+            embroidery: group?.totals?.embroidery || 0,
+            addon: group?.totals?.addon || 0,
+          }
+        };
+        const refAdvances = advances.filter(a => a.ref === safeGroup.ref);
+        const totalAdvance = refAdvances.reduce((s,a) => s + (a.amount || 0), 0);
+        const isSettled = safeGroup.totals.total > 0 && (safeGroup.totals.pending - totalAdvance) <= 0;
 
         return (
-          <div key={group.ref} className="space-y-4">
+          <div key={safeGroup.ref} className="space-y-4">
             {selectedGroups.length > 1 && (
               <div className="flex items-center gap-3 px-1">
                 <Badge variant="outline" className="font-mono text-[11px] font-bold text-primary border-primary/20 bg-primary/5 px-2 py-0.5">
-                  {group.ref}
+                  {safeGroup.ref}
                 </Badge>
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] truncate">{group.name}</span>
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] truncate">{safeGroup.name}</span>
                 <div className="flex-1 border-t border-border/40 border-dashed" />
               </div>
             )}
 
             <div className="space-y-3">
               {/* Fabric */}
-              {group.totals.fabric > 0 && (
-                <SectionAccordion icon={Package} label="Fabric" amount={group.totals.fabric}
-                  onEdit={() => onEdit("items", group.items, "order")}>
-                  {group.items.filter(i => i.fabric_amount > 0).map(item => (
+              {safeGroup.totals.fabric > 0 && (
+                <SectionAccordion icon={Package} label="Fabric" amount={safeGroup.totals.fabric}
+                  onEdit={() => onEdit("items", safeGroup.items, "order")}>
+                  {safeGroup.items.filter(i => i.fabric_amount > 0).map(item => (
                     <div key={item.id} className="group/row py-2.5 border-b border-border/40 last:border-0">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
@@ -293,10 +323,10 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
               )}
 
               {/* Tailoring */}
-              {group.totals.tailoring > 0 && (
-                <SectionAccordion icon={Scissors} label="Tailoring" amount={group.totals.tailoring}
-                  onEdit={() => onEdit("tailoring", group.items, "order")}>
-                  {group.items.filter(i => i.tailoring_amount > 0).map(item => (
+              {safeGroup.totals.tailoring > 0 && (
+                <SectionAccordion icon={Scissors} label="Tailoring" amount={safeGroup.totals.tailoring}
+                  onEdit={() => onEdit("tailoring", safeGroup.items, "order")}>
+                  {safeGroup.items.filter(i => i.tailoring_amount > 0).map(item => (
                     <div key={item.id} className="group/row py-2.5 border-b border-border/40 last:border-0 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <p className={cn("text-xs font-mono font-bold tracking-tight text-primary", item.cancelled && "line-through opacity-50")}>{item.barcode}</p>
@@ -327,10 +357,10 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
               )}
 
               {/* Embroidery */}
-              {group.totals.embroidery > 0 && (
-                <SectionAccordion icon={Info} label="Embroidery" amount={group.totals.embroidery}
-                  onEdit={() => onEdit("embroidery", group.items, "order")}>
-                  {group.items.filter(i => i.embroidery_amount > 0).map(item => (
+              {safeGroup.totals.embroidery > 0 && (
+                <SectionAccordion icon={Info} label="Embroidery" amount={safeGroup.totals.embroidery}
+                  onEdit={() => onEdit("embroidery", safeGroup.items, "order")}>
+                  {safeGroup.items.filter(i => i.embroidery_amount > 0).map(item => (
                     <div key={item.id} className="group/row py-2.5 border-b border-border/40 last:border-0 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <p className={cn("text-xs font-mono font-bold tracking-tight text-primary", item.cancelled && "line-through opacity-50")}>{item.barcode}</p>
@@ -360,10 +390,10 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
               )}
 
               {/* Add-on */}
-              {group.totals.addon > 0 && (
-                <SectionAccordion icon={Tag} label="Add-on" amount={group.totals.addon}
-                  onEdit={() => onEdit("addon", group.items, "order")}>
-                  {group.items.filter(i => i.addon_amount > 0).map(item => (
+              {safeGroup.totals.addon > 0 && (
+                <SectionAccordion icon={Tag} label="Add-on" amount={safeGroup.totals.addon}
+                  onEdit={() => onEdit("addon", safeGroup.items, "order")}>
+                  {safeGroup.items.filter(i => i.addon_amount > 0).map(item => (
                     <div key={item.id} className="group/row py-2.5 border-b border-border/40 last:border-0 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <p className={cn("text-xs font-mono font-bold tracking-tight text-primary", item.cancelled && "line-through opacity-50")}>{item.barcode}</p>
@@ -389,7 +419,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
 
               {/* Advances */}
               <SectionAccordion icon={Wallet} label="Advances" amount={totalAdvance}
-                onEdit={() => onEdit("advances", group.items, "order")}>
+                onEdit={() => onEdit("advances", safeGroup.items, "order")}>
                 {refAdvances.length === 0
                   ? <p className="text-[11px] text-muted-foreground text-center py-4 font-medium italic">No advances recorded</p>
                   : refAdvances.map(adv => (
@@ -411,11 +441,11 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
                 <CardContent className="p-3.5 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Total Value</span>
-                    <span className="font-mono font-black text-xs text-foreground">₹{fmt(group.totals.total)}</span>
+                    <span className="font-mono font-black text-xs text-foreground">₹{fmt(safeGroup.totals.total)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Received</span>
-                    <span className="font-mono font-black text-xs text-success">₹{fmt(group.totals.received)}</span>
+                    <span className="font-mono font-black text-xs text-success">₹{fmt(safeGroup.totals.received)}</span>
                   </div>
                   {totalAdvance > 0 && (
                     <div className="flex justify-between items-center">
@@ -427,7 +457,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground">{isSettled ? "Status" : "Outstanding"}</span>
                     {isSettled
                       ? <Badge variant="success" className="font-black uppercase tracking-tighter text-[10px] px-1.5 py-0">Settled</Badge>
-                      : <span className={cn("font-mono font-black text-sm", (group.totals.pending - totalAdvance) < 0 ? "text-destructive" : "text-warning")}>₹{fmt(group.totals.pending - totalAdvance)}</span>
+                      : <span className={cn("font-mono font-black text-sm", (safeGroup.totals.pending - totalAdvance) < 0 ? "text-destructive" : "text-warning")}>₹{fmt(safeGroup.totals.pending - totalAdvance)}</span>
                     }
                   </div>
                 </CardContent>
@@ -440,7 +470,7 @@ function OrderWiseView({ selectedGroups, advances, onEdit, onCancelItem, onDelet
   );
 }
 
-export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPay, onClose, onCancelItem, onDeleteItem, onGroupChanged }) {
+export default function OrderDetailPane({ selectedGroups = [], advances = [], onEdit, onPay, onClose, onCancelItem, onDeleteItem, onGroupChanged }) {
   const [viewTab, setViewTab] = useState("order");
   const [showGroupDialog, setShowGroupDialog] = useState(false);
   const [groupDialogMode, setGroupDialogMode] = useState("create");
@@ -448,7 +478,7 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
   const [selectedItemIds, setSelectedItemIds] = useState([]);
 
   // Get all items from selected groups
-  const allItems = selectedGroups.flatMap(g => g.items);
+  const allItems = (Array.isArray(selectedGroups) ? selectedGroups : []).flatMap(g => Array.isArray(g?.items) ? g.items : []);
 
   // Check if all selected orders belong to the same customer
   const isSameCustomer = selectedGroups.length > 0 && new Set(selectedGroups.map(g => g.name?.trim()?.toLowerCase()).filter(Boolean)).size <= 1;
@@ -579,9 +609,9 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain">
         <div className="p-5 min-h-full">
-          {viewTab === "article"
-            ? <ArticleWiseView selectedGroups={selectedGroups} advances={advances} onEdit={onEdit} onCancelItem={onCancelItem} onDeleteItem={onDeleteItem} onEditGroup={handleEditGroup} />
-            : <OrderWiseView selectedGroups={selectedGroups} advances={advances} onEdit={onEdit} onCancelItem={onCancelItem} onDeleteItem={onDeleteItem} onEditGroup={handleEditGroup} />
+              {viewTab === "article"
+                ? <ArticleWiseView selectedGroups={Array.isArray(selectedGroups) ? selectedGroups : []} advances={Array.isArray(advances) ? advances : []} onEdit={onEdit} onCancelItem={onCancelItem} onDeleteItem={onDeleteItem} onEditGroup={handleEditGroup} />
+                : <OrderWiseView selectedGroups={Array.isArray(selectedGroups) ? selectedGroups : []} advances={Array.isArray(advances) ? advances : []} onEdit={onEdit} onCancelItem={onCancelItem} onDeleteItem={onDeleteItem} onEditGroup={handleEditGroup} />
           }
         </div>
       </div>
@@ -597,7 +627,7 @@ export default function OrderDetailPane({ selectedGroups, advances, onEdit, onPa
       />
 
       {/* Pay button */}
-      {selectedGroups.some(g => !g.items.every(i => i.cancelled)) && (
+      {selectedGroups.some(g => Array.isArray(g.items) ? !g.items.every(i => i.cancelled) : false) && (
         <div className="flex-shrink-0 p-5 bg-background border-t border-border/50 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
           <Button 
             onClick={onPay}

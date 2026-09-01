@@ -174,10 +174,10 @@ export default function LabourPayments() {
     });
     
     // Convert to array and sort by date descending
-    return Object.values(dates)
+    return Object.values(dates || {})
       .map(d => ({
         ...d,
-        payments: Object.values(d.payments).sort((a, b) => (b.ref || "").localeCompare(a.ref || ""))
+        payments: Object.values(d.payments || {}).sort((a, b) => (b.ref || "").localeCompare(a.ref || ""))
       }))
       .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   }, [items]);

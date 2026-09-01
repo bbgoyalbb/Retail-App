@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import { FixedSizeList as List } from "react-window";
+import { FixedSizeList } from "react-window";
 import {
   getItems, getItem, getAdvances, updateItem, deleteItem, createItem,
   updateAdvance, createAdvance, deleteAdvance, invalidateItemsCache,
@@ -1093,7 +1093,7 @@ export default function ItemsManager() {
               };
 
               return (
-                <List
+                <FixedSizeList
                   ref={listRef}
                   height={listHeight}
                   itemCount={refs.length}
@@ -1103,7 +1103,7 @@ export default function ItemsManager() {
                   width={listWidth}
                 >
                   {Row}
-                </List>
+                </FixedSizeList>
               );
             })()}
           </div>

@@ -1,6 +1,25 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <script>
+    (function(){
+      try{
+        var _orig = Object.values;
+        Object.values = function(obj){
+          if (obj === null || obj === undefined){
+            try{
+              var stack = new Error().stack || '(no stack)';
+              var snap = { time: Date.now(), argType: String(obj), stack: stack };
+              try{ window.__EARLY_VALUES_CALLS = window.__EARLY_VALUES_CALLS || []; window.__EARLY_VALUES_CALLS.push(snap); }catch(e){}
+              try{ console.error('EARLY Object.values called with', obj, '\n', stack); }catch(e){}
+            }catch(e){}
+            return [];
+          }
+          return _orig.call(Object, obj);
+        };
+      }catch(e){}
+    })();
+  </script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#C86B4D" />
