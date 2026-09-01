@@ -903,12 +903,15 @@ export default function ItemsManager() {
   ) : null;
   const _isAdv = _sf?.isAdvanceSection;
 
-  // ─── Render ───────────────────────────────────────────────
-  return (
-    <div data-testid="items-manager-page" className="flex absolute inset-0 top-12 md:top-0 overflow-hidden bg-background">
+// ─── Render ───────────────────────────────────────────────
+return (
+  <div data-testid="items-manager-page" className="flex absolute inset-0 top-12 md:top-0 overflow-hidden bg-background">
 
-      {/* ── LEFT COLUMN ── */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden border-r border-border/50">
+    {/* ── LEFT COLUMN (order list) ── */}
+    <div className={cn(
+      "flex flex-col min-w-0 overflow-hidden border-r border-border/50",
+      detailOpen ? "flex-1" : "w-full"
+    )}>
 
       {/* ── TOP BAR ── */}
       <ItemsFilterBar
@@ -929,15 +932,14 @@ export default function ItemsManager() {
         customers={customers}
       />
 
-      {/* ── BODY ── */}
-      <div className="flex flex-1 min-h-0 overflow-hidden bg-muted/10">
+      {/* ── BODY (order list) ── */}
+      <div className="flex-1 min-h-0 overflow-hidden bg-muted/10">
 
-        {/* Order list */}
+        {/* Order list container */}
         <div className={cn(
-          "flex flex-col bg-background overflow-hidden flex-shrink-0",
-          detailOpen ? "hidden sm:flex sm:flex-1" : "flex w-full sm:flex-1"
+          "flex flex-col bg-background overflow-hidden h-full min-w-0",
+          detailOpen ? "hidden sm:flex" : "flex"
         )}>
-
           <div className="flex-shrink-0 px-4 py-3 border-b border-border/50 bg-background/50 flex items-center gap-4">
             <div className="flex items-center gap-2">
               <p className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground">
@@ -1107,13 +1109,13 @@ export default function ItemsManager() {
               );
             })()}
           </div>
-        </div>
+        </div>{/* end Order list container */}
       </div>{/* end BODY */}
       </div>{/* end LEFT COLUMN */}
 
       {/* Detail pane */}
       <div className={cn(
-        "flex-shrink-0 bg-background overflow-hidden border-l border-border/50 relative",
+        "bg-background overflow-hidden border-l border-border/50 relative",
         detailOpen ? "w-full sm:w-[50%] lg:w-[40%] xl:w-[35%]" : "w-0"
       )}>
         <div className="absolute inset-0 flex flex-col">
