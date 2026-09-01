@@ -366,6 +366,13 @@ export default function ItemsManager() {
     };
   }, []);
 
+  // Re-measure width when detail pane opens/closes
+  useEffect(() => {
+    if (scrollRef.current) {
+      setListWidth(scrollRef.current.clientWidth || 0);
+    }
+  }, [detailOpen]);
+
   // Close detail pane when no orders are selected
   useEffect(() => {
     if (selectedRefs.size === 0 && detailOpen) {
@@ -933,11 +940,11 @@ return (
       />
 
       {/* ── BODY (order list) ── */}
-      <div className="flex-1 min-h-0 overflow-hidden bg-muted/10 relative">
+      <div className="flex-1 min-h-0 overflow-hidden bg-muted/10">
 
         {/* Order list container */}
         <div className={cn(
-          "absolute inset-0 flex flex-col bg-background overflow-hidden",
+          "flex flex-col bg-background overflow-hidden h-full w-full min-w-0",
           detailOpen ? "hidden sm:flex" : "flex"
         )}>
           <div className="flex-shrink-0 px-4 py-3 border-b border-border/50 bg-background/50 flex items-center gap-4">
@@ -1115,7 +1122,7 @@ return (
 
       {/* Detail pane */}
       <div className={cn(
-        "bg-background overflow-hidden border-l border-border/50 relative",
+        "bg-background overflow-hidden border-l border-border/50 relative flex-shrink-0",
         detailOpen ? "w-full sm:w-[50%] lg:w-[40%] xl:w-[35%]" : "w-0"
       )}>
         <div className="absolute inset-0 flex flex-col">
