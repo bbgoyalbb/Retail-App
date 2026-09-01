@@ -522,7 +522,7 @@ export default function ItemsManager() {
       setSearchLoadingMore(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSearchMode, runSearch]);
+  }, [isSearchMode, runSearch, debouncedName, searchCustomer, searchDateFrom, searchDateTo, searchStatus, searchPayment, searchMinAmt, searchMaxAmt]);
 
   const clearSearch = () => {
     setNameFilter(""); setDebouncedName("");
