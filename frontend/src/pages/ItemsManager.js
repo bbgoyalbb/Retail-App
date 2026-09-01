@@ -457,7 +457,7 @@ export default function ItemsManager() {
   const hasAdvancedFilters = searchDateFrom || searchDateTo || searchStatus !== "All" || searchPayment !== "All" || searchMinAmt || searchMaxAmt || searchCustomer !== "All";
   const isSearchMode = !!(debouncedName || hasAdvancedFilters);
 
-  // Full-search via /search API — fetches first 50 matching items
+  // Full-search via /search API — fetches all matching items at once (same as main page)
   const runSearch = useCallback(async (page = 1) => {
     if (page === 1) {
       setSearchLoading(true);
@@ -466,7 +466,8 @@ export default function ItemsManager() {
       setSearchLoadingMore(true);
     }
 
-    const params = { q: debouncedName || "", limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE };
+    // Load all matching entries at once when filtering (limit: 0), same as main page behavior
+    const params = { q: debouncedName || "", limit: 0, skip: 0 };
     if (searchCustomer !== "All") params.customer = searchCustomer;
     if (searchDateFrom) params.date_from = searchDateFrom;
     if (searchDateTo) params.date_to = searchDateTo;
@@ -483,7 +484,7 @@ export default function ItemsManager() {
       setSearchResults(prev => page === 1 ? items : [...prev, ...items]);
       setSearchPage(page);
       setSearchTotal(total);
-      setHasMoreSearch((page * PAGE_SIZE) < total);
+      setHasMoreSearch(false); // No pagination when loading all at once
 
       const uniqueRefs = [...new Set(items.map(i => i.ref).filter(Boolean))];
       if (uniqueRefs.length > 0) {
