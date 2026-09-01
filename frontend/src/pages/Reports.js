@@ -298,7 +298,7 @@ export default function Reports() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="h-64 sm:h-80" ref={chartRef}>
-                        {chartWidth > 0 ? (
+                        {chartWidth > 0 && Array.isArray(revenueData) && revenueData.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
                             <BarChart data={revenueData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -339,7 +339,7 @@ export default function Reports() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="h-64 sm:h-80">
-                        {chartWidth > 0 ? (
+                        {chartWidth > 0 && Array.isArray(revenueData) && revenueData.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
                             <LineChart data={revenueData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -463,7 +463,7 @@ export default function Reports() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-3 sm:p-6">
-                      {summary.payment_modes?.length > 0 ? (
+                      {Array.isArray(summary.payment_modes) && summary.payment_modes.length > 0 ? (
                         <div>
                           <div className="h-64 sm:h-80">
                             {chartWidth > 0 ? (
@@ -480,9 +480,9 @@ export default function Reports() {
                                     paddingAngle={5}
                                     stroke="none"
                                   >
-                                    {summary.payment_modes.map((_, i) => (
+                                    {Array.isArray(summary.payment_modes) ? summary.payment_modes.map((_, i) => (
                                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                                    ))}
+                                    )) : null}
                                   </Pie>
                                   <Tooltip formatter={v => `₹${fmt(v)}`} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
                                 </PieChart>
@@ -490,12 +490,12 @@ export default function Reports() {
                             ) : null}
                           </div>
                           <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 overflow-x-auto">
-                            {summary.payment_modes.map((m, i) => (
+                            {Array.isArray(summary.payment_modes) ? summary.payment_modes.map((m, i) => (
                               <div key={m.mode} className="flex items-center gap-2">
                                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length]} } />
                                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{m.mode}</span>
                               </div>
-                            ))}
+                            )) : null}
                           </div>
                         </div>
                       ) : (
@@ -517,7 +517,7 @@ export default function Reports() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-3 sm:p-6">
-                      {summary.article_types?.length > 0 ? (
+                      {Array.isArray(summary.article_types) && summary.article_types.length > 0 ? (
                         <div className="h-64 sm:h-80">
                           {chartWidth > 0 ? (
                             <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
