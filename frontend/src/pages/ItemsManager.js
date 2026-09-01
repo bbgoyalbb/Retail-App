@@ -933,12 +933,12 @@ return (
       />
 
       {/* ── BODY (order list) ── */}
-      <div className="flex-1 min-h-0 overflow-hidden bg-muted/10 flex">
+      <div className="flex-1 min-h-0 overflow-hidden bg-muted/10 relative">
 
         {/* Order list container */}
         <div className={cn(
-          "flex flex-col bg-background overflow-hidden h-full min-w-0",
-          detailOpen ? "hidden sm:flex flex-1" : "flex w-full"
+          "absolute inset-0 flex flex-col bg-background overflow-hidden",
+          detailOpen ? "hidden sm:flex" : "flex"
         )}>
           <div className="flex-shrink-0 px-4 py-3 border-b border-border/50 bg-background/50 flex items-center gap-4">
             <div className="flex items-center gap-2">
