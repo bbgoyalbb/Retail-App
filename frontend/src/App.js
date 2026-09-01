@@ -165,6 +165,10 @@ function AppShell() {
       let link = document.querySelector("link[rel~='icon']");
       if (!link) { link = document.createElement("link"); link.rel = "icon"; document.head.appendChild(link); }
       link.href = logoUrl;
+      link.onerror = () => {
+        // Fallback to default favicon if custom logo fails
+        link.href = '/favicon.ico';
+      };
     }).catch(() => {});
   }, []);
 

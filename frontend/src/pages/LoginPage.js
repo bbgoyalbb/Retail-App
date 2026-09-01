@@ -79,12 +79,11 @@ export default function LoginPage() {
           <div className="flex flex-col items-center text-center">
             <div className="w-24 h-24 rounded-3xl bg-[var(--brand)]/5 p-1 mb-6 shadow-2xl shadow-[var(--brand)]/10 border border-[var(--brand)]/10 transition-transform hover:scale-105 duration-200 overflow-hidden flex items-center justify-center">
               {(() => { const src = theme === "dark" ? (firmLogoDark || firmLogo) : firmLogo; return src ? (
-                <img src={src} alt={firmName} className="w-full h-full object-contain p-2" />
-              ) : (
-                <div className="w-full h-full bg-[var(--brand)] flex items-center justify-center">
-                  <span className="text-white font-black text-4xl">{firmName.charAt(0).toUpperCase()}</span>
-                </div>
-              ); })()}
+                <img src={src} alt={firmName} className="w-full h-full object-contain p-2" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.querySelector('div').style.display = 'flex'; }} />
+              ) : null; })()}
+              <div className="w-full h-full bg-[var(--brand)] flex items-center justify-center" style={{ display: (theme === "dark" ? (firmLogoDark || firmLogo) : firmLogo) ? 'none' : 'flex' }}>
+                <span className="text-white font-black text-4xl">{firmName.charAt(0).toUpperCase()}</span>
+              </div>
             </div>
             <h1 className="font-heading text-3xl font-black tracking-tighter text-foreground mb-1">
               {firmName}
