@@ -28,9 +28,9 @@ function Calendar({
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
-        head_row: "flex w-full",
+        head_row: "flex w-full mt-2",
         head_cell:
-          "text-muted-foreground w-8 h-8 font-normal text-[0.8rem] flex items-center justify-center",
+          "text-muted-foreground w-8 h-8 font-normal text-[0.8rem] text-center",
         row: "flex w-full mt-2",
         cell: cn(
           "relative p-0 text-center w-8 h-8 text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
