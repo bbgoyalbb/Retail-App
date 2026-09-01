@@ -105,10 +105,7 @@ if exist "coverage" rmdir /s /q "coverage"
 if exist "%ROOT%frontend\build" rmdir /s /q "%ROOT%frontend\build"
 if exist "%ROOT%frontend\.cache" rmdir /s /q "%ROOT%frontend\.cache"
 if exist "%ROOT%frontend\coverage" rmdir /s /q "%ROOT%frontend\coverage"
-if exist "%ROOT%backend\static\uploads" (
-    for /d %%d in ("%ROOT%backend\static\uploads\*") do if exist "%%d" rmdir /s /q "%%d"
-    del /f /q "%ROOT%backend\static\uploads\*" >nul 2>&1
-)
+:: NOTE: Do NOT delete backend/static/uploads - uploaded logos and files must persist
 
 :: Install dependencies if node_modules missing or --force specified
 if exist "node_modules" (
