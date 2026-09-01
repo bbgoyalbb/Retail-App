@@ -246,7 +246,10 @@ async def search_items(
 
     query = {"$and": filters} if len(filters) > 1 else (filters[0] if filters else {})
 
-    items = await db.items.find(query).sort("date", -1).skip(skip).limit(limit).to_list(limit)
+    # When filtering by date range, sort ascending to show earliest dates first
+    # Otherwise, sort descending to show most recent first
+    sort_order = 1 if date_from else -1
+    items = await db.items.find(query).sort("date", sort_order).skip(skip).limit(limit).to_list(limit)
     for item in items:
         item["payment_status"] = determine_payment_status(item.get("fabric_pending", 0), item.get("fabric_received", 0))
         # Extract creation timestamp from ObjectId
