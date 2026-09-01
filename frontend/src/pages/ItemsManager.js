@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import { VariableSizeList as List } from "react-window";
+import { FixedSizeList as List } from "react-window";
 import {
   getItems, getItem, getAdvances, updateItem, deleteItem, createItem,
   updateAdvance, createAdvance, deleteAdvance, invalidateItemsCache,
@@ -1085,17 +1085,8 @@ export default function ItemsManager() {
                 return null;
               }
 
-              const getItemSize = (index) => {
-                if (!itemData[index]) {
-                  console.error('ItemsManager.getItemSize: missing itemData at index', index, 'itemDataLength', itemData?.length);
-                  return 80; // fallback size
-                }
-                return itemData[index].showDate ? 120 : 80;
-              };
-
               const getItemKey = (index) => {
                 if (!itemData[index]?.group?.ref) {
-                  console.error('ItemsManager.getItemKey: missing group ref at index', index);
                   return `fallback-${index}`;
                 }
                 return itemData[index].group.ref;
@@ -1106,7 +1097,7 @@ export default function ItemsManager() {
                   ref={listRef}
                   height={listHeight}
                   itemCount={refs.length}
-                  itemSize={getItemSize}
+                  itemSize={120}
                   itemData={itemData}
                   itemKey={getItemKey}
                   width={listWidth}
