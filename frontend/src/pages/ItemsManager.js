@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import { List } from "react-window";
+import { VariableSizeList as List } from "react-window";
 import {
   getItems, getItem, getAdvances, updateItem, deleteItem, createItem,
   updateAdvance, createAdvance, deleteAdvance, invalidateItemsCache,
@@ -30,10 +30,6 @@ import { cn } from "@/lib/utils";
 const Row = ({ index, style, data }) => {
   try {
     if (!data || !Array.isArray(data) || !data[index]) {
-      try {
-        console.error('ItemsManager.Row: missing data for index', index, 'dataLength', Array.isArray(data) ? data.length : undefined);
-        window.__DIAG__ = Object.assign(window.__DIAG__ || {}, { itemsManagerRowMissing: { index, dataLength: Array.isArray(data) ? data.length : undefined, time: Date.now() } });
-      } catch (e) {}
       return null;
     }
   } catch (e) {
@@ -41,10 +37,12 @@ const Row = ({ index, style, data }) => {
   }
 
   const { group, showDate, isSelected, selectRef, setTailoringGroup, setAddonGroup, setShowFormatDialog, listRef, savedScrollPos } = data[index];
+  if (!group) return null;
+
   const safeGroup = {
-    ref: group?.ref,
-    name: group?.name,
-    date: group?.date,
+    ref: group?.ref || "",
+    name: group?.name || "",
+    date: group?.date || "",
     items: Array.isArray(group?.items) ? group.items : [],
     totals: {
       total: group?.totals?.total || 0,
@@ -52,10 +50,9 @@ const Row = ({ index, style, data }) => {
       received: group?.totals?.received || 0,
     }
   };
-  if (!group) return null;
 
-  const isCancelled = group.items.every(i => i?.cancelled);
-  const orderNos = [...new Set(group.items.map(i=>i?.order_no).filter(o=>o&&o!=="N/A"))];
+  const isCancelled = safeGroup.items.every(i => i?.cancelled);
+  const orderNos = [...new Set(safeGroup.items.map(i=>i?.order_no).filter(o=>o&&o!=="N/A"))];
 
   return (
     <div style={style}>
@@ -78,7 +75,7 @@ const Row = ({ index, style, data }) => {
             ? "bg-primary/[0.03] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary shadow-sm" 
             : "hover:bg-muted/30 border-l-4 border-l-transparent"
         )}
-        onClick={e => selectRef(group.ref, e.ctrlKey || e.metaKey || e.shiftKey)}
+        onClick={e => selectRef(safeGroup.ref, e.ctrlKey || e.metaKey || e.shiftKey)}
       >
         <div className="flex items-center gap-4 px-5 py-4">
           <div className="min-w-0 flex-1 space-y-1">
@@ -120,7 +117,7 @@ const Row = ({ index, style, data }) => {
           <div className="flex items-center gap-1 opacity-100 transition-all" onClick={e => e.stopPropagation()}>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-info hover:bg-info/10" onClick={() => { savedScrollPos.current = listRef.current?.state?.scrollOffset || 0; setTailoringGroup(group); }} aria-label="Open tailoring"><Scissors size={14} weight="bold" aria-hidden="true"/></Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { savedScrollPos.current = listRef.current?.state?.scrollOffset || 0; setAddonGroup(group); }} aria-label="Open add-ons"><Tag size={14} weight="bold" aria-hidden="true"/></Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => setShowFormatDialog(group.ref)} aria-label="View invoice"><Printer size={14} weight="bold" aria-hidden="true"/></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => setShowFormatDialog(safeGroup.ref)} aria-label="View invoice"><Printer size={14} weight="bold" aria-hidden="true"/></Button>
           </div>
         </div>
       </div>
