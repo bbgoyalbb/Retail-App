@@ -250,13 +250,11 @@ async def search_items(
     # Otherwise, sort descending to show most recent first
     sort_order = 1 if date_from else -1
     # Handle limit: 0 as "no limit" (fetch all matching items)
-    actual_limit = None if limit == 0 else limit
-    cursor = db.items.find(query).sort("date", sort_order)
-    if skip > 0:
-        cursor = cursor.skip(skip)
-    if actual_limit is not None:
-        cursor = cursor.limit(actual_limit)
-    items = await cursor.to_list(length=actual_limit if actual_limit else 100000)
+    if limit == 0:
+        # Fetch all matching items without limit
+        items = await db.items.find(query).sort("date", sort_order).to_list(length=None)
+    else:
+        items = await db.items.find(query).sort("date", sort_order).skip(skip).limit(limit).to_list(length=limit)
     for item in items:
         item["payment_status"] = determine_payment_status(item.get("fabric_pending", 0), item.get("fabric_received", 0))
         # Extract creation timestamp from ObjectId
