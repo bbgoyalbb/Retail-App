@@ -298,8 +298,9 @@ export default function Reports() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="h-64 sm:h-80" ref={chartRef}>
-                        <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
-                          <BarChart data={revenueData}>
+                        {chartWidth > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
+                            <BarChart data={revenueData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                             <XAxis 
                               dataKey="_id" 
@@ -322,6 +323,7 @@ export default function Reports() {
                             <Bar dataKey="fabric_received" name="Amount Received" fill="var(--success)" radius={[4, 4, 0, 0]} barSize={20} />
                           </BarChart>
                         </ResponsiveContainer>
+                        ) : null}
                       </div>
                     </CardContent>
                   </Card>
@@ -337,8 +339,9 @@ export default function Reports() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="h-64 sm:h-80">
-                        <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
-                          <LineChart data={revenueData}>
+                        {chartWidth > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
+                            <LineChart data={revenueData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                             <XAxis 
                               dataKey="_id" 
@@ -361,6 +364,7 @@ export default function Reports() {
                             <Line type="monotone" dataKey="tailoring_received" name="Tailoring" stroke="var(--info)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: "var(--background)" }} activeDot={{ r: 6 }} />
                           </LineChart>
                         </ResponsiveContainer>
+                        ) : null}
                       </div>
                     </CardContent>
                   </Card>
@@ -460,31 +464,35 @@ export default function Reports() {
                     </CardHeader>
                     <CardContent className="p-3 sm:p-6">
                       {summary.payment_modes?.length > 0 ? (
-                        <div className="h-64 sm:h-80">
-                          <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
-                            <PieChart>
-                              <Pie
-                                data={summary.payment_modes}
-                                dataKey="amount"
-                                nameKey="mode"
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                stroke="none"
-                              >
-                                {summary.payment_modes.map((_, i) => (
-                                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip formatter={v => `₹${fmt(v)}`} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                            </PieChart>
-                          </ResponsiveContainer>
+                        <div>
+                          <div className="h-64 sm:h-80">
+                            {chartWidth > 0 ? (
+                              <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
+                                <PieChart>
+                                  <Pie
+                                    data={summary.payment_modes}
+                                    dataKey="amount"
+                                    nameKey="mode"
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    stroke="none"
+                                  >
+                                    {summary.payment_modes.map((_, i) => (
+                                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip formatter={v => `₹${fmt(v)}`} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            ) : null}
+                          </div>
                           <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 overflow-x-auto">
                             {summary.payment_modes.map((m, i) => (
                               <div key={m.mode} className="flex items-center gap-2">
-                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length]} } />
                                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{m.mode}</span>
                               </div>
                             ))}
@@ -511,22 +519,24 @@ export default function Reports() {
                     <CardContent className="p-3 sm:p-6">
                       {summary.article_types?.length > 0 ? (
                         <div className="h-64 sm:h-80">
-                          <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
-                            <BarChart data={summary.article_types} layout="vertical">
-                              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                              <XAxis type="number" hide />
-                              <YAxis 
-                                dataKey="type" 
-                                type="category" 
-                                width={chartWidth < 480 ? 72 : 100} 
-                                tick={{ fontSize: chartWidth < 480 ? 9 : 10, fontWeight: 700, fill: "var(--muted-foreground)" }} 
-                                axisLine={false}
-                                tickLine={false}
-                              />
-                              <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.1 }} />
-                              <Bar dataKey="count" name="Total Units" fill="var(--info)" radius={[0, 4, 4, 0]} barSize={16} />
-                            </BarChart>
-                          </ResponsiveContainer>
+                          {chartWidth > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
+                              <BarChart data={summary.article_types} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                                <XAxis type="number" hide />
+                                <YAxis
+                                  dataKey="type"
+                                  type="category"
+                                  width={chartWidth < 480 ? 72 : 100}
+                                  tick={{ fontSize: chartWidth < 480 ? 9 : 10, fontWeight: 700, fill: "var(--muted-foreground)" }}
+                                  axisLine={false}
+                                  tickLine={false}
+                                />
+                                <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.1 }} />
+                                <Bar dataKey="count" name="Total Units" fill="var(--info)" radius={[0, 4, 4, 0]} barSize={16} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          ) : null}
                         </div>
                       ) : (
                         <div className="h-64 flex flex-col items-center justify-center text-muted-foreground/40">
