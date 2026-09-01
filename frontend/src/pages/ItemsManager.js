@@ -910,7 +910,7 @@ return (
     {/* ── LEFT COLUMN (order list) ── */}
     <div className={cn(
       "flex flex-col min-w-0 overflow-hidden border-r border-border/50",
-      detailOpen ? "flex-1" : "w-full"
+      detailOpen ? "flex-1" : "flex-1"
     )}>
 
       {/* ── TOP BAR ── */}
