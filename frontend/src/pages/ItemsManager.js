@@ -324,6 +324,7 @@ export default function ItemsManager() {
   const [searchTotal, setSearchTotal] = useState(0);
   const [hasMoreSearch, setHasMoreSearch] = useState(false);
   const [searchLoadingMore, setSearchLoadingMore] = useState(false);
+  const PAGE_SIZE = 50;
 
   // Full search state
   const [showFilters, setShowFilters]     = useState(false);
