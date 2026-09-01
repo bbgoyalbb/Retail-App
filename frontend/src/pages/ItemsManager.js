@@ -348,30 +348,31 @@ export default function ItemsManager() {
   const [listHeight, setListHeight] = useState(600); // Height for virtual list
   const [listWidth, setListWidth] = useState(0); // Width for virtual list (px)
 
-  // Measure container height for virtual list
+  // Measure container dimensions for virtual list
   useEffect(() => {
-    const measureHeight = () => {
+    if (!scrollRef.current) return;
+
+    const measure = () => {
       if (scrollRef.current) {
         setListHeight(scrollRef.current.clientHeight);
         setListWidth(scrollRef.current.clientWidth || 0);
       }
     };
 
-    // Initial measurement with a small delay to ensure DOM is ready
-    const timeoutId = setTimeout(measureHeight, 100);
-    window.addEventListener('resize', measureHeight);
+    // Initial measurement
+    measure();
+
+    // Use ResizeObserver to detect size changes
+    const resizeObserver = new ResizeObserver(() => {
+      measure();
+    });
+
+    resizeObserver.observe(scrollRef.current);
+
     return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', measureHeight);
+      resizeObserver.disconnect();
     };
   }, []);
-
-  // Re-measure width when detail pane opens/closes
-  useEffect(() => {
-    if (scrollRef.current) {
-      setListWidth(scrollRef.current.clientWidth || 0);
-    }
-  }, [detailOpen]);
 
   // Close detail pane when no orders are selected
   useEffect(() => {
