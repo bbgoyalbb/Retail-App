@@ -324,7 +324,6 @@ export default function ItemsManager() {
   const [searchTotal, setSearchTotal] = useState(0);
   const [hasMoreSearch, setHasMoreSearch] = useState(false);
   const [searchLoadingMore, setSearchLoadingMore] = useState(false);
-  const PAGE_SIZE = 50;
 
   // Full search state
   const [showFilters, setShowFilters]     = useState(false);
@@ -598,6 +597,9 @@ export default function ItemsManager() {
       if (settleTab === "awaiting")  return Array.isArray(g.items) && g.items.some(i => i?.tailoring_status === "Awaiting Order");
       return true;
     });
+    // Only apply frontend sorting in non-search mode (main page)
+    // In search mode, backend handles sorting (ascending for date filters, descending otherwise)
+    if (isSearchMode) return filtered;
     return filtered.sort((a, b) => {
       const cmp = String(a.date || "").localeCompare(String(b.date || ""));
       return sortDir === "desc" ? -cmp : cmp;
