@@ -42,7 +42,7 @@ jobs:
           cd backend
           pytest --cov=. --cov-report=xml --cov-report=term
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           file: ./backend/coverage.xml
           flags: backend
@@ -65,7 +65,7 @@ jobs:
           cd frontend
           yarn test -- --watchAll=false --coverage --coverageReporters=xml --coverageReporters=text
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           file: ./frontend/coverage/coverage.xml
           flags: frontend
