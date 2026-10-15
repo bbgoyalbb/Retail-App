@@ -37,7 +37,7 @@ jobs:
           bandit -r backend/ -f txt -o bandit-report.txt || true
 
       - name: Upload Bandit reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: bandit-reports
           path: |
