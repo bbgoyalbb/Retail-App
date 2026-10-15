@@ -6,7 +6,7 @@ starlette==0.41.3
 
 # MongoDB
 motor==3.6.0
-pymongo==4.9.2
+pymongo==4.17.0
 
 # Data handling
 pydantic==2.9.2
