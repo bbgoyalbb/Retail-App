@@ -24,7 +24,7 @@ cryptography==42.0.8
 
 # Utilities
 python-multipart==0.0.9
-cachetools==5.3.3
+cachetools==7.1.4
 
 # Monitoring
 prometheus-client==0.20.0
