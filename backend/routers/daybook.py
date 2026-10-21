@@ -73,7 +73,7 @@ async def _build_daybook_entries(db, date_filter: Optional[str] = None):
         "embroidery_pay_date": 1, "embroidery_received": 1, "embroidery_pay_mode": 1, "tally_embroidery": 1,
         "addon_pay_date": 1,      "addon_received": 1,      "addon_pay_mode": 1,      "tally_addon": 1,
     }
-    items = await db.items.find(item_query if (date_filter and date_filter != "All") or twelve_months_ago else {}, _DAYBOOK_PROJ).to_list(2000)
+    items = await db.items.find(item_query if (date_filter and date_filter != "All") or twelve_months_ago else {}, _DAYBOOK_PROJ).to_list(None)
 
     categories = [
         ("fabric",     "fabric_pay_date",     "fabric_received",     "fabric_pay_mode",     "tally_fabric"),
@@ -114,16 +114,11 @@ async def _build_daybook_entries(db, date_filter: Optional[str] = None):
     elif twelve_months_ago:
         adv_query["date"] = {"$gte": twelve_months_ago}
 
-    advances = await db.advances.find(adv_query, {"_id": 0}).to_list(500)
+    advances = await db.advances.find(adv_query, {"_id": 0}).to_list(None)
     for adv in advances:
         amount = adv.get("amount", 0)
-        mode = adv.get("mode", "")
-
-        # Settlement adjustments are internal bookkeeping rows; they are not real customer
-        # advance receipts and must never be shown as payment received in the daybook.
-        if mode == "Adjusted" or amount == 0:
+        if not amount:
             continue
-
         ref      = adv.get("ref", "")
         adv_date = adv.get("date", "")
         if not adv_date:
@@ -135,6 +130,7 @@ async def _build_daybook_entries(db, date_filter: Optional[str] = None):
         e["advance"] += amount
         e["total"]   += amount
         e["tally_status"]["advance"] = adv.get("tally", False)
+        mode = adv.get("mode", "")
         if mode:
             e["modes"]["advance"] = mode
 

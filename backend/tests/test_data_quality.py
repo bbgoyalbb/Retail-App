@@ -32,7 +32,7 @@ class _FakeCursor:
         self.rows = rows
 
     async def to_list(self, limit):
-        return list(self.rows)
+        return list(self.rows[:limit])
 
 
 class _FakeDB:
@@ -42,42 +42,65 @@ class _FakeDB:
 
 
 @pytest.mark.asyncio
-async def test_daybook_ignores_negative_adjusted_advance_entries():
-    db = _FakeDB(
-        items_rows=[{
-            "ref": "04/140926",
-            "name": "Vipul (Ambala)",
+async def test_daybook_keeps_adjusted_advance_and_does_not_drop_late_rows():
+    items_rows = [
+        {
+            "ref": "01/000001",
+            "name": "Dummy",
             "fabric_pay_date": "2026-09-17",
-            "fabric_received": 17334.0,
+            "fabric_received": 10.0,
             "fabric_pay_mode": "Settled - Cash",
-            "tally_fabric": False,
-            "tailoring_pay_date": "2026-09-17",
-            "tailoring_received": 11847.0,
-            "tailoring_pay_mode": "Settled - Cash",
-            "tally_tailoring": False,
+            "tally_fabric": True,
+            "tailoring_pay_date": "N/A",
+            "tailoring_received": 0,
+            "tailoring_pay_mode": "N/A",
+            "tally_tailoring": True,
             "embroidery_pay_date": "N/A",
             "embroidery_received": 0,
             "embroidery_pay_mode": "N/A",
             "tally_embroidery": True,
-            "addon_pay_date": "2026-09-17",
-            "addon_received": 627.0,
-            "addon_pay_mode": "Settled - Cash",
-            "tally_addon": False,
-        }],
-        advances_rows=[{
-            "ref": "04/140926",
-            "date": "2026-09-17",
-            "amount": -11576.0,
-            "mode": "Adjusted",
-            "tally": False,
-        }],
+            "addon_pay_date": "N/A",
+            "addon_received": 0,
+            "addon_pay_mode": "N/A",
+            "tally_addon": True,
+        }
+        for _ in range(2000)
+    ]
+    items_rows.append({
+        "ref": "05/140926",
+        "name": "Vipul's Son (Ambala)",
+        "fabric_pay_date": "N/A",
+        "fabric_received": 0,
+        "fabric_pay_mode": "Pending",
+        "tally_fabric": True,
+        "tailoring_pay_date": "2026-09-17",
+        "tailoring_received": 1195.0,
+        "tailoring_pay_mode": "Settled - Cash",
+        "tally_tailoring": False,
+        "embroidery_pay_date": "N/A",
+        "embroidery_received": 0,
+        "embroidery_pay_mode": "N/A",
+        "tally_embroidery": True,
+        "addon_pay_date": "N/A",
+        "addon_received": 0,
+        "addon_pay_mode": "N/A",
+        "tally_addon": True,
+    })
+
+    db = _FakeDB(
+        items_rows=items_rows,
+        advances_rows=[
+            {"ref": "05/140926", "date": "2026-09-13", "amount": 464.0, "mode": "Cash", "tally": False},
+            {"ref": "05/140926", "date": "2026-09-17", "amount": -464.0, "mode": "Adjusted", "tally": False},
+        ],
     )
 
     entries = await _build_daybook_entries(db)
-    row = next(item for item in entries if item["ref"] == "04/140926" and item["date"] == "2026-09-17")
+    row = next(item for item in entries if item["ref"] == "05/140926" and item["date"] == "2026-09-17")
 
-    assert row["advance"] == 0
-    assert row["total"] == 17334.0 + 11847.0 + 627.0
+    assert row["tailoring"] == 1195.0
+    assert row["advance"] == -464.0
+    assert row["total"] == 731.0
 
 
 class TestRoundMoney:
