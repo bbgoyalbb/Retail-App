@@ -12,7 +12,9 @@ All functions are pure (no DB access), making them easy to test in isolation.
 """
 
 import pytest
+from types import SimpleNamespace
 from decimal import Decimal
+from routers.daybook import _build_daybook_entries
 from data_quality import (
     PENNY_TOLERANCE,
     RUPEE_TOLERANCE,
@@ -23,6 +25,59 @@ from data_quality import (
     analyze_payment_field,
     normalize_payment_field,
 )
+
+
+class _FakeCursor:
+    def __init__(self, rows):
+        self.rows = rows
+
+    async def to_list(self, limit):
+        return list(self.rows)
+
+
+class _FakeDB:
+    def __init__(self, items_rows, advances_rows):
+        self.items = SimpleNamespace(find=lambda *args, **kwargs: _FakeCursor(items_rows))
+        self.advances = SimpleNamespace(find=lambda *args, **kwargs: _FakeCursor(advances_rows))
+
+
+@pytest.mark.asyncio
+async def test_daybook_ignores_negative_adjusted_advance_entries():
+    db = _FakeDB(
+        items_rows=[{
+            "ref": "04/140926",
+            "name": "Vipul (Ambala)",
+            "fabric_pay_date": "2026-09-17",
+            "fabric_received": 17334.0,
+            "fabric_pay_mode": "Settled - Cash",
+            "tally_fabric": False,
+            "tailoring_pay_date": "2026-09-17",
+            "tailoring_received": 11847.0,
+            "tailoring_pay_mode": "Settled - Cash",
+            "tally_tailoring": False,
+            "embroidery_pay_date": "N/A",
+            "embroidery_received": 0,
+            "embroidery_pay_mode": "N/A",
+            "tally_embroidery": True,
+            "addon_pay_date": "2026-09-17",
+            "addon_received": 627.0,
+            "addon_pay_mode": "Settled - Cash",
+            "tally_addon": False,
+        }],
+        advances_rows=[{
+            "ref": "04/140926",
+            "date": "2026-09-17",
+            "amount": -11576.0,
+            "mode": "Adjusted",
+            "tally": False,
+        }],
+    )
+
+    entries = await _build_daybook_entries(db)
+    row = next(item for item in entries if item["ref"] == "04/140926" and item["date"] == "2026-09-17")
+
+    assert row["advance"] == 0
+    assert row["total"] == 17334.0 + 11847.0 + 627.0
 
 
 class TestRoundMoney:

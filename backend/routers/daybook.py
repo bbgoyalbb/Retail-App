@@ -117,8 +117,13 @@ async def _build_daybook_entries(db, date_filter: Optional[str] = None):
     advances = await db.advances.find(adv_query, {"_id": 0}).to_list(500)
     for adv in advances:
         amount = adv.get("amount", 0)
-        if not amount:
+        mode = adv.get("mode", "")
+
+        # Settlement adjustments are internal bookkeeping rows; they are not real customer
+        # advance receipts and must never be shown as payment received in the daybook.
+        if mode == "Adjusted" or amount == 0:
             continue
+
         ref      = adv.get("ref", "")
         adv_date = adv.get("date", "")
         if not adv_date:
@@ -130,7 +135,6 @@ async def _build_daybook_entries(db, date_filter: Optional[str] = None):
         e["advance"] += amount
         e["total"]   += amount
         e["tally_status"]["advance"] = adv.get("tally", False)
-        mode = adv.get("mode", "")
         if mode:
             e["modes"]["advance"] = mode
 
