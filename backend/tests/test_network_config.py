@@ -1,4 +1,16 @@
+import codecs
+from pathlib import Path
+
 from network_config import build_cors_allowlist, build_ssl_subject_alt_names
+
+
+def test_env_file_with_utf8_bom_is_parsed_correctly(tmp_path):
+    env_path = tmp_path / ".env"
+    env_path.write_bytes(codecs.BOM_UTF8 + b"MONGO_URL=mongodb://localhost:27017\nDB_NAME=retail_book\n")
+
+    data = env_path.read_bytes()
+    assert data.startswith(codecs.BOM_UTF8)
+    assert data.decode("utf-8-sig").splitlines()[0] == "MONGO_URL=mongodb://localhost:27017"
 
 
 def test_build_cors_allowlist_includes_localhost_and_lan_pattern():

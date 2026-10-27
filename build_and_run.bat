@@ -5,6 +5,7 @@ if "%~1"=="--force" set "FORCE_BUILD=1"
 setlocal EnableDelayedExpansion
 set "ROOT=%~dp0"
 set "BACKEND_PORT=8001"
+set "FRONTEND_PORT=3000"
 set "ENV_FILE=%ROOT%backend\.env"
 set "PYTHON=%ROOT%backend\venv\Scripts\python.exe"
 
@@ -22,8 +23,8 @@ echo.
 
 :: ---- Step 0: Ensure JWT_SECRET_KEY and host metadata exist in .env ----
 if not exist "%ENV_FILE%" (
-    echo [0/4] Creating backend\.env with a new JWT_SECRET_KEY...
-    powershell -Command "$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create(); $bytes = New-Object byte[] 32; $rng.GetBytes($bytes); $key = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''; Set-Content -Path '%ENV_FILE%' -Value \"JWT_SECRET_KEY=$key\""
+    echo [0/4] Creating backend\.env with default DB and security values...
+    powershell -Command "$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create(); $bytes = New-Object byte[] 32; $rng.GetBytes($bytes); $key = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''; $content = @('MONGO_URL=mongodb://localhost:27017','DB_NAME=retail_book','DEBUG=true','STATIC_IPS=59.144.172.176','JWT_SECRET_KEY=' + $key) -join [Environment]::NewLine; [System.IO.File]::WriteAllText('%ENV_FILE%', $content, [System.Text.UTF8Encoding]::new($false))"
     echo [0/4] .env created.
 ) else (
     findstr /i "JWT_SECRET_KEY" "%ENV_FILE%" >nul 2>&1
@@ -32,6 +33,21 @@ if not exist "%ENV_FILE%" (
         powershell -Command "$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create(); $bytes = New-Object byte[] 32; $rng.GetBytes($bytes); $key = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''; Add-Content -Path '%ENV_FILE%' -Value \"JWT_SECRET_KEY=$key\""
     ) else (
         echo [0/4] JWT_SECRET_KEY already set in .env. OK.
+    )
+    findstr /i "MONGO_URL" "%ENV_FILE%" >nul 2>&1
+    if errorlevel 1 (
+        echo [0/4] Adding MongoDB URL to .env...
+        echo MONGO_URL=mongodb://localhost:27017>> "%ENV_FILE%"
+    )
+    findstr /i "DB_NAME" "%ENV_FILE%" >nul 2>&1
+    if errorlevel 1 (
+        echo [0/4] Adding database name to .env...
+        echo DB_NAME=retail_book>> "%ENV_FILE%"
+    )
+    findstr /i "STATIC_IPS" "%ENV_FILE%" >nul 2>&1
+    if errorlevel 1 (
+        echo [0/4] Adding static IP to .env...
+        echo STATIC_IPS=59.144.172.176>> "%ENV_FILE%"
     )
 )
 
@@ -238,13 +254,13 @@ echo.
 echo ==========================================
 echo  ACCESS URLs:
 echo  LAN / same Wi-Fi:    https://!IP!:%BACKEND_PORT%/
-echo  LAN / same Wi-Fi:    https://!IP!:%FRONTEND_PORT%/
+echo  Frontend LAN:        https://!IP!:%FRONTEND_PORT%/
 if not "!STATIC_URL!"=="" (
     echo  Public / static IP:  https://!STATIC_URL!:%BACKEND_PORT%/
-    echo  Public / static IP:  https://!STATIC_URL!:%FRONTEND_PORT%/
+    echo  Frontend public:    https://!STATIC_URL!:%FRONTEND_PORT%/
 ) else (
     echo  Public / static IP:  not configured yet
-    echo  Public / static IP:  not configured yet
+    echo  Frontend public:    not configured yet
 )
 echo  NOTE: Accept the security warning in browser (self-signed cert)
 echo  Open the LAN URL on your phone/tablet while connected to the same Wi-Fi.

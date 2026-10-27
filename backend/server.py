@@ -30,6 +30,25 @@ from network_config import build_cors_allowlist
 import auth as auth_module  # noqa: F401 — imported for side-effects (security obj)
 
 ROOT_DIR = Path(__file__).parent
+
+def _sanitize_environment_from_bom(env_path: Path) -> None:
+    if not env_path.exists():
+        return
+    try:
+        raw = env_path.read_bytes()
+    except OSError:
+        return
+
+    if raw.startswith(b"\xef\xbb\xbf"):
+        env_path.write_text(raw.decode("utf-8-sig"), encoding="utf-8", newline="\n")
+
+    for key in list(os.environ):
+        if key.startswith("\ufeff"):
+            value = os.environ.pop(key)
+            os.environ[key.lstrip("\ufeff")] = value
+
+
+_sanitize_environment_from_bom(ROOT_DIR / ".env")
 load_dotenv(ROOT_DIR / ".env")
 
 # ==========================================

@@ -16,13 +16,28 @@ if not exist "%PYTHON%" set "PYTHON=py"
 
 :: ---- Ensure JWT_SECRET_KEY and host metadata in .env ----
 if not exist "%ENV_FILE%" (
-    powershell -Command "$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create(); $bytes = New-Object byte[] 32; $rng.GetBytes($bytes); $key = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''; Set-Content -Path '%ENV_FILE%' -Value \"JWT_SECRET_KEY=$key\""
-    echo [INFO] Created backend\.env with new JWT_SECRET_KEY.
+    powershell -Command "$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create(); $bytes = New-Object byte[] 32; $rng.GetBytes($bytes); $key = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''; $content = @('MONGO_URL=mongodb://localhost:27017','DB_NAME=retail_book','DEBUG=true','STATIC_IPS=59.144.172.176','JWT_SECRET_KEY=' + $key) -join [Environment]::NewLine; [System.IO.File]::WriteAllText('%ENV_FILE%', $content, [System.Text.UTF8Encoding]::new($false))"
+    echo [INFO] Created backend\.env with new default values.
 ) else (
     findstr /i "JWT_SECRET_KEY" "%ENV_FILE%" >nul 2>&1
     if errorlevel 1 (
         powershell -Command "$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create(); $bytes = New-Object byte[] 32; $rng.GetBytes($bytes); $key = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''; Add-Content -Path '%ENV_FILE%' -Value \"JWT_SECRET_KEY=$key\""
         echo [INFO] Added JWT_SECRET_KEY to .env.
+    )
+    findstr /i "MONGO_URL" "%ENV_FILE%" >nul 2>&1
+    if errorlevel 1 (
+        echo [INFO] Added MONGO_URL to .env.
+        echo MONGO_URL=mongodb://localhost:27017>> "%ENV_FILE%"
+    )
+    findstr /i "DB_NAME" "%ENV_FILE%" >nul 2>&1
+    if errorlevel 1 (
+        echo [INFO] Added DB_NAME to .env.
+        echo DB_NAME=retail_book>> "%ENV_FILE%"
+    )
+    findstr /i "STATIC_IPS" "%ENV_FILE%" >nul 2>&1
+    if errorlevel 1 (
+        echo [INFO] Added STATIC_IPS to .env.
+        echo STATIC_IPS=59.144.172.176>> "%ENV_FILE%"
     )
 )
 

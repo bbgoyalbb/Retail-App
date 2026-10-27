@@ -1,0 +1,6 @@
+Retail access URLs
+
+LAN / same Wi-Fi: https://192.168.31.17:8001/
+LAN API: https://192.168.31.17:8001/
+Public / static IP: not configured yet
+Public API: not configured yet
