@@ -134,7 +134,7 @@ cp frontend/.env.sample frontend/.env
 
 
 
-Required variables in `frontend/.env`:
+Available variables in `frontend/.env`:
 
 
 
@@ -142,7 +142,7 @@ Required variables in `frontend/.env`:
 
 |---|---|
 
-| `REACT_APP_BACKEND_URL` | Backend URL without trailing slash (e.g. `http://127.0.0.1:8001`) |
+| `REACT_APP_BACKEND_URL` | Optional backend URL override. If omitted, the app uses the current host on port `8001`, supporting localhost, LAN, and configured static-IP access. |
 
 | `REACT_APP_ENABLE_SEED` | Set to `true` to seed from Excel on first load (dev only, default: `false`) |
 

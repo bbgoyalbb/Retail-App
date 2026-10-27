@@ -17,6 +17,14 @@ if not exist "%PYTHON%" (
     set "PYTHON=py"
 )
 
+:: ---- Never terminate processes belonging to other apps ----
+powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; if (-not (Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue)) { Write-Error 'Cannot inspect listening ports'; exit 2 }; $ports = @(8001,3020); $listeners = Get-NetTCPConnection -State Listen -ErrorAction Stop | Where-Object { $ports -contains $_.LocalPort }; if ($listeners) { $listeners | ForEach-Object { $owner = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; [pscustomobject]@{ LocalAddress=$_.LocalAddress; LocalPort=$_.LocalPort; Process=if($owner){$owner.ProcessName}else{'(unknown)'}; PID=$_.OwningProcess } } | Format-Table -AutoSize; exit 1 }"
+if errorlevel 1 (
+    echo [ERROR] A required port is occupied, or could not be checked. No processes were stopped; identify the owner before proceeding.
+    pause
+    exit /b 1
+)
+
 echo ==========================================
 echo  Retail App - DEV WATCH MODE
 echo ==========================================
@@ -42,15 +50,6 @@ if not exist "%ENV_FILE%" (
     )
 )
 
-:: ---- Kill ALL node processes and processes on ports ----
-echo.
-echo [CLEANUP] Stopping all Node processes and clearing ports...
-powershell -Command "try { Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force } catch {}"
-powershell -Command "try { Get-Process nodejs -ErrorAction SilentlyContinue | Stop-Process -Force } catch {}"
-powershell -Command "Get-NetTCPConnection -LocalPort %FRONTEND_PORT% -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
-powershell -Command "Get-NetTCPConnection -LocalPort %BACKEND_PORT% -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
-timeout /t 3 /nobreak >nul 2>&1
-
 echo.
 echo ==========================================
 echo  Starting Development Servers...
@@ -63,7 +62,7 @@ echo     URL: http://localhost:%BACKEND_PORT%/
 echo     API: http://localhost:%BACKEND_PORT%/api/
 echo     Docs: http://localhost:%BACKEND_PORT%/docs
 echo.
-start "Backend Dev Server" cmd /k "cd /d "%ROOT%backend" && echo [Backend] Starting with auto-reload... && "%PYTHON%" -m uvicorn server:app --reload --host 127.0.0.1 --port %BACKEND_PORT% --log-level info"
+start "Backend Dev Server" cmd /k "cd /d "%ROOT%backend" && echo [Backend] Starting with auto-reload... && "%PYTHON%" -m uvicorn server:app --reload --host 0.0.0.0 --port %BACKEND_PORT% --log-level info"
 
 :: ---- Wait a moment for backend to start ----
 timeout /t 3 /nobreak >nul 2>&1
@@ -74,7 +73,7 @@ echo     URL: http://localhost:%FRONTEND_PORT%/
 echo     Note: Uses react-scripts directly (bypasses craco issues)
 echo     Note: Source map warnings for html5-qrcode are normal
 echo.
-start "Frontend Dev Server" cmd /k "cd /d "%ROOT%frontend" && set "PORT=%FRONTEND_PORT%" && set "BROWSER=none" && echo [Frontend] Starting dev server on port %FRONTEND_PORT%... && yarn start"
+start "Frontend Dev Server" cmd /k "cd /d "%ROOT%frontend" && set "PORT=%FRONTEND_PORT%" && set "HOST=0.0.0.0" && set "BROWSER=none" && echo [Frontend] Starting dev server on port %FRONTEND_PORT%... && yarn start"
 
 echo.
 echo ==========================================

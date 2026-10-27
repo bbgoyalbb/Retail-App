@@ -26,8 +26,10 @@ jest.mock('axios', () => ({
 }));
 
 describe('API Configuration', () => {
-  test('BACKEND_URL should use window.location.origin when no env var', () => {
-    expect(BACKEND_URL).toBe(window.location.origin);
+  test('BACKEND_URL should use the current host and backend port when no env var', () => {
+    expect(BACKEND_URL).toBe(
+      `${window.location.protocol}//${window.location.hostname}:8001`
+    );
   });
 });
 

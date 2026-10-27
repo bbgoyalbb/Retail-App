@@ -3,9 +3,12 @@ import { CACHE_TTL, PAGINATION } from "@/lib/constants";
 import { isSessionValid, clearSession } from "@/lib/security";
 
 // Backend URL configuration (Fix 4.4)
-// Priority: 1. Env var REACT_APP_BACKEND_URL, 2. Same origin (production), 3. Default dev port
+// Use an explicit backend URL when configured; otherwise keep the current host
+// while targeting the API server port, which also supports LAN/public-IP access.
 const envBackendUrl = process.env.REACT_APP_BACKEND_URL;
-export const BACKEND_URL = envBackendUrl || window.location.origin;
+export const BACKEND_URL =
+  envBackendUrl ||
+  `${window.location.protocol}//${window.location.hostname}:8001`;
 
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
 

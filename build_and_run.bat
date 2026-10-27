@@ -5,9 +5,24 @@ if "%~1"=="--force" set "FORCE_BUILD=1"
 setlocal EnableDelayedExpansion
 set "ROOT=%~dp0"
 set "BACKEND_PORT=8001"
-set "FRONTEND_PORT=3000"
 set "ENV_FILE=%ROOT%backend\.env"
+set "LAUNCH_LOG=%ROOT%backend\launcher.log"
 set "PYTHON=%ROOT%backend\venv\Scripts\python.exe"
+> "%LAUNCH_LOG%" echo [%date% %time%] Launcher started. Arguments: %*
+
+:: ---- Refuse to disturb an app already using the backend port ----
+>> "%LAUNCH_LOG%" echo [%date% %time%] Checking port %BACKEND_PORT%.
+powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; if (-not (Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue)) { Write-Error 'Cannot inspect listening ports'; exit 2 }; $port = %BACKEND_PORT%; $listeners = Get-NetTCPConnection -State Listen -ErrorAction Stop | Where-Object { $_.LocalPort -eq $port }; if ($listeners) { $listeners | ForEach-Object { $owner = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; [pscustomobject]@{ LocalAddress=$_.LocalAddress; LocalPort=$_.LocalPort; Process=if($owner){$owner.ProcessName}else{'(unknown)'}; PID=$_.OwningProcess } } | Format-Table -AutoSize; exit 1 }"
+set "PORT_CHECK_RESULT=%ERRORLEVEL%"
+>> "%LAUNCH_LOG%" echo [%date% %time%] Port check exit code: %PORT_CHECK_RESULT%.
+if not "%PORT_CHECK_RESULT%"=="0" (
+    echo [ERROR] Backend port %BACKEND_PORT% is occupied, or could not be checked. No processes were stopped; identify the owner before proceeding.
+    echo See log: %LAUNCH_LOG%
+    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: Port check failed.
+    pause
+    exit /b 1
+)
+echo [INFO] Port %BACKEND_PORT% is free.
 
 if not exist "%PYTHON%" (
     echo [WARN] Virtual environment not found at %ROOT%backend\venv
@@ -20,11 +35,12 @@ echo ==========================================
 echo  Retail App - Production Build ^& Run
 echo ==========================================
 echo.
+>> "%LAUNCH_LOG%" echo [%date% %time%] Starting environment configuration.
 
 :: ---- Step 0: Ensure JWT_SECRET_KEY and host metadata exist in .env ----
 if not exist "%ENV_FILE%" (
     echo [0/4] Creating backend\.env with default DB and security values...
-    powershell -Command "$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create(); $bytes = New-Object byte[] 32; $rng.GetBytes($bytes); $key = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''; $content = @('MONGO_URL=mongodb://localhost:27017','DB_NAME=retail_book','DEBUG=true','STATIC_IPS=59.144.172.176','JWT_SECRET_KEY=' + $key) -join [Environment]::NewLine; [System.IO.File]::WriteAllText('%ENV_FILE%', $content, [System.Text.UTF8Encoding]::new($false))"
+    powershell -Command "$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create(); $bytes = New-Object byte[] 32; $rng.GetBytes($bytes); $key = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''; $content = @('MONGO_URL=mongodb://localhost:27017','DB_NAME=retail_book','DEBUG=false','STATIC_IPS=59.144.172.176','JWT_SECRET_KEY=' + $key) -join [Environment]::NewLine; [System.IO.File]::WriteAllText('%ENV_FILE%', $content, [System.Text.UTF8Encoding]::new($false))"
     echo [0/4] .env created.
 ) else (
     findstr /i "JWT_SECRET_KEY" "%ENV_FILE%" >nul 2>&1
@@ -51,74 +67,75 @@ if not exist "%ENV_FILE%" (
     )
 )
 
+set "STATIC_IP_CONFIG="
+for /f "delims=" %%g in ('powershell -NoProfile -Command "$p='%ENV_FILE%'; if (Test-Path $p) { $m = [regex]::Match((Get-Content $p -Raw), '(?m)^STATIC_IPS=([^\r\n]*)'); if ($m.Success) { $m.Groups[1].Value.Trim() } }"') do set "STATIC_IP_CONFIG=%%g"
+if defined STATIC_IP_CONFIG set "STATIC_IP=%STATIC_IP_CONFIG%"
+if not defined STATIC_IP set "STATIC_IP=59.144.172.176"
+>> "%LAUNCH_LOG%" echo [%date% %time%] Static host configuration resolved.
+
 powershell -NoProfile -Command "$path='%ENV_FILE%'; $ips = @('localhost','127.0.0.1') + ((Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -and $_.IPAddress -notmatch '^127\.' -and $_.IPAddress -notmatch '^169\.254\.' } | Select-Object -ExpandProperty IPAddress) | Select-Object -Unique); $publicIp = $env:STATIC_IP; if (-not $publicIp) { $publicIp = (Get-Content $path -Raw | Select-String -Pattern '^STATIC_IPS=' -SimpleMatch -CaseSensitive -AllMatches -ErrorAction SilentlyContinue | ForEach-Object { $_.Line.Split('=',2)[1].Trim() } | Select-Object -First 1); }; $hostList = ($ips | Where-Object { $_ -and $_.Trim() } | Select-Object -Unique) -join ','; $patternA = '(?m)^APP_HOSTS=.*'; $patternB = '(?m)^STATIC_IPS=.*'; $patternC = '(?m)^CORS_ORIGINS=.*'; $content = if (Test-Path $path) { Get-Content $path -Raw } else { '' }; $cors = 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000'; foreach ($ip in $ips) { if ($ip -and $ip -notmatch '^(localhost|127\.0\.0\.1)$') { $cors += ',https://' + $ip + ':3000,https://' + $ip + ':8001' } }; if ($publicIp) { $cors += ',https://' + $publicIp + ':3000,https://' + $publicIp + ':8001' }; if ($content -match $patternA) { $content = [regex]::Replace($content, $patternA, 'APP_HOSTS=' + $hostList) } elseif ($content.Trim().Length -gt 0) { $content += [Environment]::NewLine + 'APP_HOSTS=' + $hostList } else { $content = 'APP_HOSTS=' + $hostList }; if ($content -match $patternB) { $content = [regex]::Replace($content, $patternB, 'STATIC_IPS=' + $publicIp) } else { $content += [Environment]::NewLine + 'STATIC_IPS=' + $publicIp }; if ($content -match $patternC) { $content = [regex]::Replace($content, $patternC, 'CORS_ORIGINS=' + $cors) } else { $content += [Environment]::NewLine + 'CORS_ORIGINS=' + $cors }; Set-Content -Path $path -Value $content -Encoding UTF8;"
+if errorlevel 1 (
+    echo [ERROR] Could not update backend network configuration.
+    echo See log: %LAUNCH_LOG%
+    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: Network configuration update failed.
+    pause
+    exit /b 1
+)
+>> "%LAUNCH_LOG%" echo [%date% %time%] Backend network configuration updated.
 echo.
 
-:: ---- Detect local IP: find the interface with a default gateway (real internet connection) ----
-:: Skip virtual adapters (Hyper-V, VMware, VirtualBox, WSL, Docker)
+:: ---- Detect the LAN IP without FOR /F command parsing ----
+>> "%LAUNCH_LOG%" echo [%date% %time%] Detecting the LAN IP.
+set "IP_FILE=%TEMP%\retail-app-ip-%RANDOM%.txt"
+powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; $route = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction Stop | Where-Object { $_.NextHop -and $_.NextHop -ne '0.0.0.0' -and $_.InterfaceAlias -notmatch 'VirtualBox|VMware|vEthernet|WSL|Docker|Hyper-V' } | Sort-Object RouteMetric | Select-Object -First 1; $ip = $null; if ($route) { $ip = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $route.InterfaceIndex -ErrorAction Stop | Where-Object { $_.IPAddress -notmatch '^127\.' -and $_.IPAddress -notmatch '^169\.254\.' } | Select-Object -First 1 -ExpandProperty IPAddress }; if (-not $ip) { $ip = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop | Where-Object { $_.IPAddress -match '^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)' -and $_.IPAddress -notmatch '^192\.168\.56\.' } | Select-Object -First 1 -ExpandProperty IPAddress }; if (-not $ip) { throw 'No usable LAN IPv4 address was found' }; Write-Output $ip" > "%IP_FILE%" 2>> "%LAUNCH_LOG%"
+set "IP_RESULT=%ERRORLEVEL%"
+if not "%IP_RESULT%"=="0" (
+    echo [ERROR] Could not detect the LAN IP address. See %LAUNCH_LOG%
+    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: LAN IP detection failed with exit code %IP_RESULT%.
+    if exist "%IP_FILE%" del /f /q "%IP_FILE%" >nul 2>&1
+    pause
+    exit /b 1
+)
 set "IP="
-for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "(Get-NetRoute -DestinationPrefix '0.0.0.0/0' ^| Where-Object { $_.NextHop -and $_.NextHop -ne '0.0.0.0' -and $_.InterfaceAlias -notmatch '(VirtualBox|VMware|vEthernet|WSL|Docker|Hyper-V)' } ^| Select-Object -First 1 -ExpandProperty InterfaceIndex) ^| ForEach-Object { (Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $_ ^| Where-Object { $_.IPAddress -notmatch '^127\.' } ^| Select-Object -First 1 -ExpandProperty IPAddress) }"`) do (
-    set "IP=%%i"
+set /p "IP="<"%IP_FILE%"
+del /f /q "%IP_FILE%" >nul 2>&1
+if not defined IP (
+    echo [ERROR] LAN IP detection returned an empty address. See %LAUNCH_LOG%
+    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: LAN IP detection returned no address.
+    pause
+    exit /b 1
 )
-:: Fallback: any 192.168.x.x or 10.x.x.x address
-if "!IP!"=="" (
-    for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "Get-NetIPAddress -AddressFamily IPv4 ^| Where-Object { $_.IPAddress -match '^(192\.168\.|10\.)' -and $_.IPAddress -notmatch '^(192\.168\.56\.)' } ^| Select-Object -First 1 -ExpandProperty IPAddress"`) do (
-        set "IP=%%i"
-    )
-)
-:: Last resort: manual parse, skip 172.x, 169.254.x, 192.168.56.x
-if "!IP!"=="" (
-    for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
-        set "TMP=%%a"
-        set "TMP=!TMP: =!"
-        call :check_ip_valid
-        if not "!IP!"=="" goto :found_ip
-    )
-)
-:found_ip
-if "!IP!"=="" set "IP=127.0.0.1"
-
-set "STATIC_URL="
-for /f "delims=" %%g in ('powershell -NoProfile -Command "$p='%ENV_FILE%'; if (Test-Path $p) { $content = Get-Content $p -Raw; if ($content -match '(?m)^STATIC_IPS=(.+)$') { $Matches[1].Trim() } }"') do set "STATIC_URL=%%g"
+set "STATIC_URL=%STATIC_IP%"
+>> "%LAUNCH_LOG%" echo [%date% %time%] LAN IP detection succeeded.
 (
     echo Retail access URLs
     echo.
     echo LAN / same Wi-Fi: https://!IP!:%BACKEND_PORT%/
-    echo LAN API: https://!IP!:%BACKEND_PORT%/
     if not "!STATIC_URL!"=="" (
-        echo Public / static IP: https://!STATIC_URL!:%BACKEND_PORT%/
-        echo Public API: https://!STATIC_URL!:%BACKEND_PORT%/
+        echo Public URL - router must forward TCP %BACKEND_PORT%: https://!STATIC_URL!:%BACKEND_PORT%/
     ) else (
-        echo Public / static IP: not configured yet
-        echo Public API: not configured yet
+        echo Public URL: not configured
     )
 ) > "%ROOT%backend\network_urls.txt"
 
+>> "%LAUNCH_LOG%" echo [%date% %time%] Network URLs written.
 echo [INFO] Saved access URLs to %ROOT%backend\network_urls.txt
 
 goto :ip_done
-
-:check_ip_valid
-:: Check if TMP is a valid IP we want (skip 172.x, 169.254.x, 192.168.56.x)
-set "VALID=1"
-echo %TMP% | findstr /b "172." >nul && set "VALID=0"
-if "%VALID%"=="0" goto :ip_check_end
-echo %TMP% | findstr /b "169.254." >nul && set "VALID=0"
-if "%VALID%"=="0" goto :ip_check_end
-echo %TMP% | findstr /b "192.168.56." >nul && set "VALID=0"
-if "%VALID%"=="0" goto :ip_check_end
-if "%VALID%"=="1" set "IP=%TMP%"
-:ip_check_end
-goto :eof
 
 :ip_done
 
 :: ---- Step 1: Windows Firewall rule ----
 echo [1/4] Configuring Windows Firewall for port %BACKEND_PORT%...
+>> "%LAUNCH_LOG%" echo [%date% %time%] Checking Windows Firewall rule.
 netsh advfirewall firewall show rule name="Retail App Port %BACKEND_PORT%" >nul 2>&1
-if errorlevel 1 (
+set "FIREWALL_CHECK_RESULT=%ERRORLEVEL%"
+>> "%LAUNCH_LOG%" echo [%date% %time%] Firewall rule query exit code: %FIREWALL_CHECK_RESULT%.
+if not "%FIREWALL_CHECK_RESULT%"=="0" (
     netsh advfirewall firewall add rule name="Retail App Port %BACKEND_PORT%" dir=in action=allow protocol=TCP localport=%BACKEND_PORT% >nul 2>&1
-    if errorlevel 1 (
+    set "FIREWALL_ADD_RESULT=!ERRORLEVEL!"
+    >> "%LAUNCH_LOG%" echo [%date% %time%] Firewall rule add exit code: %FIREWALL_ADD_RESULT%.
+    if not "!FIREWALL_ADD_RESULT!"=="0" (
         echo [WARN] Could not add firewall rule - run as Administrator for internet access.
     ) else (
         echo [1/4] Firewall rule added - port %BACKEND_PORT% now open.
@@ -130,7 +147,14 @@ echo.
 
 :: ---- Step 2: Build React Frontend ----
 echo [2/4] Building React frontend for production...
+>> "%LAUNCH_LOG%" echo [%date% %time%] Entering frontend build stage.
 cd /d "%ROOT%frontend"
+if errorlevel 1 (
+    echo [ERROR] Could not enter the frontend directory: %ROOT%frontend
+    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: Frontend directory not found.
+    pause
+    exit /b 1
+)
 set GENERATE_SOURCEMAP=false
 :: Suppress Node.js deprecation warnings (fs.F_OK, url.parse, etc.)
 set NODE_OPTIONS=--no-deprecation
@@ -147,21 +171,33 @@ if exist "%ROOT%frontend\coverage" rmdir /s /q "%ROOT%frontend\coverage"
 :: Install dependencies if node_modules missing or --force specified
 if exist "node_modules" (
     if "%FORCE_BUILD%"=="1" (
-        echo [2/4] Reinstall requested (--force flag)
+        echo [2/4] Reinstall requested: --force
         echo [2/4] Installing dependencies...
         call yarn install
+        if errorlevel 1 (
+            echo [ERROR] Frontend dependency installation failed.
+            >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: yarn install failed.
+            pause
+            exit /b 1
+        )
     ) else (
-        echo [2/4] node_modules found, skipping yarn install (use --force to reinstall)
+        echo [2/4] node_modules found; skipping yarn install. Use --force to reinstall.
     )
 ) else (
     echo [2/4] Installing dependencies...
     call yarn install
+    if errorlevel 1 (
+        echo [ERROR] Frontend dependency installation failed.
+        >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: yarn install failed.
+        pause
+        exit /b 1
+    )
 )
 
 :: Check if build exists and is recent (within last hour)
 set "REBUILD_NEEDED=1"
 if "%FORCE_BUILD%"=="1" (
-    echo [2/4] Force rebuild requested (--force flag)
+    echo [2/4] Force rebuild requested: --force
     set "REBUILD_NEEDED=1"
 ) else if exist "build" (
     for /f "delims=" %%a in ('powershell -Command "(Get-Item 'build' -ErrorAction SilentlyContinue).LastWriteTime"') do set "BUILD_TIME=%%a"
@@ -169,7 +205,7 @@ if "%FORCE_BUILD%"=="1" (
     if defined BUILD_TIME if defined SRC_TIME (
         powershell -Command "if ([datetime]'!BUILD_TIME!' -gt [datetime]'!SRC_TIME!') { exit 0 } else { exit 1 }" >nul 2>&1
         if !errorlevel! equ 0 (
-            echo [2/4] Build is up-to-date, skipping rebuild (use --force to rebuild)
+            echo [2/4] Build is up-to-date; skipping rebuild. Use --force to rebuild.
             set "REBUILD_NEEDED=0"
         )
     )
@@ -189,15 +225,13 @@ if "%REBUILD_NEEDED%"=="1" (
     )
 )
 echo [2/4] Build complete!
-echo [2/4] Build is served directly from frontend\build (no copy needed)
+>> "%LAUNCH_LOG%" echo [%date% %time%] Frontend build stage complete.
+echo [2/4] Build is served directly from frontend\build; no copy needed.
 echo.
-
-:: ---- Step 3: Kill any existing backend process on port ----
-echo [3/5] Checking for existing process on port %BACKEND_PORT%...
-powershell -Command "$p = (Get-NetTCPConnection -LocalPort %BACKEND_PORT% -ErrorAction SilentlyContinue).OwningProcess; if ($p) { Stop-Process -Id $p -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1 }"
 
 :: ---- Step 4: Check and start MongoDB ----
 echo [4/5] Checking MongoDB service status...
+>> "%LAUNCH_LOG%" echo [%date% %time%] Checking MongoDB service.
 sc query MongoDB >nul 2>&1
 if errorlevel 1 (
     echo [WARN] MongoDB service not found. Attempting to start MongoDB directly...
@@ -248,33 +282,64 @@ if exist "%ROOT%backend\ssl.crt" (
 if "%REGEN_CERT%"=="1" (
     echo [5/5] Regenerating SSL certificate for current IP !IP!...
     "%PYTHON%" "%ROOT%backend\gen_cert.py"
+    if errorlevel 1 (
+        echo [ERROR] SSL certificate generation failed.
+        >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: SSL certificate generation failed.
+        pause
+        exit /b 1
+    )
 )
 echo [5/5] Starting FastAPI production server on 0.0.0.0:%BACKEND_PORT%...
+>> "%LAUNCH_LOG%" echo [%date% %time%] Starting backend server.
+>> "%LAUNCH_LOG%" echo [%date% %time%] Printing access URLs.
 echo.
 echo ==========================================
 echo  ACCESS URLs:
 echo  LAN / same Wi-Fi:    https://!IP!:%BACKEND_PORT%/
-echo  Frontend LAN:        https://!IP!:%FRONTEND_PORT%/
 if not "!STATIC_URL!"=="" (
-    echo  Public / static IP:  https://!STATIC_URL!:%BACKEND_PORT%/
-    echo  Frontend public:    https://!STATIC_URL!:%FRONTEND_PORT%/
+    echo  Public URL - router must forward TCP %BACKEND_PORT%: https://!STATIC_URL!:%BACKEND_PORT%/
 ) else (
-    echo  Public / static IP:  not configured yet
-    echo  Frontend public:    not configured yet
+    echo  Public URL:        not configured
 )
-echo  NOTE: Accept the security warning in browser (self-signed cert)
+echo  NOTE: Accept the browser security warning for the self-signed certificate.
 echo  Open the LAN URL on your phone/tablet while connected to the same Wi-Fi.
 echo ==========================================
 echo.
 echo  API endpoints: /api/...
 echo  Logs:          %ROOT%backend\server.log
 echo  Health check:  https://!IP!:%BACKEND_PORT%/health
-echo  Press Ctrl+C to stop.
+echo  Open the LAN URL above after the backend reports startup complete.
+echo  Press Ctrl+C to stop the backend.
 echo.
 
+>> "%LAUNCH_LOG%" echo [%date% %time%] Access URLs printed; preparing backend command.
+>> "%LAUNCH_LOG%" echo [%date% %time%] Changing to backend working directory.
 cd /d "%ROOT%backend"
-start "" "https://!IP!:%BACKEND_PORT%/"
+if errorlevel 1 (
+    echo [ERROR] Could not enter the backend directory: %ROOT%backend
+    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: Backend directory not found.
+    pause
+    exit /b 1
+)
+>> "%LAUNCH_LOG%" echo [%date% %time%] Backend working directory ready.
+set "DEBUG=false"
+echo [INFO] Starting backend in this window. Uvicorn will print when startup is complete.
+echo [INFO] This window stays open while the app is running. Open the LAN URL after the startup message appears.
+echo [INFO] The default browser will open automatically after the backend health check succeeds.
+>> "%LAUNCH_LOG%" echo [%date% %time%] Starting Uvicorn in the foreground with console output enabled.
+start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%backend\open_app_when_ready.ps1" -Url "https://!IP!:%BACKEND_PORT%/" -LogPath "%LAUNCH_LOG%"
+set "BROWSER_WATCHER_RESULT=!ERRORLEVEL!"
+if not "!BROWSER_WATCHER_RESULT!"=="0" (
+    echo [WARN] Could not start the browser readiness check. Open the LAN URL manually.
+    >> "%LAUNCH_LOG%" echo [%date% %time%] WARNING: Browser readiness checker failed to start.
+) else (
+    >> "%LAUNCH_LOG%" echo [%date% %time%] Browser readiness checker started.
+)
 "%PYTHON%" -m uvicorn server:app --host 0.0.0.0 --port %BACKEND_PORT% --ssl-keyfile ssl.key --ssl-certfile ssl.crt --log-level info
+set "SERVER_EXIT_CODE=%ERRORLEVEL%"
+echo [ERROR] Backend server exited with code %SERVER_EXIT_CODE%.
+echo See log: %LAUNCH_LOG%
+>> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: Backend server exited with code %SERVER_EXIT_CODE%.
 
 endlocal
 pause
