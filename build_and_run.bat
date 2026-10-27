@@ -125,24 +125,12 @@ goto :ip_done
 
 :ip_done
 
-:: ---- Step 1: Windows Firewall rule ----
-echo [1/4] Configuring Windows Firewall for port %BACKEND_PORT%...
->> "%LAUNCH_LOG%" echo [%date% %time%] Checking Windows Firewall rule.
-netsh advfirewall firewall show rule name="Retail App Port %BACKEND_PORT%" >nul 2>&1
-set "FIREWALL_CHECK_RESULT=%ERRORLEVEL%"
->> "%LAUNCH_LOG%" echo [%date% %time%] Firewall rule query exit code: %FIREWALL_CHECK_RESULT%.
-if not "%FIREWALL_CHECK_RESULT%"=="0" (
-    netsh advfirewall firewall add rule name="Retail App Port %BACKEND_PORT%" dir=in action=allow protocol=TCP localport=%BACKEND_PORT% >nul 2>&1
-    set "FIREWALL_ADD_RESULT=!ERRORLEVEL!"
-    >> "%LAUNCH_LOG%" echo [%date% %time%] Firewall rule add exit code: %FIREWALL_ADD_RESULT%.
-    if not "!FIREWALL_ADD_RESULT!"=="0" (
-        echo [WARN] Could not add firewall rule - run as Administrator for internet access.
-    ) else (
-        echo [1/4] Firewall rule added - port %BACKEND_PORT% now open.
-    )
-) else (
-    echo [1/4] Firewall rule already exists. OK.
-)
+:: ---- Step 1: Leave Windows Firewall alone ----
+:: The launcher must not mutate the machine firewall profile because some Wi‑Fi
+:: setups interpret that as a network policy change and interrupt normal internet access.
+:: If the user wants the port opened, they can add it manually.
+echo [1/4] Skipping firewall changes for port %BACKEND_PORT% to avoid disrupting normal Wi‑Fi access.
+>> "%LAUNCH_LOG%" echo [%date% %time%] Firewall changes skipped intentionally to preserve network access.
 echo.
 
 :: ---- Step 2: Build React Frontend ----

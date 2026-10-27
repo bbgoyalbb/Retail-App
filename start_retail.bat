@@ -12,25 +12,9 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: ---- Self-elevate only if firewall rules are missing ----
-:: Check if both firewall rules already exist before demanding admin
-netsh advfirewall firewall show rule name="Retail App Port %BACKEND_PORT%" >nul 2>&1
-set "BACKEND_RULE_MISSING=%errorlevel%"
-netsh advfirewall firewall show rule name="Retail App Port %FRONTEND_PORT%" >nul 2>&1
-set "FRONTEND_RULE_MISSING=%errorlevel%"
-
-if %BACKEND_RULE_MISSING% neq 0 goto :need_elevation
-if %FRONTEND_RULE_MISSING% neq 0 goto :need_elevation
-goto :rules_ok
-
-:need_elevation
-net session >nul 2>&1
-if %errorlevel% neq 0 (
-    powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
-    exit /b
-)
-
-:rules_ok
+:: ---- Avoid changing the machine firewall profile. Some networks mis-handle
+::      automatically created app rules and can interrupt normal internet access.
+::      Only warn instead of mutating firewall state.
 set "PYTHON=%ROOT%backend\venv\Scripts\python.exe"
 
 :: Check if backend venv exists, fallback to system python
@@ -74,17 +58,11 @@ if not defined STATIC_IP set "STATIC_IP=59.144.172.176"
 
 powershell -NoProfile -Command "$path='%ENV_FILE%'; $ips = @('localhost','127.0.0.1') + ((Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -and $_.IPAddress -notmatch '^127\.' -and $_.IPAddress -notmatch '^169\.254\.' } | Select-Object -ExpandProperty IPAddress) | Select-Object -Unique); $publicIp = $env:STATIC_IP; if (-not $publicIp) { $publicIp = (Get-Content $path -Raw | Select-String -Pattern '^STATIC_IPS=' -SimpleMatch -CaseSensitive -AllMatches -ErrorAction SilentlyContinue | ForEach-Object { $_.Line.Split('=',2)[1].Trim() } | Select-Object -First 1); }; $hostList = ($ips | Where-Object { $_ -and $_.Trim() } | Select-Object -Unique) -join ','; $patternA = '(?m)^APP_HOSTS=.*'; $patternB = '(?m)^STATIC_IPS=.*'; $patternC = '(?m)^CORS_ORIGINS=.*'; $content = if (Test-Path $path) { Get-Content $path -Raw } else { '' }; $cors = 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000'; foreach ($ip in $ips) { if ($ip -and $ip -notmatch '^(localhost|127\.0\.0\.1)$') { $cors += ',https://' + $ip + ':3000,https://' + $ip + ':8001' } }; if ($publicIp) { $cors += ',https://' + $publicIp + ':3000,https://' + $publicIp + ':8001' }; if ($content -match $patternA) { $content = [regex]::Replace($content, $patternA, 'APP_HOSTS=' + $hostList) } elseif ($content.Trim().Length -gt 0) { $content += [Environment]::NewLine + 'APP_HOSTS=' + $hostList } else { $content = 'APP_HOSTS=' + $hostList }; if ($content -match $patternB) { $content = [regex]::Replace($content, $patternB, 'STATIC_IPS=' + $publicIp) } else { $content += [Environment]::NewLine + 'STATIC_IPS=' + $publicIp }; if ($content -match $patternC) { $content = [regex]::Replace($content, $patternC, 'CORS_ORIGINS=' + $cors) } else { $content += [Environment]::NewLine + 'CORS_ORIGINS=' + $cors }; Set-Content -Path $path -Value $content -Encoding UTF8;"
 
-:: ---- Ensure Firewall rules ----
-netsh advfirewall firewall show rule name="Retail App Port %BACKEND_PORT%" >nul 2>&1
-if errorlevel 1 (
-    netsh advfirewall firewall add rule name="Retail App Port %BACKEND_PORT%" dir=in action=allow protocol=TCP localport=%BACKEND_PORT% >nul 2>&1
-    if not errorlevel 1 echo [INFO] Firewall rule added for port %BACKEND_PORT%.
-)
-netsh advfirewall firewall show rule name="Retail App Port %FRONTEND_PORT%" >nul 2>&1
-if errorlevel 1 (
-    netsh advfirewall firewall add rule name="Retail App Port %FRONTEND_PORT%" dir=in action=allow protocol=TCP localport=%FRONTEND_PORT% >nul 2>&1
-    if not errorlevel 1 echo [INFO] Firewall rule added for port %FRONTEND_PORT%.
-)
+:: ---- Do not modify Windows Firewall automatically. If the system blocks inbound
+::      access, add the app ports manually in Windows Defender Firewall and keep
+::      the rest of the network untouched.
+
+echo [INFO] Windows Firewall is left unchanged; if your system requires it, add the app ports manually.
 
 :: ---- Detect local IP ----
 for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
