@@ -25,7 +25,7 @@ if (-not $curl) {
 }
 
 while ((Get-Date) -lt $deadline) {
-    $curlOutput = & $curl.Source --insecure --silent --show-error --output NUL --write-out "%{http_code}" --max-time 5 $healthUri.Uri.AbsoluteUri 2>&1
+    $curlOutput = & $curl.Source --insecure --silent --output NUL --write-out "%{http_code}" --max-time 5 $healthUri.Uri.AbsoluteUri
     $curlExitCode = $LASTEXITCODE
     $httpStatus = ($curlOutput -join "").Trim()
     if ($curlExitCode -eq 0 -and $httpStatus -eq "200") {
