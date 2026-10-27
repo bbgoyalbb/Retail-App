@@ -25,6 +25,8 @@ import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+from network_config import build_cors_allowlist
+
 import auth as auth_module  # noqa: F401 — imported for side-effects (security obj)
 
 ROOT_DIR = Path(__file__).parent
@@ -280,21 +282,19 @@ app.include_router(auth_router,        prefix=PREFIX)
 # ==========================================
 # NOTE: Middleware must be registered BEFORE routes so Starlette wraps them correctly.
 
-# CORS — fail loudly if not configured in production
+# CORS — allow localhost plus private LAN/static IPs without a brittle one-off allowlist.
+# The runtime accepts values from CORS_ORIGINS and also falls back to safe local defaults.
 cors_origins = os.environ.get("CORS_ORIGINS")
-if not cors_origins:
-    if os.environ.get("DEBUG", "").lower() != "true":
-        raise RuntimeError(
-            "CORS_ORIGINS environment variable not set. "
-            "Set it to your allowed origins (e.g. 'https://yourshop.com'). "
-            "For development, set DEBUG=true to allow all origins."
-        )
-    cors_origins = "*"
+allow_origins, allow_origin_regex = build_cors_allowlist(
+    cors_origins,
+    debug=os.environ.get("DEBUG", "").lower() == "true",
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=cors_origins.split(",") if cors_origins != "*" else ["*"],
+    allow_origins=allow_origins if allow_origins and allow_origins != ["*"] else ["*"],
+    allow_origin_regex=allow_origin_regex,
     allow_methods=["*"],
     allow_headers=["*"],
     max_age=600,  # Cache preflight requests for 10 minutes

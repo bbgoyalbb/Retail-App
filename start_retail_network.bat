@@ -14,7 +14,7 @@ set "PYTHON=%ROOT%backend\venv\Scripts\python.exe"
 
 if not exist "%PYTHON%" set "PYTHON=py"
 
-:: ---- Ensure JWT_SECRET_KEY in .env ----
+:: ---- Ensure JWT_SECRET_KEY and host metadata in .env ----
 if not exist "%ENV_FILE%" (
     powershell -Command "$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create(); $bytes = New-Object byte[] 32; $rng.GetBytes($bytes); $key = ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''; Set-Content -Path '%ENV_FILE%' -Value \"JWT_SECRET_KEY=$key\""
     echo [INFO] Created backend\.env with new JWT_SECRET_KEY.
@@ -25,6 +25,8 @@ if not exist "%ENV_FILE%" (
         echo [INFO] Added JWT_SECRET_KEY to .env.
     )
 )
+
+powershell -NoProfile -Command "$path='%ENV_FILE%'; $ips = @('localhost','127.0.0.1') + ((Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -and $_.IPAddress -notmatch '^127\.' -and $_.IPAddress -notmatch '^169\.254\.' } | Select-Object -ExpandProperty IPAddress) | Select-Object -Unique); $publicIp = $env:STATIC_IP; if (-not $publicIp) { $publicIp = (Get-Content $path -Raw | Select-String -Pattern '^STATIC_IPS=' -SimpleMatch -CaseSensitive -AllMatches -ErrorAction SilentlyContinue | ForEach-Object { $_.Line.Split('=',2)[1].Trim() } | Select-Object -First 1); }; $hostList = ($ips | Where-Object { $_ -and $_.Trim() } | Select-Object -Unique) -join ','; $patternA = '(?m)^APP_HOSTS=.*'; $patternB = '(?m)^STATIC_IPS=.*'; $patternC = '(?m)^CORS_ORIGINS=.*'; $content = if (Test-Path $path) { Get-Content $path -Raw } else { '' }; $cors = 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000'; foreach ($ip in $ips) { if ($ip -and $ip -notmatch '^(localhost|127\.0\.0\.1)$') { $cors += ',https://' + $ip + ':3000,https://' + $ip + ':8001' } }; if ($publicIp) { $cors += ',https://' + $publicIp + ':3000,https://' + $publicIp + ':8001' }; if ($content -match $patternA) { $content = [regex]::Replace($content, $patternA, 'APP_HOSTS=' + $hostList) } elseif ($content.Trim().Length -gt 0) { $content += [Environment]::NewLine + 'APP_HOSTS=' + $hostList } else { $content = 'APP_HOSTS=' + $hostList }; if ($content -match $patternB) { $content = [regex]::Replace($content, $patternB, 'STATIC_IPS=' + $publicIp) } else { $content += [Environment]::NewLine + 'STATIC_IPS=' + $publicIp }; if ($content -match $patternC) { $content = [regex]::Replace($content, $patternC, 'CORS_ORIGINS=' + $cors) } else { $content += [Environment]::NewLine + 'CORS_ORIGINS=' + $cors }; Set-Content -Path $path -Value $content -Encoding UTF8;"
 
 :: ---- Ensure Firewall rules ----
 netsh advfirewall firewall show rule name="Retail App Port %BACKEND_PORT%" >nul 2>&1
@@ -46,6 +48,24 @@ for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
 )
 :found_ip
 if "!IP!"=="" set "IP=127.0.0.1"
+
+set "STATIC_URL="
+for /f "delims=" %%g in ('powershell -NoProfile -Command "$p='%ENV_FILE%'; if (Test-Path $p) { $content = Get-Content $p -Raw; if ($content -match '(?m)^STATIC_IPS=(.+)$') { $Matches[1].Trim() } }"') do set "STATIC_URL=%%g"
+(
+    echo Retail access URLs
+    echo.
+    echo LAN / same Wi-Fi: https://!IP!:%FRONTEND_PORT%/
+    echo LAN API: https://!IP!:%BACKEND_PORT%/
+    if not "!STATIC_URL!"=="" (
+        echo Public / static IP: https://!STATIC_URL!:%FRONTEND_PORT%/
+        echo Public API: https://!STATIC_URL!:%BACKEND_PORT%/
+    ) else (
+        echo Public / static IP: not configured yet
+        echo Public API: not configured yet
+    )
+) > "%ROOT%backend\network_urls.txt"
+
+echo [INFO] Saved access URLs to %ROOT%backend\network_urls.txt
 
 :start_backend
 echo Checking for existing process on port %BACKEND_PORT%...
@@ -82,11 +102,17 @@ timeout /t 2 /nobreak >nul
 start "" "https://!IP!:%FRONTEND_PORT%/"
 echo.
 echo ==========================================
-echo  Access from this PC:    https://!IP!:%FRONTEND_PORT%/
-echo  Access from network:    https://!IP!:%FRONTEND_PORT%/
-echo  Backend API:            https://!IP!:%BACKEND_PORT%/
+echo  LAN access:         https://!IP!:%FRONTEND_PORT%/
+echo  LAN API:            https://!IP!:%BACKEND_PORT%/
+if not "!STATIC_URL!"=="" (
+    echo  Public access:      https://!STATIC_URL!:%FRONTEND_PORT%/
+    echo  Public API:         https://!STATIC_URL!:%BACKEND_PORT%/
+) else (
+    echo  Public access:      not configured yet
+    echo  Public API:         not configured yet
+)
 echo  NOTE: Accept BOTH certificate warnings in browser (one-time per device)
-echo  Internet (prod only):   use build_and_run.bat
+echo  Open the LAN URL on phone/tablet while on the same Wi-Fi.
 echo ==========================================
 echo.
 pause >nul

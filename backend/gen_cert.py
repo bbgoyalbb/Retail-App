@@ -1,7 +1,8 @@
-"""Auto-generate a self-signed SSL certificate for the current machine IP."""
+"""Auto-generate a self-signed SSL certificate covering localhost and LAN/static hosts."""
 import ipaddress
 import os
 import socket
+import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -10,32 +11,93 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
-out_dir = Path(__file__).parent
+from network_config import build_ssl_subject_alt_names
 
-# Read organization name from env or use generic placeholder
+out_dir = Path(__file__).parent
 ORG_NAME = os.getenv("FIRM_NAME", "Retail Business")
 
-# Detect current local IP
-try:
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("8.8.8.8", 80))
-    local_ip = s.getsockname()[0]
-    s.close()
-except Exception:
-    local_ip = "127.0.0.1"
 
-print(f"Detected local IP: {local_ip}")
+def detect_local_ipv4s():
+    candidates = []
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        candidates.append(s.getsockname()[0])
+        s.close()
+    except Exception:
+        pass
 
-# Build SAN list — always include localhost + 127.0.0.1 + current LAN IP
-san_entries = [
-    x509.DNSName("localhost"),
-    x509.IPAddress(ipaddress.IPv4Address("127.0.0.1")),
-]
-if local_ip != "127.0.0.1":
-    san_entries.append(x509.IPAddress(ipaddress.IPv4Address(local_ip)))
+    for env_name in ("APP_HOST", "SERVER_HOST", "STATIC_IP"):
+        value = os.getenv(env_name)
+        if value:
+            candidates.append(value)
+
+    for env_name in ("APP_HOSTS", "STATIC_IPS", "CORS_ORIGINS"):
+        raw = os.getenv(env_name, "")
+        if not raw:
+            continue
+        for segment in raw.split(","):
+            segment = segment.strip().strip("/")
+            if not segment:
+                continue
+            if segment.startswith("http://") or segment.startswith("https://"):
+                segment = segment.split("//", 1)[1]
+            if "/" in segment:
+                segment = segment.split("/", 1)[0]
+            if segment and segment not in candidates:
+                candidates.append(segment)
+
+    if os.name == "nt":
+        try:
+            out = subprocess.run(["ipconfig"], capture_output=True, text=True, check=False)
+            for line in out.stdout.splitlines():
+                if "IPv4 Address" in line or ":" in line:
+                    candidate = line.split(":")[-1].strip()
+                    if candidate and candidate not in candidates:
+                        candidates.append(candidate)
+        except Exception:
+            pass
+    else:
+        try:
+            out = subprocess.run(["hostname", "-I"], capture_output=True, text=True, check=False)
+            for candidate in out.stdout.split():
+                if candidate and candidate not in candidates:
+                    candidates.append(candidate)
+        except Exception:
+            pass
+
+    valid = []
+    for candidate in candidates:
+        candidate = candidate.strip()
+        if not candidate:
+            continue
+        try:
+            ip = ipaddress.ip_address(candidate)
+        except ValueError:
+            continue
+        if isinstance(ip, ipaddress.IPv4Address) and ip.is_private and str(ip) not in valid:
+            valid.append(str(ip))
+    return valid
+
+
+local_ips = detect_local_ipv4s() or ["127.0.0.1"]
+hostnames = build_ssl_subject_alt_names(local_ips)
+san_entries = []
+for name in hostnames:
+    if not name:
+        continue
+    try:
+        san_entries.append(x509.IPAddress(ipaddress.ip_address(name)))
+    except ValueError:
+        san_entries.append(x509.DNSName(name))
+
+if not san_entries:
+    san_entries = [
+        x509.DNSName("localhost"),
+        x509.IPAddress(ipaddress.IPv4Address("127.0.0.1")),
+    ]
 
 key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-
 subject = issuer = x509.Name([
     x509.NameAttribute(NameOID.COMMON_NAME, "Retail App"),
     x509.NameAttribute(NameOID.ORGANIZATION_NAME, ORG_NAME),
@@ -61,4 +123,4 @@ cert = (
 ))
 (out_dir / "ssl.crt").write_bytes(cert.public_bytes(serialization.Encoding.PEM))
 
-print(f"Certificate regenerated for IP: {local_ip}")
+print(f"Certificate regenerated for hosts: {', '.join(sorted({str(entry.value) if hasattr(entry, 'value') else str(entry) for entry in san_entries}))}")
