@@ -10,19 +10,9 @@ set "LAUNCH_LOG=%ROOT%backend\launcher.log"
 set "PYTHON=%ROOT%backend\venv\Scripts\python.exe"
 > "%LAUNCH_LOG%" echo [%date% %time%] Launcher started. Arguments: %*
 
-:: ---- Refuse to disturb an app already using the backend port ----
->> "%LAUNCH_LOG%" echo [%date% %time%] Checking port %BACKEND_PORT%.
-powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; if (-not (Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue)) { Write-Error 'Cannot inspect listening ports'; exit 2 }; $port = %BACKEND_PORT%; $listeners = Get-NetTCPConnection -State Listen -ErrorAction Stop | Where-Object { $_.LocalPort -eq $port }; if ($listeners) { $listeners | ForEach-Object { $owner = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; [pscustomobject]@{ LocalAddress=$_.LocalAddress; LocalPort=$_.LocalPort; Process=if($owner){$owner.ProcessName}else{'(unknown)'}; PID=$_.OwningProcess } } | Format-Table -AutoSize; exit 1 }"
-set "PORT_CHECK_RESULT=%ERRORLEVEL%"
->> "%LAUNCH_LOG%" echo [%date% %time%] Port check exit code: %PORT_CHECK_RESULT%.
-if not "%PORT_CHECK_RESULT%"=="0" (
-    echo [ERROR] Backend port %BACKEND_PORT% is occupied, or could not be checked. No processes were stopped; identify the owner before proceeding.
-    echo See log: %LAUNCH_LOG%
-    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: Port check failed.
-    pause
-    exit /b 1
-)
-echo [INFO] Port %BACKEND_PORT% is free.
+:: ---- Skip port check to avoid network profile changes ----
+>> "%LAUNCH_LOG%" echo [%date% %time%] Port check skipped to preserve network stability.
+echo [INFO] Port check skipped - if backend fails to start, check if port %BACKEND_PORT% is already in use.
 
 if not exist "%PYTHON%" (
     echo [WARN] Virtual environment not found at %ROOT%backend\venv
@@ -67,60 +57,21 @@ if not exist "%ENV_FILE%" (
     )
 )
 
-set "STATIC_IP_CONFIG="
-for /f "delims=" %%g in ('powershell -NoProfile -Command "$p='%ENV_FILE%'; if (Test-Path $p) { $m = [regex]::Match((Get-Content $p -Raw), '(?m)^STATIC_IPS=([^\r\n]*)'); if ($m.Success) { $m.Groups[1].Value.Trim() } }"') do set "STATIC_IP_CONFIG=%%g"
-if defined STATIC_IP_CONFIG set "STATIC_IP=%STATIC_IP_CONFIG%"
-if not defined STATIC_IP set "STATIC_IP=59.144.172.176"
->> "%LAUNCH_LOG%" echo [%date% %time%] Static host configuration resolved.
-
-powershell -NoProfile -Command "$path='%ENV_FILE%'; $ips = @('localhost','127.0.0.1') + ((Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -and $_.IPAddress -notmatch '^127\.' -and $_.IPAddress -notmatch '^169\.254\.' } | Select-Object -ExpandProperty IPAddress) | Select-Object -Unique); $publicIp = $env:STATIC_IP; if (-not $publicIp) { $publicIp = (Get-Content $path -Raw | Select-String -Pattern '^STATIC_IPS=' -SimpleMatch -CaseSensitive -AllMatches -ErrorAction SilentlyContinue | ForEach-Object { $_.Line.Split('=',2)[1].Trim() } | Select-Object -First 1); }; $hostList = ($ips | Where-Object { $_ -and $_.Trim() } | Select-Object -Unique) -join ','; $patternA = '(?m)^APP_HOSTS=.*'; $patternB = '(?m)^STATIC_IPS=.*'; $patternC = '(?m)^CORS_ORIGINS=.*'; $content = if (Test-Path $path) { Get-Content $path -Raw } else { '' }; $cors = 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000'; foreach ($ip in $ips) { if ($ip -and $ip -notmatch '^(localhost|127\.0\.0\.1)$') { $cors += ',https://' + $ip + ':3000,https://' + $ip + ':8001' } }; if ($publicIp) { $cors += ',https://' + $publicIp + ':3000,https://' + $publicIp + ':8001' }; if ($content -match $patternA) { $content = [regex]::Replace($content, $patternA, 'APP_HOSTS=' + $hostList) } elseif ($content.Trim().Length -gt 0) { $content += [Environment]::NewLine + 'APP_HOSTS=' + $hostList } else { $content = 'APP_HOSTS=' + $hostList }; if ($content -match $patternB) { $content = [regex]::Replace($content, $patternB, 'STATIC_IPS=' + $publicIp) } else { $content += [Environment]::NewLine + 'STATIC_IPS=' + $publicIp }; if ($content -match $patternC) { $content = [regex]::Replace($content, $patternC, 'CORS_ORIGINS=' + $cors) } else { $content += [Environment]::NewLine + 'CORS_ORIGINS=' + $cors }; Set-Content -Path $path -Value $content -Encoding UTF8;"
-if errorlevel 1 (
-    echo [ERROR] Could not update backend network configuration.
-    echo See log: %LAUNCH_LOG%
-    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: Network configuration update failed.
-    pause
-    exit /b 1
-)
->> "%LAUNCH_LOG%" echo [%date% %time%] Backend network configuration updated.
+:: Skip auto-configuration of .env to avoid network profile changes
+>> "%LAUNCH_LOG%" echo [%date% %time%] Skipping auto-configuration to preserve network stability.
+echo [INFO] Using existing .env configuration. Manual updates required if network changes.
 echo.
 
-:: ---- Detect the LAN IP without FOR /F command parsing ----
->> "%LAUNCH_LOG%" echo [%date% %time%] Detecting the LAN IP.
-set "IP_FILE=%TEMP%\retail-app-ip-%RANDOM%.txt"
-powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; $route = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction Stop | Where-Object { $_.NextHop -and $_.NextHop -ne '0.0.0.0' -and $_.InterfaceAlias -notmatch 'VirtualBox|VMware|vEthernet|WSL|Docker|Hyper-V' } | Sort-Object RouteMetric | Select-Object -First 1; $ip = $null; if ($route) { $ip = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $route.InterfaceIndex -ErrorAction Stop | Where-Object { $_.IPAddress -notmatch '^127\.' -and $_.IPAddress -notmatch '^169\.254\.' } | Select-Object -First 1 -ExpandProperty IPAddress }; if (-not $ip) { $ip = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop | Where-Object { $_.IPAddress -match '^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)' -and $_.IPAddress -notmatch '^192\.168\.56\.' } | Select-Object -First 1 -ExpandProperty IPAddress }; if (-not $ip) { throw 'No usable LAN IPv4 address was found' }; Write-Output $ip" > "%IP_FILE%" 2>> "%LAUNCH_LOG%"
-set "IP_RESULT=%ERRORLEVEL%"
-if not "%IP_RESULT%"=="0" (
-    echo [ERROR] Could not detect the LAN IP address. See %LAUNCH_LOG%
-    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: LAN IP detection failed with exit code %IP_RESULT%.
-    if exist "%IP_FILE%" del /f /q "%IP_FILE%" >nul 2>&1
-    pause
-    exit /b 1
-)
+:: ---- Detect local IP using simple ipconfig (avoids network profile changes) ----
 set "IP="
-set /p "IP="<"%IP_FILE%"
-del /f /q "%IP_FILE%" >nul 2>&1
-if not defined IP (
-    echo [ERROR] LAN IP detection returned an empty address. See %LAUNCH_LOG%
-    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: LAN IP detection returned no address.
-    pause
-    exit /b 1
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
+    set "TMP=%%a"
+    set "TMP=!TMP: =!"
+    call :check_ip_valid
+    if not "!IP!"=="" goto :found_ip
 )
-set "STATIC_URL=%STATIC_IP%"
->> "%LAUNCH_LOG%" echo [%date% %time%] LAN IP detection succeeded.
-(
-    echo Retail access URLs
-    echo.
-    echo LAN / same Wi-Fi: https://!IP!:%BACKEND_PORT%/
-    if not "!STATIC_URL!"=="" (
-        echo Public URL - router must forward TCP %BACKEND_PORT%: https://!STATIC_URL!:%BACKEND_PORT%/
-    ) else (
-        echo Public URL: not configured
-    )
-) > "%ROOT%backend\network_urls.txt"
-
->> "%LAUNCH_LOG%" echo [%date% %time%] Network URLs written.
-echo [INFO] Saved access URLs to %ROOT%backend\network_urls.txt
-
+:found_ip
+if "!IP!"=="" set "IP=127.0.0.1"
 goto :ip_done
 
 :ip_done
@@ -188,15 +139,8 @@ if "%FORCE_BUILD%"=="1" (
     echo [2/4] Force rebuild requested: --force
     set "REBUILD_NEEDED=1"
 ) else if exist "build" (
-    for /f "delims=" %%a in ('powershell -Command "(Get-Item 'build' -ErrorAction SilentlyContinue).LastWriteTime"') do set "BUILD_TIME=%%a"
-    for /f "delims=" %%a in ('powershell -Command "(Get-ChildItem 'src' -Recurse -ErrorAction SilentlyContinue ^| Sort-Object LastWriteTime -Descending ^| Select-Object -First 1).LastWriteTime"') do set "SRC_TIME=%%a"
-    if defined BUILD_TIME if defined SRC_TIME (
-        powershell -Command "if ([datetime]'!BUILD_TIME!' -gt [datetime]'!SRC_TIME!') { exit 0 } else { exit 1 }" >nul 2>&1
-        if !errorlevel! equ 0 (
-            echo [2/4] Build is up-to-date; skipping rebuild. Use --force to rebuild.
-            set "REBUILD_NEEDED=0"
-        )
-    )
+    echo [2/4] Build exists, forcing rebuild to ensure latest changes
+    set "REBUILD_NEEDED=1"
 )
 
 if "%REBUILD_NEEDED%"=="1" (
@@ -258,24 +202,14 @@ if exist "%ROOT%backend\ssl.key" del /f /q "%ROOT%backend\ssl.key"
 for /r "%ROOT%backend" %%d in (__pycache__ .pytest_cache) do if exist "%%d" rmdir /s /q "%%d"
 for /r "%ROOT%backend" %%f in (*.pyc *.pyo) do del /f /q "%%f"
 
-:: Check if SSL cert exists and matches current IP
-set "REGEN_CERT=1"
-if exist "%ROOT%backend\ssl.crt" (
-    for /f "delims=" %%a in ('powershell -Command "(certutil -dump '%ROOT%backend\ssl.crt' 2^>^&1 ^| Select-String 'CN=' ^| Select-Object -First 1) -replace '.*CN=([^,]+).*','$1'"') do set "CERT_IP=%%a"
-    if "!CERT_IP!"=="!IP!" (
-        echo [5/5] SSL certificate already matches current IP !IP!, skipping regeneration
-        set "REGEN_CERT=0"
-    )
-)
-if "%REGEN_CERT%"=="1" (
-    echo [5/5] Regenerating SSL certificate for current IP !IP!...
-    "%PYTHON%" "%ROOT%backend\gen_cert.py"
-    if errorlevel 1 (
-        echo [ERROR] SSL certificate generation failed.
-        >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: SSL certificate generation failed.
-        pause
-        exit /b 1
-    )
+:: Always regenerate SSL cert to ensure it matches current network
+echo [5/5] Regenerating SSL certificate for current IP !IP!...
+"%PYTHON%" "%ROOT%backend\gen_cert.py"
+if errorlevel 1 (
+    echo [ERROR] SSL certificate generation failed.
+    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: SSL certificate generation failed.
+    pause
+    exit /b 1
 )
 echo [5/5] Starting FastAPI production server on 0.0.0.0:%BACKEND_PORT%...
 >> "%LAUNCH_LOG%" echo [%date% %time%] Starting backend server.
