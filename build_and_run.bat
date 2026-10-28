@@ -76,6 +76,19 @@ goto :ip_done
 
 :ip_done
 
+:check_ip_valid
+:: Check if TMP is a valid IP we want (skip 172.x, 169.254.x, 192.168.56.x)
+set "VALID=1"
+echo %TMP% | findstr /b "172." >nul && set "VALID=0"
+if "%VALID%"=="0" goto :ip_check_end
+echo %TMP% | findstr /b "169.254." >nul && set "VALID=0"
+if "%VALID%"=="0" goto :ip_check_end
+echo %TMP% | findstr /b "192.168.56." >nul && set "VALID=0"
+if "%VALID%"=="0" goto :ip_check_end
+if "%VALID%"=="1" set "IP=%TMP%"
+:ip_check_end
+goto :eof
+
 :: ---- Step 1: Leave Windows Firewall alone ----
 :: The launcher must not mutate the machine firewall profile because some Wi‑Fi
 :: setups interpret that as a network policy change and interrupt normal internet access.
@@ -218,11 +231,6 @@ echo.
 echo ==========================================
 echo  ACCESS URLs:
 echo  LAN / same Wi-Fi:    https://!IP!:%BACKEND_PORT%/
-if not "!STATIC_URL!"=="" (
-    echo  Public URL - router must forward TCP %BACKEND_PORT%: https://!STATIC_URL!:%BACKEND_PORT%/
-) else (
-    echo  Public URL:        not configured
-)
 echo  NOTE: Accept the browser security warning for the self-signed certificate.
 echo  Open the LAN URL on your phone/tablet while connected to the same Wi-Fi.
 echo ==========================================
@@ -259,9 +267,11 @@ if not "!BROWSER_WATCHER_RESULT!"=="0" (
 )
 "%PYTHON%" -m uvicorn server:app --host 0.0.0.0 --port %BACKEND_PORT% --ssl-keyfile ssl.key --ssl-certfile ssl.crt --log-level info
 set "SERVER_EXIT_CODE=%ERRORLEVEL%"
-echo [ERROR] Backend server exited with code %SERVER_EXIT_CODE%.
-echo See log: %LAUNCH_LOG%
->> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: Backend server exited with code %SERVER_EXIT_CODE%.
+if not "%SERVER_EXIT_CODE%"=="0" (
+    echo [ERROR] Backend server exited with code %SERVER_EXIT_CODE%.
+    echo See log: %LAUNCH_LOG%
+    >> "%LAUNCH_LOG%" echo [%date% %time%] ERROR: Backend server exited with code %SERVER_EXIT_CODE%.
+)
 
 endlocal
 pause

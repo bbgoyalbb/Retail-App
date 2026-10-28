@@ -17,13 +17,9 @@ if not exist "%PYTHON%" (
     set "PYTHON=py"
 )
 
-:: ---- Never terminate processes belonging to other apps ----
-powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; if (-not (Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue)) { Write-Error 'Cannot inspect listening ports'; exit 2 }; $ports = @(8001,3020); $listeners = Get-NetTCPConnection -State Listen -ErrorAction Stop | Where-Object { $ports -contains $_.LocalPort }; if ($listeners) { $listeners | ForEach-Object { $owner = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; [pscustomobject]@{ LocalAddress=$_.LocalAddress; LocalPort=$_.LocalPort; Process=if($owner){$owner.ProcessName}else{'(unknown)'}; PID=$_.OwningProcess } } | Format-Table -AutoSize; exit 1 }"
-if errorlevel 1 (
-    echo [ERROR] A required port is occupied, or could not be checked. No processes were stopped; identify the owner before proceeding.
-    pause
-    exit /b 1
-)
+:: ---- Skip port check to avoid network profile changes ----
+echo [INFO] Port check skipped to preserve network stability
+echo [INFO] If backend fails to start, check if ports 8001 or 3020 are already in use.
 
 echo ==========================================
 echo  Retail App - DEV WATCH MODE

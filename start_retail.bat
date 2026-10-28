@@ -64,22 +64,7 @@ for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
 :found_ip
 if "!IP!"=="" set "IP=127.0.0.1"
 
-set "STATIC_URL="
-(
-    echo Retail access URLs
-    echo.
-    echo LAN / same Wi-Fi: https://!IP!:%FRONTEND_PORT%/
-    echo LAN API: https://!IP!:%BACKEND_PORT%/
-    if not "!STATIC_URL!"=="" (
-        echo Public / static IP: https://!STATIC_URL!:%FRONTEND_PORT%/
-        echo Public API: https://!STATIC_URL!:%BACKEND_PORT%/
-    ) else (
-        echo Public / static IP: not configured yet
-        echo Public API: not configured yet
-    )
-) > "%ROOT%backend\network_urls.txt"
-
-echo [INFO] Saved access URLs to %ROOT%backend\network_urls.txt
+echo [INFO] Detected local IP: !IP!
 
 :start_backend
 echo [INFO] Regenerating SSL certificate for current IP...
@@ -116,15 +101,8 @@ echo ==========================================
 echo  Retail App Started!
 echo  Local LAN URL:   https://!IP!:%FRONTEND_PORT%/
 echo  Local API URL:   https://!IP!:%BACKEND_PORT%/
-if not "!STATIC_URL!"=="" (
-    echo  Public URL:      https://!STATIC_URL!:%FRONTEND_PORT%/
-    echo  Public API:      https://!STATIC_URL!:%BACKEND_PORT%/
-) else (
-    echo  Public URL:      not configured yet
-    echo  Public API:      not configured yet
-)
 echo  NOTE: Accept BOTH certificate warnings in browser
-echo  Open these URLs on phone/tablet using the same Wi-Fi, or the configured public IP if exposed
+echo  Open these URLs on phone/tablet using the same Wi-Fi
 echo ==========================================
 echo.
 echo  Press any key to close this window...

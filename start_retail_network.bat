@@ -58,23 +58,7 @@ for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4 Address"') do (
 :found_ip
 if "!IP!"=="" set "IP=127.0.0.1"
 
-set "STATIC_URL="
-for /f "delims=" %%g in ('powershell -NoProfile -Command "$p='%ENV_FILE%'; if (Test-Path $p) { $content = Get-Content $p -Raw; if ($content -match '(?m)^STATIC_IPS=(.+)$') { $Matches[1].Trim() } }"') do set "STATIC_URL=%%g"
-(
-    echo Retail access URLs
-    echo.
-    echo LAN / same Wi-Fi: https://!IP!:%FRONTEND_PORT%/
-    echo LAN API: https://!IP!:%BACKEND_PORT%/
-    if not "!STATIC_URL!"=="" (
-        echo Public / static IP: https://!STATIC_URL!:%FRONTEND_PORT%/
-        echo Public API: https://!STATIC_URL!:%BACKEND_PORT%/
-    ) else (
-        echo Public / static IP: not configured yet
-        echo Public API: not configured yet
-    )
-) > "%ROOT%backend\network_urls.txt"
-
-echo [INFO] Saved access URLs to %ROOT%backend\network_urls.txt
+echo [INFO] Detected local IP: !IP!
 
 :start_backend
 echo Regenerating SSL certificate for current IP...
@@ -110,13 +94,6 @@ echo.
 echo ==========================================
 echo  LAN access:         https://!IP!:%FRONTEND_PORT%/
 echo  LAN API:            https://!IP!:%BACKEND_PORT%/
-if not "!STATIC_URL!"=="" (
-    echo  Public access:      https://!STATIC_URL!:%FRONTEND_PORT%/
-    echo  Public API:         https://!STATIC_URL!:%BACKEND_PORT%/
-) else (
-    echo  Public access:      not configured yet
-    echo  Public API:         not configured yet
-)
 echo  NOTE: Accept BOTH certificate warnings in browser (one-time per device)
 echo  Open the LAN URL on phone/tablet while on the same Wi-Fi.
 echo ==========================================
