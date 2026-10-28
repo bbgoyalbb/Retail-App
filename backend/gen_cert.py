@@ -1,7 +1,6 @@
 """Auto-generate a self-signed SSL certificate covering localhost and LAN/static hosts."""
 import ipaddress
 import os
-import socket
 import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -19,13 +18,8 @@ ORG_NAME = os.getenv("FIRM_NAME", "Retail Business")
 
 def detect_local_ipv4s():
     candidates = []
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        candidates.append(s.getsockname()[0])
-        s.close()
-    except Exception:
-        pass
+    # Skip socket connection to avoid network profile changes
+    # Only use environment variables and ipconfig
 
     for env_name in ("APP_HOST", "SERVER_HOST", "STATIC_IP"):
         value = os.getenv(env_name)
