@@ -76,19 +76,6 @@ goto :ip_done
 
 :ip_done
 
-:check_ip_valid
-:: Check if TMP is a valid IP we want (skip 172.x, 169.254.x, 192.168.56.x)
-set "VALID=1"
-echo %TMP% | findstr /b "172." >nul && set "VALID=0"
-if "%VALID%"=="0" goto :ip_check_end
-echo %TMP% | findstr /b "169.254." >nul && set "VALID=0"
-if "%VALID%"=="0" goto :ip_check_end
-echo %TMP% | findstr /b "192.168.56." >nul && set "VALID=0"
-if "%VALID%"=="0" goto :ip_check_end
-if "%VALID%"=="1" set "IP=%TMP%"
-:ip_check_end
-goto :eof
-
 :: ---- Step 1: Leave Windows Firewall alone ----
 :: The launcher must not mutate the machine firewall profile because some Wi‑Fi
 :: setups interpret that as a network policy change and interrupt normal internet access.
@@ -274,4 +261,17 @@ if not "%SERVER_EXIT_CODE%"=="0" (
 )
 
 endlocal
-pause
+goto :eof
+
+:check_ip_valid
+:: Check if TMP is a valid IP we want (skip 172.x, 169.254.x, 192.168.56.x)
+set "VALID=1"
+echo %TMP% | findstr /b "172." >nul && set "VALID=0"
+if "%VALID%"=="0" goto :ip_check_end
+echo %TMP% | findstr /b "169.254." >nul && set "VALID=0"
+if "%VALID%"=="0" goto :ip_check_end
+echo %TMP% | findstr /b "192.168.56." >nul && set "VALID=0"
+if "%VALID%"=="0" goto :ip_check_end
+if "%VALID%"=="1" set "IP=%TMP%"
+:ip_check_end
+goto :eof
